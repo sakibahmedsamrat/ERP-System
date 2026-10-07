@@ -1,0 +1,209 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  userId    String   @unique
+  password  String
+  role      String   @default("USER") // SUPER_ADMIN, ADMIN, USER
+  modules   String   @default("*") // Comma-separated modules e.g., "workers,companies,attendance"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tasksAssigned Task[] @relation("AssignedTasks")
+  tasksCreated  Task[] @relation("CreatedTasks")
+  companyes      Company[] // Companyes managed by this user
+}
+
+model Worker {
+  id         String   @id @default(cuid())
+  workerId   String   @unique // Employee ID
+  name       String
+  designation String?
+  gender     String?
+  bloodGroup String?
+  religion   String?
+  nationalId String?
+  phone      String?
+  address    String?  // Present Address
+  permanentAddress String?
+  joinDate   DateTime @default(now())
+  departmentId String?
+  department Department? @relation(fields: [departmentId], references: [id])
+  sectionId    String?
+  section    Section?    @relation(fields: [sectionId], references: [id])
+  subSectionId String?
+  subSection SubSection? @relation(fields: [subSectionId], references: [id])
+  grade      String?
+  photoUrl   String?
+  signatureUrl String?
+  
+  // Salary Information
+  grossSalary         Float? @default(0)
+  basicSalary         Float? @default(0)
+  houseRent           Float? @default(0)
+  conveyanceAllowance Float? @default(0)
+  medicalAllowance    Float? @default(0)
+  
+  companyId   String
+  company     Company   @relation(fields: [companyId], references: [id])
+  
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  attendances Attendance[]
+  settlements Settlement[]
+}
+
+model Company {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  location  String?
+  managerId String?
+  manager   User?    @relation(fields: [managerId], references: [id])
+  workers   Worker[]
+  departments Department[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Department {
+  id        String   @id @default(cuid())
+  name      String
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  sections  Section[]
+  workers   Worker[]
+}
+
+model Section {
+  id           String     @id @default(cuid())
+  name         String
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  subSections  SubSection[]
+  workers      Worker[]
+}
+
+model SubSection {
+  id        String   @id @default(cuid())
+  name      String
+  sectionId String
+  section   Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  workers   Worker[]
+}
+
+model Attendance {
+  id       String   @id @default(cuid())
+  workerId String
+  worker   Worker   @relation(fields: [workerId], references: [id])
+  date     DateTime @default(now())
+  status   String   // PRESENT, ABSENT, LATE, LEAVE
+  createdAt DateTime @default(now())
+}
+
+model Settlement {
+  id        String   @id @default(cuid())
+  workerId  String
+  worker    Worker   @relation(fields: [workerId], references: [id])
+  
+  // Dates & Info
+  resignApplyDate DateTime?
+  lastWorkingDay  DateTime?
+  serviceAge      String?
+  
+  // Salary Info
+  grossSalary     Float? @default(0)
+  basicSalary     Float? @default(0)
+  houseRent       Float? @default(0)
+  conveyanceAllowance Float? @default(0)
+  medicalAllowance    Float? @default(0)
+  
+  // Leave & Work Day Info
+  totalEarnLeaveDays      Float? @default(0)
+  totalLateEarlyMinutes   Float? @default(0)
+  currentMonthWorkingDays Float? @default(0)
+  absentDays              Float? @default(0)
+
+  // Pay Calculation - Payables
+  serviceBenefitAmount   Float? @default(0)
+  currentMonthWorkDayPay Float? @default(0)
+  extraDutyOTPay         Float? @default(0)
+  earnLeavePay           Float? @default(0)
+  
+  // Pay Calculation - Deductions
+  deductMoneyAct2006 Float? @default(0)
+  absentDeduction    Float? @default(0)
+  lateEarlyDeduction Float? @default(0)
+  
+  // Totals
+  payableSubTotal   Float? @default(0)
+  deductionSubTotal Float? @default(0)
+  totalPayAmount    Float? @default(0)
+  amountInWords     String?
+  
+  // Approvals & Status
+  paymentReceiverDate DateTime?
+  status    String   @default("PENDING") // PENDING, APPROVED, PAID
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Training {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  date        DateTime
+  location    String?
+  status      String   @default("SCHEDULED") // SCHEDULED, COMPLETED, CANCELLED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Recruitment {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  status      String   @default("OPEN") // OPEN, CLOSED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  applicants  Applicant[]
+}
+
+model Applicant {
+  id            String   @id @default(cuid())
+  name          String
+  email         String?
+  phone         String
+  recruitmentId String
+  recruitment   Recruitment @relation(fields: [recruitmentId], references: [id])
+  resumeUrl     String?
+  status        String   @default("APPLIED") // APPLIED, INTERVIEWING, OFFERED, HIRED, REJECTED
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  deadline    DateTime?
+  status      String   @default("TODO") // TODO, IN_PROGRESS, DONE
+  
+  assigneeId  String?
+  assignee    User?    @relation("AssignedTasks", fields: [assigneeId], references: [id])
+  
+  creatorId   String
+  creator     User     @relation("CreatedTasks", fields: [creatorId], references: [id])
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
