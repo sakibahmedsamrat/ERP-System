@@ -20,9 +20,9 @@ export async function bulkImportWorkers(workers: any[]) {
     ]);
 
     allCompanies.forEach(c => companiesCache.set(c.name.toLowerCase(), c.id));
-    allDepts.forEach(d => deptsCache.set(\\_\\, d.id));
-    allSecs.forEach(s => sectionsCache.set(\\_\\, s.id));
-    allSubSecs.forEach(s => subSectionsCache.set(\\_\\, s.id));
+    allDepts.forEach(d => deptsCache.set(`${d.companyId}_${d.name.toLowerCase()}`, d.id));
+    allSecs.forEach(s => sectionsCache.set(`${s.departmentId}_${s.name.toLowerCase()}`, s.id));
+    allSubSecs.forEach(s => subSectionsCache.set(`${s.sectionId}_${s.name.toLowerCase()}`, s.id));
 
     const upsertOperations = [];
 
@@ -44,7 +44,7 @@ export async function bulkImportWorkers(workers: any[]) {
       let deptId = null;
       const dName = getVal(['department'])?.trim();
       if (dName) {
-        const deptKey = \\_\\;
+        const deptKey = `${companyId}_${dName.toLowerCase()}`;
         deptId = deptsCache.get(deptKey);
         if (!deptId) {
           const dept = await prisma.department.create({ data: { name: dName, companyId } });
@@ -56,7 +56,7 @@ export async function bulkImportWorkers(workers: any[]) {
       let secId = null;
       const sName = getVal(['section'])?.trim();
       if (deptId && sName) {
-        const secKey = \\_\\;
+        const secKey = `${deptId}_${sName.toLowerCase()}`;
         secId = sectionsCache.get(secKey);
         if (!secId) {
           const section = await prisma.section.create({ data: { name: sName, departmentId: deptId } });
@@ -68,7 +68,7 @@ export async function bulkImportWorkers(workers: any[]) {
       let subSecId = null;
       const ssName = getVal(['sub section', 'sub-section', 'subsection'])?.trim();
       if (secId && ssName) {
-        const subSecKey = \\_\\;
+        const subSecKey = `${secId}_${ssName.toLowerCase()}`;
         subSecId = subSectionsCache.get(subSecKey);
         if (!subSecId) {
           const subSection = await prisma.subSection.create({ data: { name: ssName, sectionId: secId } });
@@ -100,7 +100,7 @@ export async function bulkImportWorkers(workers: any[]) {
       }
 
       const record = {
-        workerId: getVal(['workerid', 'staff id', 'id']) || \TMP-\\,
+        workerId: getVal(['workerid', 'staff id', 'id']) || `TMP-${Math.floor(Math.random() * 100000)}`,
         name: getVal(['name', 'staff name', 'worker name']) || 'Unknown',
         designation: getVal(['designation']) || null,
         gender: getVal(['gender']) || null,
@@ -141,4 +141,3 @@ export async function bulkImportWorkers(workers: any[]) {
     return { error: 'Failed to import workers. Check format.' };
   }
 }
-
