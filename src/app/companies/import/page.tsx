@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState } from 'react';
 import Link from 'next/link';
@@ -33,7 +33,7 @@ export default function ImportCompanyHierarchyPage() {
             const chunk = results.data.slice(i, i + 100);
             const response = await bulkImportHierarchy(chunk);
             if (response.error) {
-              setMessage(\Error: \\);
+              setMessage(`Error: ${response.error}`);
               hasError = true;
               break;
             }

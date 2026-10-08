@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState } from 'react';
 import Link from 'next/link';
@@ -34,7 +34,7 @@ export default function ImportWorkersPage() {
             const chunk = results.data.slice(i, i + 50);
             const response = await bulkImportWorkers(chunk);
             if (response.error) {
-              setMessage(\Error in chunk \: \\);
+              setMessage(`Error in chunk ${i}: ${response.error}`);
               hasError = true;
               break;
             }
