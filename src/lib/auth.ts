@@ -9,7 +9,7 @@ export async function encrypt(payload: any) {
   return await new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime('1 day from now')
+    .setExpirationTime('1h') // Changed from 1 day to 1 hour
     .sign(key);
 }
 
@@ -21,7 +21,7 @@ export async function decrypt(input: string): Promise<any> {
 }
 
 export async function login(user: { id: string; userId: string; name: string; role: string; modules: string }) {
-  const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
   const session = await encrypt({ user, expires });
 
   cookies().set('session', session, { expires, httpOnly: true });
@@ -47,7 +47,7 @@ export async function updateSession(request: NextRequest) {
 
   try {
     const parsed = await decrypt(session);
-    parsed.expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    parsed.expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
     const res = NextResponse.next();
     res.cookies.set({
       name: 'session',
