@@ -54,6 +54,9 @@ export default async function SettlementsPage() {
                   <Link href={`/settlements/${settlement.id}`} className="text-sm text-blue-600 hover:underline">
                     View / Print
                   </Link>
+                  <Link href={`/settlements/${settlement.id}/edit`} className="text-sm text-green-600 hover:underline">
+                    Edit
+                  </Link>
                   <DeleteSettlementButton id={settlement.id} onDelete={deleteSettlement} />
                 </td>
               </tr>
@@ -72,3 +75,5 @@ export default async function SettlementsPage() {
     </div>
   );
 }
+
+

@@ -71,3 +71,61 @@ export async function deleteSettlement(id: string) {
     return { error: 'Failed to delete settlement' };
   }
 }
+export async function updateSettlement(id: string, formData: FormData) {
+  const getFloat = (name: string) => {
+    const val = formData.get(name) as string;
+    return val ? parseFloat(val) : 0;
+  };
+
+  const getDate = (name: string) => {
+    const val = formData.get(name) as string;
+    return val ? new Date(val) : null;
+  };
+
+  await prisma.settlement.update({
+    where: { id },
+    data: {
+      resignApplyDate: getDate('resignApplyDate'),
+      lastWorkingDay: getDate('lastWorkingDay'),
+      serviceAge: formData.get('serviceAge') as string,
+      
+      grossSalary: getFloat('grossSalary'),
+      basicSalary: getFloat('basicSalary'),
+      houseRent: getFloat('houseRent'),
+      conveyanceAllowance: getFloat('conveyanceAllowance'),
+      medicalAllowance: getFloat('medicalAllowance'),
+      
+      totalEarnLeaveDays: getFloat('totalEarnLeaveDays'),
+      totalLateEarlyMinutes: getFloat('totalLateEarlyMinutes'),
+      currentMonthWorkingDays: getFloat('currentMonthWorkingDays'),
+      absentDays: getFloat('absentDays'),
+      
+      serviceBenefitAmount: getFloat('serviceBenefitAmount'),
+      currentMonthWorkDayPay: getFloat('currentMonthWorkDayPay'),
+      extraDutyOTPay: getFloat('extraDutyOTPay'),
+      earnLeavePay: getFloat('earnLeavePay'),
+      
+      deductMoneyAct2006: getFloat('deductMoneyAct2006'),
+      absentDeduction: getFloat('absentDeduction'),
+      lateEarlyDeduction: getFloat('lateEarlyDeduction'),
+      
+      payableSubTotal: getFloat('payableSubTotal'),
+      deductionSubTotal: getFloat('deductionSubTotal'),
+      totalPayAmount: getFloat('totalPayAmount'),
+      amountInWords: formData.get('amountInWords') as string,
+      
+      paymentReceiverDate: getDate('paymentReceiverDate'),
+    }
+  });
+
+  revalidatePath('/settlements');
+  revalidatePath('/settlements/' + id);
+  redirect('/settlements');
+}
+export async function getSettlement(id: string) {
+  const settlement = await prisma.settlement.findUnique({
+    where: { id },
+    include: { worker: { include: { company: true, department: true, section: true, subSection: true } } }
+  });
+  return settlement;
+}
