@@ -35,13 +35,6 @@ export default function LoginPage() {
             </div>
           )}
 
-          <div className="bg-blue-50 text-blue-800 p-4 rounded-lg mb-6 text-sm">
-            <p className="font-bold mb-1">First time setup?</p>
-            <p>Use default credentials to login:</p>
-            <p className="font-mono mt-1">User ID: admin</p>
-            <p className="font-mono">Pass: admin123</p>
-          </div>
-
           <form action={formAction} className="space-y-5">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">User ID</label>
