@@ -203,7 +203,7 @@ export default function NewSettlementPage() {
         if (!isNaN(resignDate.getTime()) && !isNaN(lwdDate.getTime())) {
           const diffTime = lwdDate.getTime() - resignDate.getTime();
           const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-          const D = diffDays + 1;
+          const D = diffDays;
           const shortfall = 60 - D;
           if (shortfall > 0) {
             newDeductMoneyAct2006 = Math.round(shortfall * (prev.basicSalary / 30));
