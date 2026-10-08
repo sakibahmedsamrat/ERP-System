@@ -41,7 +41,7 @@ export default function ImportWorkersPage() {
             if (response.count) totalCount += response.count;
           }
           if (!hasError) {
-            setMessage(\Success! Imported \ workers.\);
+            setMessage(`Success! Imported ${totalCount} workers.`);
             setTimeout(() => {
               router.push('/workers');
             }, 2000);
@@ -52,7 +52,7 @@ export default function ImportWorkersPage() {
         setLoading(false);
       },
       error: (err) => {
-        setMessage(\Error parsing File: \\);
+        setMessage(`Error parsing File: ${err.message}`);
         setLoading(false);
       }
     });

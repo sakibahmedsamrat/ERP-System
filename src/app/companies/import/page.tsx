@@ -39,7 +39,7 @@ export default function ImportCompanyHierarchyPage() {
             }
           }
           if (!hasError) {
-            setMessage(\Success! Imported structure from Excel/CSV.\);
+            setMessage(`Success! Imported structure from Excel/CSV.`);
             setTimeout(() => {
               router.push('/companies');
             }, 2000);
@@ -50,7 +50,7 @@ export default function ImportCompanyHierarchyPage() {
         setLoading(false);
       },
       error: (err) => {
-        setMessage(\Error parsing File: \\);
+        setMessage(`Error parsing File: ${err.message}`);
         setLoading(false);
       }
     });
