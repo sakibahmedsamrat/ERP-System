@@ -3,6 +3,7 @@
 import { PrismaClient } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { logAction } from '@/lib/audit';
 import { writeFile } from 'fs/promises';
 import { join } from 'path';
 
@@ -77,6 +78,7 @@ export async function createWorker(formData: FormData) {
     return { error: 'Failed to create worker (Worker ID must be unique)' };
   }
 
+  await logAction('WORKERS', 'CREATE', 'Created worker: ' + workerId);
   revalidatePath('/workers');
   redirect('/workers');
 }
@@ -86,6 +88,8 @@ export async function deleteWorker(id: string) {
     // Delete related attendances and settlements first
     await prisma.attendance.deleteMany({ where: { workerId: id } });
     await prisma.settlement.deleteMany({ where: { workerId: id } });
+    const w = await prisma.worker.findUnique({where: {id}});
+    if(w) await logAction('WORKERS', 'DELETE', 'Deleted worker: ' + w.workerId);
     await prisma.worker.delete({ where: { id } });
     revalidatePath('/workers');
     return { success: true };
@@ -157,6 +161,8 @@ export async function updateWorker(id: string, formData: FormData) {
     return { error: 'Failed to update worker' };
   }
 
+  await logAction('WORKERS', 'CREATE', 'Created worker: ' + workerId);
   revalidatePath('/workers');
   redirect('/workers');
 }
+

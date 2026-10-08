@@ -82,6 +82,11 @@ export default function Sidebar({ user }: { user?: any }) {
               <Shield size={20} /> User Management
             </Link>
           )}
+          {user?.role === 'SUPER_ADMIN' && (
+            <Link href="/activity-logs" className="flex items-center gap-3 p-3 rounded hover:bg-gray-800 transition text-green-400">
+              <CheckSquare size={20} /> Activity Logs
+            </Link>
+          )}
           <Link href="/settings" className="flex items-center gap-3 p-3 rounded hover:bg-gray-800 transition">
             <Settings size={20} /> Settings
           </Link>

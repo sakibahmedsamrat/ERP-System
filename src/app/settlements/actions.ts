@@ -3,6 +3,7 @@
 import { PrismaClient } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { logAction } from '@/lib/audit';
 
 const prisma = new PrismaClient();
 
@@ -57,12 +58,15 @@ export async function createSettlement(formData: FormData) {
     }
   });
 
+  await logAction('SETTLEMENTS', 'CREATE', 'Created settlement for worker: ' + workerId);
   revalidatePath('/settlements');
   redirect('/settlements');
 }
 
 export async function deleteSettlement(id: string) {
   try {
+    const s = await prisma.settlement.findUnique({where: {id}});
+    if(s) await logAction('SETTLEMENTS', 'DELETE', 'Deleted settlement for worker: ' + s.workerId);
     await prisma.settlement.delete({ where: { id } });
     revalidatePath('/settlements');
     return { success: true };
@@ -118,6 +122,7 @@ export async function updateSettlement(id: string, formData: FormData) {
     }
   });
 
+  await logAction('SETTLEMENTS', 'UPDATE', 'Updated settlement ID: ' + id);
   revalidatePath('/settlements');
   revalidatePath('/settlements/' + id);
   redirect('/settlements');
@@ -129,3 +134,4 @@ export async function getSettlement(id: string) {
   });
   return settlement;
 }
+

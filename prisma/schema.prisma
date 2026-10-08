@@ -208,3 +208,12 @@ model Task {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  userName  String
+  action    String   // e.g. CREATE, UPDATE, DELETE
+  module    String   // e.g. WORKERS, SETTLEMENTS
+  details   String?  @db.Text
+  createdAt DateTime @default(now())
+}
