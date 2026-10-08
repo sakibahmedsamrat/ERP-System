@@ -6,8 +6,8 @@ import DeleteWorkerButton from '@/components/DeleteWorkerButton';
 
 const prisma = new PrismaClient();
 
-export default async function WorkersPage({ searchParams }: { searchParams: { workerId?: string; name?: string; designation?: string; department?: string; section?: string; subSection?: string; } }) {
-  const { workerId, name, designation, department, section, subSection } = searchParams;
+export default async function WorkersPage({ searchParams }: { searchParams: { workerId?: string; name?: string; designation?: string; department?: string; section?: string; subSection?: string; company?: string; } }) {
+  const { workerId, name, designation, department, section, subSection, company } = searchParams;
 
   const whereClause: any = { AND: [] };
 
@@ -17,6 +17,7 @@ export default async function WorkersPage({ searchParams }: { searchParams: { wo
   if (department) whereClause.AND.push({ department: { name: { contains: department, mode: 'insensitive' } } });
   if (section) whereClause.AND.push({ section: { name: { contains: section, mode: 'insensitive' } } });
   if (subSection) whereClause.AND.push({ subSection: { name: { contains: subSection, mode: 'insensitive' } } });
+  if (company) whereClause.AND.push({ company: { name: { contains: company, mode: 'insensitive' } } });
 
   const queryOptions: any = {
     orderBy: { createdAt: 'desc' },
@@ -49,15 +50,16 @@ export default async function WorkersPage({ searchParams }: { searchParams: { wo
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6 p-4">
-        <form className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3 w-full text-sm">
+        <form className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-3 w-full text-sm">
           <input type="text" name="workerId" defaultValue={workerId} placeholder="ID..." className="border border-gray-300 rounded p-2 outline-none focus:border-blue-500" />
           <input type="text" name="name" defaultValue={name} placeholder="Name..." className="border border-gray-300 rounded p-2 outline-none focus:border-blue-500" />
+          <input type="text" name="company" defaultValue={company} placeholder="Company..." className="border border-gray-300 rounded p-2 outline-none focus:border-blue-500" />
           <input type="text" name="designation" defaultValue={designation} placeholder="Designation..." className="border border-gray-300 rounded p-2 outline-none focus:border-blue-500" />
           <input type="text" name="department" defaultValue={department} placeholder="Department..." className="border border-gray-300 rounded p-2 outline-none focus:border-blue-500" />
           <input type="text" name="section" defaultValue={section} placeholder="Section..." className="border border-gray-300 rounded p-2 outline-none focus:border-blue-500" />
           <input type="text" name="subSection" defaultValue={subSection} placeholder="Sub-Section..." className="border border-gray-300 rounded p-2 outline-none focus:border-blue-500" />
           
-          <div className="md:col-span-3 lg:col-span-6 flex justify-end gap-2 mt-2">
+          <div className="md:col-span-3 lg:col-span-7 flex justify-end gap-2 mt-2">
             <button type="submit" className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-900 transition flex items-center gap-2">
               <Search size={16} /> Filter
             </button>
