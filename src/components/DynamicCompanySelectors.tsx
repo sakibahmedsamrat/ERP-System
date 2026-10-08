@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react';
 
@@ -19,10 +19,25 @@ type CompanyHierarchy = {
   }[];
 };
 
-export default function DynamicCompanySelectors({ companies }: { companies: CompanyHierarchy[] }) {
-  const [selectedCompanyId, setSelectedCompanyId] = useState('');
-  const [selectedDeptId, setSelectedDeptId] = useState('');
-  const [selectedSectionId, setSelectedSectionId] = useState('');
+type Props = {
+  companies: CompanyHierarchy[];
+  initialCompanyId?: string;
+  initialDepartmentId?: string;
+  initialSectionId?: string;
+  initialSubSectionId?: string;
+};
+
+export default function DynamicCompanySelectors({ 
+  companies, 
+  initialCompanyId = '',
+  initialDepartmentId = '',
+  initialSectionId = '',
+  initialSubSectionId = ''
+}: Props) {
+  const [selectedCompanyId, setSelectedCompanyId] = useState(initialCompanyId);
+  const [selectedDeptId, setSelectedDeptId] = useState(initialDepartmentId);
+  const [selectedSectionId, setSelectedSectionId] = useState(initialSectionId);
+  const [selectedSubSectionId, setSelectedSubSectionId] = useState(initialSubSectionId);
 
   const company = companies.find(c => c.id === selectedCompanyId);
   const depts = company?.departments || [];
@@ -46,6 +61,7 @@ export default function DynamicCompanySelectors({ companies }: { companies: Comp
             setSelectedCompanyId(e.target.value);
             setSelectedDeptId('');
             setSelectedSectionId('');
+            setSelectedSubSectionId('');
           }}
         >
           <option value="">Select Company</option>
@@ -62,6 +78,7 @@ export default function DynamicCompanySelectors({ companies }: { companies: Comp
           onChange={(e) => {
             setSelectedDeptId(e.target.value);
             setSelectedSectionId('');
+            setSelectedSubSectionId('');
           }}
           disabled={!selectedCompanyId}
         >
@@ -76,7 +93,10 @@ export default function DynamicCompanySelectors({ companies }: { companies: Comp
           name="sectionId" 
           className="w-full border rounded p-2 outline-none focus:border-blue-500 bg-white"
           value={selectedSectionId}
-          onChange={(e) => setSelectedSectionId(e.target.value)}
+          onChange={(e) => {
+             setSelectedSectionId(e.target.value);
+             setSelectedSubSectionId('');
+          }}
           disabled={!selectedDeptId}
         >
           <option value="">Select Section</option>
@@ -89,6 +109,8 @@ export default function DynamicCompanySelectors({ companies }: { companies: Comp
         <select 
           name="subSectionId" 
           className="w-full border rounded p-2 outline-none focus:border-blue-500 bg-white"
+          value={selectedSubSectionId}
+          onChange={(e) => setSelectedSubSectionId(e.target.value)}
           disabled={!selectedSectionId}
         >
           <option value="">Select Sub-Section</option>
