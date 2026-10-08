@@ -1,7 +1,12 @@
 import { createTask } from '../actions';
 import Link from 'next/link';
+import { PrismaClient } from '@prisma/client';
 
-export default function NewTaskPage() {
+const prisma = new PrismaClient();
+
+export default async function NewTaskPage() {
+  const users = await prisma.user.findMany({ select: { id: true, name: true, userId: true }, orderBy: { name: 'asc' } });
+  
   return (
     <div className="p-8 max-w-2xl mx-auto">
       <div className="flex justify-between items-center mb-6">
@@ -36,6 +41,22 @@ export default function NewTaskPage() {
               rows={4}
               className="w-full border border-gray-300 rounded p-2 focus:ring-2 focus:ring-blue-500 outline-none"
             ></textarea>
+          </div>
+
+          <div>
+            <label htmlFor="assigneeId" className="block text-sm font-medium text-gray-700 mb-1">
+              Assign To
+            </label>
+            <select 
+              id="assigneeId" 
+              name="assigneeId" 
+              className="w-full border border-gray-300 rounded p-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+            >
+              <option value="">Select User (Optional)</option>
+              {users.map(u => (
+                <option key={u.id} value={u.id}>{u.name} ({u.userId})</option>
+              ))}
+            </select>
           </div>
 
           <div>
