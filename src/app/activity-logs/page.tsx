@@ -1,15 +1,13 @@
 ﻿import { PrismaClient } from '@prisma/client';
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { verifyToken } from '@/lib/auth';
+import { getSession } from '@/lib/auth';
 
 const prisma = new PrismaClient();
 
 export default async function ActivityLogsPage() {
-  const token = cookies().get('token')?.value;
-  if (!token) redirect('/login');
-  const payload = await verifyToken(token);
-  if (!payload || payload.role !== 'SUPER_ADMIN') {
+  const session = await getSession();
+  if (!session || !session.user) redirect('/login');
+  if (session.user.role !== 'SUPER_ADMIN') {
     redirect('/');
   }
 

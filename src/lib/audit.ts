@@ -1,19 +1,16 @@
 ﻿import { PrismaClient } from '@prisma/client';
-import { cookies } from 'next/headers';
-import { verifyToken } from './auth';
+import { getSession } from './auth';
 
 const prisma = new PrismaClient();
 
 export async function logAction(module: string, action: string, details: string) {
   try {
-    const token = cookies().get('token')?.value;
-    if (!token) return;
-    const payload = await verifyToken(token);
-    if (payload && payload.userId && payload.name) {
+    const session = await getSession();
+    if (session && session.user && session.user.userId) {
       await prisma.auditLog.create({
         data: {
-          userId: payload.userId,
-          userName: payload.name,
+          userId: session.user.userId,
+          userName: session.user.name || 'Unknown',
           module,
           action,
           details
