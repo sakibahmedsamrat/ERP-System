@@ -1,6 +1,7 @@
 import { Users, Building2, CalendarCheck, CheckSquare, Clock } from 'lucide-react';
 import { PrismaClient } from '@prisma/client';
 import { getSession } from '@/lib/auth';
+import { markTaskDone } from './tasks/actions';
 
 const prisma = new PrismaClient();
 
@@ -18,7 +19,16 @@ export default async function Dashboard() {
 
   const totalWorkers = await prisma.worker.count();
   const totalCompanies = await prisma.company.count();
-  const totalTasks = await prisma.task.count();
+  let taskWhere: any = {};
+  if (user && user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN') {
+    taskWhere = {
+      OR: [
+        { assigneeId: user.id },
+        { creatorId: user.id }
+      ]
+    };
+  }
+  const totalTasks = await prisma.task.count({ where: taskWhere });
   const todayAttendanceCount = await prisma.attendance.count({
     where: { status: 'PRESENT' }
   });
@@ -86,12 +96,19 @@ export default async function Dashboard() {
                     {task.description && (
                       <p className="text-gray-600 text-sm mb-2 line-clamp-2">{task.description}</p>
                     )}
-                    {task.deadline && (
-                      <div className="text-xs font-medium text-red-600 flex items-center gap-1">
-                        <Clock size={12} /> 
-                        Deadline: {new Date(task.deadline).toLocaleDateString()}
-                      </div>
-                    )}
+                    <div className="flex justify-between items-end mt-2">
+                      {task.deadline ? (
+                        <div className="text-xs font-medium text-red-600 flex items-center gap-1">
+                          <Clock size={12} /> 
+                          Deadline: {new Date(task.deadline).toLocaleDateString()}
+                        </div>
+                      ) : <div />}
+                      <form action={markTaskDone.bind(null, task.id)}>
+                        <button type="submit" className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition">
+                          Done
+                        </button>
+                      </form>
+                    </div>
                   </div>
                 ))
               )}

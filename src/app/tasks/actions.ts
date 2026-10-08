@@ -53,3 +53,33 @@ export async function createTask(formData: FormData) {
   revalidatePath('/tasks');
   redirect('/tasks');
 }
+
+export async function markTaskDone(taskId: string) {
+  const session = await getSession();
+  if (!session?.user) return { error: 'Unauthorized' };
+
+  await prisma.task.update({
+    where: { id: taskId },
+    data: { status: 'DONE' }
+  });
+  
+  revalidatePath('/tasks');
+  revalidatePath('/');
+  return { success: true };
+}
+
+export async function deleteTask(taskId: string) {
+  const session = await getSession();
+  const role = session?.user?.role;
+  if (role !== 'SUPER_ADMIN' && role !== 'ADMIN') {
+    return { error: 'Unauthorized' };
+  }
+
+  await prisma.task.delete({
+    where: { id: taskId }
+  });
+  
+  revalidatePath('/tasks');
+  revalidatePath('/');
+  return { success: true };
+}

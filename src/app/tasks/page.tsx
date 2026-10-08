@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { PrismaClient } from '@prisma/client';
-import { Plus, Clock } from 'lucide-react';
+import { Plus, Clock, Trash2, CheckCircle } from 'lucide-react';
 import { getSession } from '@/lib/auth';
+import { deleteTask, markTaskDone } from './actions';
 
 const prisma = new PrismaClient();
 
@@ -70,6 +71,23 @@ export default async function TasksPage() {
                     Deadline: {new Date(task.deadline).toLocaleDateString()}
                   </div>
                 )}
+                
+                <div className="flex justify-end gap-2 mt-2">
+                  {task.status !== 'DONE' && (
+                    <form action={markTaskDone.bind(null, task.id)}>
+                      <button type="submit" className="flex items-center gap-1 text-sm bg-blue-50 text-blue-700 hover:bg-blue-100 px-3 py-1.5 rounded transition">
+                        <CheckCircle size={14} /> Done
+                      </button>
+                    </form>
+                  )}
+                  {user && (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN') && (
+                    <form action={deleteTask.bind(null, task.id)}>
+                      <button type="submit" className="flex items-center gap-1 text-sm bg-red-50 text-red-700 hover:bg-red-100 px-3 py-1.5 rounded transition">
+                        <Trash2 size={14} /> Delete
+                      </button>
+                    </form>
+                  )}
+                </div>
               </div>
             </div>
           ))}
