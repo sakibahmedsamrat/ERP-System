@@ -2,11 +2,16 @@ import Link from 'next/link';
 import { PrismaClient } from '@prisma/client';
 import { Plus, User, Building2, Trash2, Search, Download, Upload, Hash, Briefcase, Layers, Network, FolderTree, X } from 'lucide-react';
 import { deleteWorker } from './actions';
+import { getSession } from '@/lib/auth';
 import DeleteWorkerButton from '@/components/DeleteWorkerButton';
 
 const prisma = new PrismaClient();
 
 export default async function WorkersPage({ searchParams }: { searchParams: { workerId?: string; name?: string; designation?: string; department?: string; section?: string; subSection?: string; company?: string; } }) {
+  const session = await getSession();
+  const role = session?.user?.role;
+  const isAdmin = role === 'SUPER_ADMIN' || role === 'ADMIN';
+
   const { workerId, name, designation, department, section, subSection, company } = searchParams;
 
   const whereClause: any = { AND: [] };
@@ -42,13 +47,16 @@ export default async function WorkersPage({ searchParams }: { searchParams: { wo
         <h1 className="text-3xl font-bold text-gray-800">Employees</h1>
         
         <div className="flex gap-2">
-          {/* We'll handle CSV upload/download via a separate page or API in the future, for now placeholder buttons */}
-          <Link href="/api/workers/export" className="bg-green-600 text-white px-3 py-2 rounded flex items-center gap-2 hover:bg-green-700 transition text-sm">
-            <Download size={16} /> Export CSV
-          </Link>
-          <Link href="/workers/import" className="bg-purple-600 text-white px-3 py-2 rounded flex items-center gap-2 hover:bg-purple-700 transition text-sm">
-            <Upload size={16} /> Import CSV
-          </Link>
+          {isAdmin && (
+            <>
+              <Link href="/api/workers/export" className="bg-green-600 text-white px-3 py-2 rounded flex items-center gap-2 hover:bg-green-700 transition text-sm">
+                <Download size={16} /> Export CSV
+              </Link>
+              <Link href="/workers/import" className="bg-purple-600 text-white px-3 py-2 rounded flex items-center gap-2 hover:bg-purple-700 transition text-sm">
+                <Upload size={16} /> Import CSV
+              </Link>
+            </>
+          )}
           <Link href="/workers/new" className="bg-blue-600 text-white px-4 py-2 rounded flex items-center gap-2 hover:bg-blue-700 transition text-sm">
             <Plus size={16} /> Add Employee
           </Link>

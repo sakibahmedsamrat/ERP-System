@@ -30,12 +30,14 @@ export default async function TasksPage() {
     <div className="p-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Task Management</h1>
-        <Link 
-          href="/tasks/new" 
-          className="bg-blue-600 text-white px-4 py-2 rounded flex items-center gap-2 hover:bg-blue-700 transition"
-        >
-          <Plus size={20} /> Assign Task
-        </Link>
+        {user && (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN') && (
+          <Link 
+            href="/tasks/new" 
+            className="bg-blue-600 text-white px-4 py-2 rounded flex items-center gap-2 hover:bg-blue-700 transition"
+          >
+            <Plus size={20} /> Assign Task
+          </Link>
+        )}
       </div>
 
       {tasks.length === 0 ? (

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { PrismaClient } from '@prisma/client';
+import { getSession } from '@/lib/auth';
 import { Plus, Upload, Layers, Pencil } from 'lucide-react';
 import DeleteCompanyButton from '@/components/DeleteCompanyButton';
 import { deleteCompany } from './actions';
@@ -7,6 +8,9 @@ import { deleteCompany } from './actions';
 const prisma = new PrismaClient();
 
 export default async function CompaniesPage() {
+  const session = await getSession();
+  const role = session?.user?.role;
+  const isAdmin = role === 'SUPER_ADMIN' || role === 'ADMIN';
   const companies = await prisma.company.findMany({
     orderBy: { createdAt: 'desc' },
     include: {
@@ -28,8 +32,10 @@ export default async function CompaniesPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Companies (কোম্পানি)</h1>
         <div className="flex gap-2">
-          <Link 
-            href="/companies/import" 
+          {isAdmin && (
+            <>
+              <Link 
+                href="/companies/import" 
             className="bg-purple-600 text-white px-4 py-2 rounded flex items-center gap-2 hover:bg-purple-700 transition"
           >
             <Upload size={20} /> Import Structure
@@ -39,7 +45,9 @@ export default async function CompaniesPage() {
             className="bg-blue-600 text-white px-4 py-2 rounded flex items-center gap-2 hover:bg-blue-700 transition"
           >
             <Plus size={20} /> Add Company
-          </Link>
+              </Link>
+            </>
+          )}
         </div>
       </div>
 
@@ -119,3 +127,4 @@ export default async function CompaniesPage() {
     </div>
   );
 }
+
