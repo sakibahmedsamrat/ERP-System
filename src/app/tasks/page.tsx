@@ -10,7 +10,7 @@ export default async function TasksPage() {
   const user = session?.user;
 
   let whereClause = {};
-  if (user && user.role !== 'SUPER_ADMIN') {
+  if (user && user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN') {
     whereClause = {
       OR: [
         { assigneeId: user.id },
