@@ -12,6 +12,20 @@ export async function bulkImportWorkers(workers: any[]) {
     const sectionsCache = new Map<string, string>();
     const subSectionsCache = new Map<string, string>();
 
+    const [allCompanies, allDepts, allSecs, allSubSecs] = await Promise.all([
+      prisma.company.findMany(),
+      prisma.department.findMany(),
+      prisma.section.findMany(),
+      prisma.subSection.findMany()
+    ]);
+
+    allCompanies.forEach(c => companiesCache.set(c.name.toLowerCase(), c.id));
+    allDepts.forEach(d => deptsCache.set(\\_\\, d.id));
+    allSecs.forEach(s => sectionsCache.set(\\_\\, s.id));
+    allSubSecs.forEach(s => subSectionsCache.set(\\_\\, s.id));
+
+    const upsertOperations = [];
+
     for (const w of workers) {
       const getVal = (keys: string[]) => {
         const foundKey = Object.keys(w).find(k => keys.some(key => k.toLowerCase().trim() === key.toLowerCase()));
@@ -20,24 +34,20 @@ export async function bulkImportWorkers(workers: any[]) {
 
       const companyName = getVal(['company', 'company name'])?.trim() || 'Main Company';
       
-      let companyId = companiesCache.get(companyName);
+      let companyId = companiesCache.get(companyName.toLowerCase());
       if (!companyId) {
-        let company = await prisma.company.findUnique({ where: { name: companyName } });
-        if (!company) {
-          company = await prisma.company.create({ data: { name: companyName } });
-        }
+        const company = await prisma.company.create({ data: { name: companyName } });
         companyId = company.id;
-        companiesCache.set(companyName, companyId);
+        companiesCache.set(companyName.toLowerCase(), companyId);
       }
 
       let deptId = null;
       const dName = getVal(['department'])?.trim();
       if (dName) {
-        const deptKey = `${companyId}_${dName}`;
+        const deptKey = \\_\\;
         deptId = deptsCache.get(deptKey);
         if (!deptId) {
-          let dept = await prisma.department.findFirst({ where: { name: dName, companyId } });
-          if (!dept) dept = await prisma.department.create({ data: { name: dName, companyId } });
+          const dept = await prisma.department.create({ data: { name: dName, companyId } });
           deptId = dept.id;
           deptsCache.set(deptKey, deptId);
         }
@@ -46,11 +56,10 @@ export async function bulkImportWorkers(workers: any[]) {
       let secId = null;
       const sName = getVal(['section'])?.trim();
       if (deptId && sName) {
-        const secKey = `${deptId}_${sName}`;
+        const secKey = \\_\\;
         secId = sectionsCache.get(secKey);
         if (!secId) {
-          let section = await prisma.section.findFirst({ where: { name: sName, departmentId: deptId } });
-          if (!section) section = await prisma.section.create({ data: { name: sName, departmentId: deptId } });
+          const section = await prisma.section.create({ data: { name: sName, departmentId: deptId } });
           secId = section.id;
           sectionsCache.set(secKey, secId);
         }
@@ -59,11 +68,10 @@ export async function bulkImportWorkers(workers: any[]) {
       let subSecId = null;
       const ssName = getVal(['sub section', 'sub-section', 'subsection'])?.trim();
       if (secId && ssName) {
-        const subSecKey = `${secId}_${ssName}`;
+        const subSecKey = \\_\\;
         subSecId = subSectionsCache.get(subSecKey);
         if (!subSecId) {
-          let subSection = await prisma.subSection.findFirst({ where: { name: ssName, sectionId: secId } });
-          if (!subSection) subSection = await prisma.subSection.create({ data: { name: ssName, sectionId: secId } });
+          const subSection = await prisma.subSection.create({ data: { name: ssName, sectionId: secId } });
           subSecId = subSection.id;
           subSectionsCache.set(subSecKey, subSecId);
         }
@@ -72,7 +80,6 @@ export async function bulkImportWorkers(workers: any[]) {
       let jDate = new Date();
       const rawDate = getVal(['joindate', 'join date', 'date of join']);
       if (rawDate) {
-         // handle dd/mm/yyyy or other formats correctly if possible, or fallback to new Date
          const d = new Date(rawDate);
          if (!isNaN(d.getTime())) jDate = d;
       }
@@ -93,7 +100,7 @@ export async function bulkImportWorkers(workers: any[]) {
       }
 
       const record = {
-        workerId: getVal(['workerid', 'staff id', 'id']) || `TMP-${Math.floor(Math.random() * 10000)}`,
+        workerId: getVal(['workerid', 'staff id', 'id']) || \TMP-\\,
         name: getVal(['name', 'staff name', 'worker name']) || 'Unknown',
         designation: getVal(['designation']) || null,
         gender: getVal(['gender']) || null,
@@ -116,12 +123,16 @@ export async function bulkImportWorkers(workers: any[]) {
         medicalAllowance,
       };
 
-      await prisma.worker.upsert({
-        where: { workerId: record.workerId },
-        update: record,
-        create: record,
-      });
+      upsertOperations.push(
+        prisma.worker.upsert({
+          where: { workerId: record.workerId },
+          update: record,
+          create: record,
+        })
+      );
     }
+
+    await prisma.$transaction(upsertOperations);
 
     revalidatePath('/workers');
     return { success: true, count: workers.length };
@@ -130,5 +141,4 @@ export async function bulkImportWorkers(workers: any[]) {
     return { error: 'Failed to import workers. Check format.' };
   }
 }
-
 
