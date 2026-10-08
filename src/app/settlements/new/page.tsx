@@ -416,6 +416,26 @@ export default function NewSettlementPage() {
             {selectedWorker.grade === 'M' && (
               <div className="flex items-center"><strong className="w-48 text-sm">Extra Duty Days :</strong> <input type="number" name="extraDutyDays" value={formVals.extraDutyDays || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
             )}
+            {(() => {
+              let noticePeriodDue = 0;
+              if (resignApplyDate && lastWorkingDay) {
+                const rDate = new Date(resignApplyDate);
+                const lDate = new Date(lastWorkingDay);
+                if (!isNaN(rDate.getTime()) && !isNaN(lDate.getTime())) {
+                  const diffDays = Math.floor((lDate.getTime() - rDate.getTime()) / (1000 * 60 * 60 * 24));
+                  const shortfall = 60 - diffDays;
+                  if (shortfall > 0) noticePeriodDue = shortfall;
+                }
+              }
+              return (
+                <div className="flex items-center">
+                  <strong className="w-48 text-sm text-red-600">Notice Period Due :</strong> 
+                  <span className="border-b border-dashed border-gray-400 flex-1 px-1 text-red-600 font-bold bg-red-50">
+                    {noticePeriodDue > 0 ? `${noticePeriodDue} Days` : ''}
+                  </span>
+                </div>
+              );
+            })()}
           </div>
 
           <h4 className="font-bold text-gray-800 bg-gray-100 p-2 mb-4">Pay calculation info</h4>

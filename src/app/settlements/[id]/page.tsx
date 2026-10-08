@@ -94,6 +94,22 @@ export default async function SettlementPrintPage({ params }: { params: { id: st
           
           <div className="flex"><strong className="w-64 print:w-48">Current month working days :</strong> <span className="border-b border-dashed border-gray-400 flex-1 text-center">{settlement.currentMonthWorkingDays || 0}</span> <span className="ml-2 w-16">Days</span></div>
           <div className="flex"><strong className="w-64 print:w-48">Absent Days :</strong> <span className="border-b border-dashed border-gray-400 flex-1 text-center">{settlement.absentDays || 0}</span> <span className="ml-2 w-16"></span></div>
+
+          {(() => {
+            let noticePeriodDue = 0;
+            if (settlement.resignApplyDate && settlement.lastWorkingDay) {
+              const rDate = new Date(settlement.resignApplyDate);
+              const lDate = new Date(settlement.lastWorkingDay);
+              if (!isNaN(rDate.getTime()) && !isNaN(lDate.getTime())) {
+                const diffDays = Math.floor((lDate.getTime() - rDate.getTime()) / (1000 * 60 * 60 * 24));
+                const shortfall = 60 - diffDays;
+                if (shortfall > 0) noticePeriodDue = shortfall;
+              }
+            }
+            return (
+              <div className="flex"><strong className="w-64 print:w-48">Notice Period Due :</strong> <span className="border-b border-dashed border-gray-400 flex-1 text-center">{noticePeriodDue > 0 ? noticePeriodDue : ''}</span> <span className="ml-2 w-16">{noticePeriodDue > 0 ? 'Days' : ''}</span></div>
+            );
+          })()}
         </div>
 
         {/* Pay calculation info */}
