@@ -1,4 +1,4 @@
-﻿'use server'
+'use server'
 
 import { PrismaClient } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
@@ -33,7 +33,7 @@ export async function bulkImportWorkers(workers: any[]) {
       let deptId = null;
       const dName = getVal(['department'])?.trim();
       if (dName) {
-        const deptKey = \\_\\;
+        const deptKey = `${companyId}_${dName}`;
         deptId = deptsCache.get(deptKey);
         if (!deptId) {
           let dept = await prisma.department.findFirst({ where: { name: dName, companyId } });
@@ -46,7 +46,7 @@ export async function bulkImportWorkers(workers: any[]) {
       let secId = null;
       const sName = getVal(['section'])?.trim();
       if (deptId && sName) {
-        const secKey = \\_\\;
+        const secKey = `${deptId}_${sName}`;
         secId = sectionsCache.get(secKey);
         if (!secId) {
           let section = await prisma.section.findFirst({ where: { name: sName, departmentId: deptId } });
@@ -59,7 +59,7 @@ export async function bulkImportWorkers(workers: any[]) {
       let subSecId = null;
       const ssName = getVal(['sub section', 'sub-section', 'subsection'])?.trim();
       if (secId && ssName) {
-        const subSecKey = \\_\\;
+        const subSecKey = `${secId}_${ssName}`;
         subSecId = subSectionsCache.get(subSecKey);
         if (!subSecId) {
           let subSection = await prisma.subSection.findFirst({ where: { name: ssName, sectionId: secId } });
@@ -78,7 +78,7 @@ export async function bulkImportWorkers(workers: any[]) {
       }
 
       const record = {
-        workerId: getVal(['workerid', 'staff id', 'id']) || \TMP-\\,
+        workerId: getVal(['workerid', 'staff id', 'id']) || `TMP-${Math.floor(Math.random() * 10000)}`,
         name: getVal(['name', 'staff name', 'worker name']) || 'Unknown',
         designation: getVal(['designation']) || null,
         gender: getVal(['gender']) || null,

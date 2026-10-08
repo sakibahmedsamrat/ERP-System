@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react';
 import Link from 'next/link';
@@ -33,13 +33,13 @@ export default function ImportCompanyHierarchyPage() {
             const chunk = results.data.slice(i, i + 100);
             const response = await bulkImportHierarchy(chunk);
             if (response.error) {
-              setMessage(`Error: ${response.error}`);
+              setMessage('Error: ' + response.error);
               hasError = true;
               break;
             }
           }
           if (!hasError) {
-            setMessage(`Success! Imported structure from Excel/CSV.`);
+            setMessage('Success! Imported structure from Excel/CSV.');
             setTimeout(() => {
               router.push('/companies');
             }, 2000);
@@ -49,8 +49,8 @@ export default function ImportCompanyHierarchyPage() {
         }
         setLoading(false);
       },
-      error: (err) => {
-        setMessage(`Error parsing File: ${err.message}`);
+      error: (err: any) => {
+        setMessage('Error parsing File: ' + err.message);
         setLoading(false);
       }
     });
@@ -93,7 +93,7 @@ export default function ImportCompanyHierarchyPage() {
         </div>
 
         {message && (
-          <div className={\mt-4 p-3 rounded text-sm font-bold \\}>
+          <div className={'mt-4 p-3 rounded text-sm font-bold ' + (message.startsWith('Error') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700')}>
             {message}
           </div>
         )}

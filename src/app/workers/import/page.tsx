@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react';
 import Link from 'next/link';
@@ -34,14 +34,14 @@ export default function ImportWorkersPage() {
             const chunk = results.data.slice(i, i + 50);
             const response = await bulkImportWorkers(chunk);
             if (response.error) {
-              setMessage(`Error in chunk ${i}: ${response.error}`);
+              setMessage('Error in chunk ' + i + ': ' + response.error);
               hasError = true;
               break;
             }
             if (response.count) totalCount += response.count;
           }
           if (!hasError) {
-            setMessage(`Success! Imported ${totalCount} workers.`);
+            setMessage('Success! Imported ' + totalCount + ' workers.');
             setTimeout(() => {
               router.push('/workers');
             }, 2000);
@@ -51,8 +51,8 @@ export default function ImportWorkersPage() {
         }
         setLoading(false);
       },
-      error: (err) => {
-        setMessage(`Error parsing File: ${err.message}`);
+      error: (err: any) => {
+        setMessage('Error parsing File: ' + err.message);
         setLoading(false);
       }
     });
@@ -89,7 +89,7 @@ export default function ImportWorkersPage() {
         </div>
 
         {message && (
-          <div className={\mt-4 p-3 rounded text-sm font-bold \\}>
+          <div className={'mt-4 p-3 rounded text-sm font-bold ' + (message.startsWith('Error') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700')}>
             {message}
           </div>
         )}

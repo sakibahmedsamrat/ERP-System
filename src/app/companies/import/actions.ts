@@ -1,4 +1,4 @@
-﻿'use server'
+'use server'
 
 import { PrismaClient } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
@@ -37,7 +37,7 @@ export async function bulkImportHierarchy(data: any[]) {
 
       if (!deptName) continue;
       
-      const deptKey = \\_\\;
+      const deptKey = `${companyId}_${deptName}`;
       let deptId = deptsCache.get(deptKey);
       if (!deptId) {
         let dept = await prisma.department.findFirst({ where: { name: deptName, companyId } });
@@ -50,7 +50,7 @@ export async function bulkImportHierarchy(data: any[]) {
 
       if (!secName) continue;
 
-      const secKey = \\_\\;
+      const secKey = `${deptId}_${secName}`;
       let sectionId = sectionsCache.get(secKey);
       if (!sectionId) {
         let section = await prisma.section.findFirst({ where: { name: secName, departmentId: deptId } });
@@ -63,7 +63,7 @@ export async function bulkImportHierarchy(data: any[]) {
 
       if (!subSecName) continue;
 
-      const subSecKey = \\_\\;
+      const subSecKey = `${sectionId}_${subSecName}`;
       let subSectionId = subSectionsCache.get(subSecKey);
       if (!subSectionId) {
         let subSection = await prisma.subSection.findFirst({ where: { name: subSecName, sectionId } });
