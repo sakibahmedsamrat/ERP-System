@@ -30,3 +30,5 @@ export async function GET(request: Request) {
 
   return NextResponse.json({ workers });
 }
+
+export const dynamic = 'force-dynamic';
