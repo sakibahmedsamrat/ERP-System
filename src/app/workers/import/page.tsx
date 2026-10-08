@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState } from 'react';
 import Link from 'next/link';
@@ -75,7 +75,7 @@ export default function ImportWorkersPage() {
         <div className="bg-blue-50 text-blue-800 p-4 rounded mb-6 text-sm flex justify-between items-center">
           <div className="font-mono">
             Important headers:<br />
-            Worker ID, Name, Designation, Department, Section, Sub Section, Grade, Join Date
+            Worker ID, Name, Designation, Department, Section, Sub Section, Grade, Join Date, Gross Salary
           </div>
         </div>
 
@@ -107,3 +107,4 @@ export default function ImportWorkersPage() {
     </div>
   );
 }
+

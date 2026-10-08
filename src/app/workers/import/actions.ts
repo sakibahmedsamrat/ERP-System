@@ -77,6 +77,21 @@ export async function bulkImportWorkers(workers: any[]) {
          if (!isNaN(d.getTime())) jDate = d;
       }
 
+      const rawGross = parseFloat(getVal(['grosssalary', 'gross salary', 'gross']) || '0');
+      let grossSalary = 0;
+      let basicSalary = 0;
+      let houseRent = 0;
+      let conveyanceAllowance = 0;
+      let medicalAllowance = 0;
+
+      if (!isNaN(rawGross) && rawGross > 0) {
+        grossSalary = rawGross;
+        basicSalary = Math.round(grossSalary * 0.50);
+        houseRent = Math.round(grossSalary * 0.30);
+        conveyanceAllowance = Math.round(grossSalary * 0.10);
+        medicalAllowance = Math.round(grossSalary * 0.10);
+      }
+
       const record = {
         workerId: getVal(['workerid', 'staff id', 'id']) || `TMP-${Math.floor(Math.random() * 10000)}`,
         name: getVal(['name', 'staff name', 'worker name']) || 'Unknown',
@@ -94,6 +109,11 @@ export async function bulkImportWorkers(workers: any[]) {
         subSectionId: subSecId,
         grade: getVal(['grade']) || null,
         companyId: companyId,
+        grossSalary,
+        basicSalary,
+        houseRent,
+        conveyanceAllowance,
+        medicalAllowance,
       };
 
       await prisma.worker.upsert({
@@ -110,3 +130,5 @@ export async function bulkImportWorkers(workers: any[]) {
     return { error: 'Failed to import workers. Check format.' };
   }
 }
+
+

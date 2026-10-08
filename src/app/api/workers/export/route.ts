@@ -16,7 +16,7 @@ export async function GET() {
   const headers = [
     'workerId', 'name', 'designation', 'gender', 'bloodGroup', 
     'religion', 'nationalId', 'phone', 'address', 'permanentAddress', 
-    'joinDate', 'department', 'section', 'subSection', 'grade', 'company'
+    'joinDate', 'department', 'section', 'subSection', 'grade', 'company', 'Gross Salary', 'Basic Salary', 'House Rent', 'Conveyance Allowance', 'Medical Allowance'
   ];
 
   const csvRows = [];
@@ -27,7 +27,7 @@ export async function GET() {
       w.workerId, w.name, w.designation || '', w.gender || '', w.bloodGroup || '',
       w.religion || '', w.nationalId || '', w.phone || '', w.address || '', w.permanentAddress || '',
       w.joinDate.toISOString().split('T')[0], w.department?.name || '', w.section?.name || '', w.subSection?.name || '', 
-      w.grade || '', w.company.name
+      w.grade || '', w.company?.name || '', w.grossSalary || 0, w.basicSalary || 0, w.houseRent || 0, w.conveyanceAllowance || 0, w.medicalAllowance || 0
     ];
     // escape commas
     const escapedRow = row.map(v => typeof v === 'string' && v.includes(',') ? `"${v}"` : v);
@@ -43,3 +43,4 @@ export async function GET() {
 }
 
 export const dynamic = 'force-dynamic';
+
