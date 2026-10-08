@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { PrismaClient } from '@prisma/client';
-import { Plus, User, Building2, Trash2, Search, Download, Upload } from 'lucide-react';
+import { Plus, User, Building2, Trash2, Search, Download, Upload, Hash, Briefcase, Layers, Network, FolderTree, X } from 'lucide-react';
 import { deleteWorker } from './actions';
 import DeleteWorkerButton from '@/components/DeleteWorkerButton';
 
@@ -30,6 +30,12 @@ export default async function WorkersPage({ searchParams }: { searchParams: { wo
 
   const workers = await prisma.worker.findMany(queryOptions);
 
+  const companies = await prisma.company.findMany({ select: { name: true }, distinct: ['name'] });
+  const departments = await prisma.department.findMany({ select: { name: true }, distinct: ['name'] });
+  const sections = await prisma.section.findMany({ select: { name: true }, distinct: ['name'] });
+  const subSections = await prisma.subSection.findMany({ select: { name: true }, distinct: ['name'] });
+  const designations = await prisma.worker.findMany({ where: { designation: { not: null } }, distinct: ['designation'], select: { designation: true } });
+
   return (
     <div className="p-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -49,21 +55,86 @@ export default async function WorkersPage({ searchParams }: { searchParams: { wo
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6 p-4">
-        <form className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-3 w-full text-sm">
-          <input type="text" name="workerId" defaultValue={workerId} placeholder="ID..." className="border border-gray-300 rounded p-2 outline-none focus:border-blue-500" />
-          <input type="text" name="name" defaultValue={name} placeholder="Name..." className="border border-gray-300 rounded p-2 outline-none focus:border-blue-500" />
-          <input type="text" name="company" defaultValue={company} placeholder="Company..." className="border border-gray-300 rounded p-2 outline-none focus:border-blue-500" />
-          <input type="text" name="designation" defaultValue={designation} placeholder="Designation..." className="border border-gray-300 rounded p-2 outline-none focus:border-blue-500" />
-          <input type="text" name="department" defaultValue={department} placeholder="Department..." className="border border-gray-300 rounded p-2 outline-none focus:border-blue-500" />
-          <input type="text" name="section" defaultValue={section} placeholder="Section..." className="border border-gray-300 rounded p-2 outline-none focus:border-blue-500" />
-          <input type="text" name="subSection" defaultValue={subSection} placeholder="Sub-Section..." className="border border-gray-300 rounded p-2 outline-none focus:border-blue-500" />
+      {/* Autocomplete Data Lists */}
+      <datalist id="company-list">
+        {companies.map((c: any) => <option key={c.name} value={c.name} />)}
+      </datalist>
+      <datalist id="department-list">
+        {departments.map((d: any) => <option key={d.name} value={d.name} />)}
+      </datalist>
+      <datalist id="section-list">
+        {sections.map((s: any) => <option key={s.name} value={s.name} />)}
+      </datalist>
+      <datalist id="subsection-list">
+        {subSections.map((s: any) => <option key={s.name} value={s.name} />)}
+      </datalist>
+      <datalist id="designation-list">
+        {designations.map((d: any) => <option key={d.designation} value={d.designation} />)}
+      </datalist>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-6 p-5">
+        <div className="flex items-center gap-2 mb-4 text-gray-800 font-semibold">
+          <Search size={18} className="text-blue-600" />
+          <h2>Filter Employees</h2>
+        </div>
+        <form className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-3 w-full text-sm">
           
-          <div className="md:col-span-3 lg:col-span-7 flex justify-end gap-2 mt-2">
-            <button type="submit" className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-900 transition flex items-center gap-2">
-              <Search size={16} /> Filter
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+              <Hash size={14} />
+            </div>
+            <input type="text" name="workerId" defaultValue={workerId} placeholder="ID..." className="w-full pl-8 pr-3 py-2.5 border border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-gray-50 hover:bg-white" />
+          </div>
+
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+              <User size={14} />
+            </div>
+            <input type="text" name="name" defaultValue={name} placeholder="Name..." className="w-full pl-8 pr-3 py-2.5 border border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-gray-50 hover:bg-white" />
+          </div>
+
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+              <Building2 size={14} />
+            </div>
+            <input type="text" name="company" list="company-list" defaultValue={company} placeholder="Company..." className="w-full pl-8 pr-3 py-2.5 border border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-gray-50 hover:bg-white" />
+          </div>
+
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+              <Briefcase size={14} />
+            </div>
+            <input type="text" name="designation" list="designation-list" defaultValue={designation} placeholder="Designation..." className="w-full pl-8 pr-3 py-2.5 border border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-gray-50 hover:bg-white" />
+          </div>
+
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+              <Layers size={14} />
+            </div>
+            <input type="text" name="department" list="department-list" defaultValue={department} placeholder="Department..." className="w-full pl-8 pr-3 py-2.5 border border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-gray-50 hover:bg-white" />
+          </div>
+
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+              <Network size={14} />
+            </div>
+            <input type="text" name="section" list="section-list" defaultValue={section} placeholder="Section..." className="w-full pl-8 pr-3 py-2.5 border border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-gray-50 hover:bg-white" />
+          </div>
+
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+              <FolderTree size={14} />
+            </div>
+            <input type="text" name="subSection" list="subsection-list" defaultValue={subSection} placeholder="Sub-Section..." className="w-full pl-8 pr-3 py-2.5 border border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-gray-50 hover:bg-white" />
+          </div>
+          
+          <div className="md:col-span-2 lg:col-span-3 xl:col-span-7 flex justify-end gap-3 mt-2">
+            <Link href="/workers" className="flex items-center gap-1.5 px-5 py-2 text-gray-600 bg-white hover:bg-gray-100 hover:text-gray-900 rounded-lg border border-gray-200 transition-all shadow-sm">
+              <X size={14} /> Clear
+            </Link>
+            <button type="submit" className="bg-gray-800 text-white px-6 py-2 rounded-lg hover:bg-gray-900 transition-all flex items-center gap-2 shadow-sm font-medium">
+              <Search size={16} /> Filter Results
             </button>
-            <Link href="/workers" className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded border border-gray-200">Clear</Link>
           </div>
         </form>
       </div>
@@ -130,5 +201,7 @@ export default async function WorkersPage({ searchParams }: { searchParams: { wo
     </div>
   );
 }
+
+
 
 
