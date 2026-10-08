@@ -6,22 +6,28 @@ import DeleteWorkerButton from '@/components/DeleteWorkerButton';
 
 const prisma = new PrismaClient();
 
-export default async function WorkersPage({ searchParams }: { searchParams: { q?: string } }) {
-  const query = searchParams.q || '';
+export default async function WorkersPage({ searchParams }: { searchParams: { workerId?: string; name?: string; designation?: string; department?: string; section?: string; subSection?: string; } }) {
+  const { workerId, name, designation, department, section, subSection } = searchParams;
 
-  const workers = await prisma.worker.findMany({
-    where: {
-      OR: [
-        { name: { contains: query } },
-        { workerId: { contains: query } },
-        { phone: { contains: query } },
-        { department: { name: { contains: query } } },
-        { designation: { contains: query } }
-      ]
-    },
+  const whereClause: any = { AND: [] };
+
+  if (workerId) whereClause.AND.push({ workerId: { contains: workerId, mode: 'insensitive' } });
+  if (name) whereClause.AND.push({ name: { contains: name, mode: 'insensitive' } });
+  if (designation) whereClause.AND.push({ designation: { contains: designation, mode: 'insensitive' } });
+  if (department) whereClause.AND.push({ department: { name: { contains: department, mode: 'insensitive' } } });
+  if (section) whereClause.AND.push({ section: { name: { contains: section, mode: 'insensitive' } } });
+  if (subSection) whereClause.AND.push({ subSection: { name: { contains: subSection, mode: 'insensitive' } } });
+
+  const queryOptions: any = {
     orderBy: { createdAt: 'desc' },
-    include: { company: true }
-  });
+    include: { company: true, department: true, section: true, subSection: true }
+  };
+  
+  if (whereClause.AND.length > 0) {
+    queryOptions.where = whereClause;
+  }
+
+  const workers = await prisma.worker.findMany(queryOptions);
 
   return (
     <div className="p-8">
@@ -43,38 +49,39 @@ export default async function WorkersPage({ searchParams }: { searchParams: { q?
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6 p-4">
-        <form className="flex gap-2 w-full max-w-lg">
-          <input 
-            type="text" 
-            name="q" 
-            defaultValue={query} 
-            placeholder="Search by ID, Name, Phone, Dept, Designation..." 
-            className="flex-1 border border-gray-300 rounded p-2 outline-none focus:border-blue-500"
-          />
-          <button type="submit" className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-900 transition flex items-center gap-2">
-            <Search size={16} /> Search
-          </button>
-          {query && (
-            <Link href="/workers" className="px-4 py-2 text-red-600 hover:bg-red-50 rounded">Clear</Link>
-          )}
+        <form className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3 w-full text-sm">
+          <input type="text" name="workerId" defaultValue={workerId} placeholder="ID..." className="border border-gray-300 rounded p-2 outline-none focus:border-blue-500" />
+          <input type="text" name="name" defaultValue={name} placeholder="Name..." className="border border-gray-300 rounded p-2 outline-none focus:border-blue-500" />
+          <input type="text" name="designation" defaultValue={designation} placeholder="Designation..." className="border border-gray-300 rounded p-2 outline-none focus:border-blue-500" />
+          <input type="text" name="department" defaultValue={department} placeholder="Department..." className="border border-gray-300 rounded p-2 outline-none focus:border-blue-500" />
+          <input type="text" name="section" defaultValue={section} placeholder="Section..." className="border border-gray-300 rounded p-2 outline-none focus:border-blue-500" />
+          <input type="text" name="subSection" defaultValue={subSection} placeholder="Sub-Section..." className="border border-gray-300 rounded p-2 outline-none focus:border-blue-500" />
+          
+          <div className="md:col-span-3 lg:col-span-6 flex justify-end gap-2 mt-2">
+            <button type="submit" className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-900 transition flex items-center gap-2">
+              <Search size={16} /> Filter
+            </button>
+            <Link href="/workers" className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded border border-gray-200">Clear</Link>
+          </div>
         </form>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
-        <table className="w-full text-left whitespace-nowrap">
+        <table className="w-full text-left whitespace-nowrap text-sm">
           <thead className="bg-gray-50 border-b border-gray-100">
             <tr>
               <th className="p-4 font-medium text-gray-600">ID</th>
               <th className="p-4 font-medium text-gray-600">Name</th>
               <th className="p-4 font-medium text-gray-600">Company</th>
+              <th className="p-4 font-medium text-gray-600">Dept</th>
+              <th className="p-4 font-medium text-gray-600">Section</th>
+              <th className="p-4 font-medium text-gray-600">Sub-Section</th>
               <th className="p-4 font-medium text-gray-600">Designation</th>
-              <th className="p-4 font-medium text-gray-600">Phone</th>
-              <th className="p-4 font-medium text-gray-600">Blood</th>
               <th className="p-4 font-medium text-gray-600 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {workers.map((worker) => (
+            {workers.map((worker: any) => (
               <tr key={worker.id} className="hover:bg-gray-50 transition">
                 <td className="p-4 font-medium text-gray-900">{worker.workerId}</td>
                 <td className="p-4 flex items-center gap-2">
@@ -83,12 +90,13 @@ export default async function WorkersPage({ searchParams }: { searchParams: { q?
                 </td>
                 <td className="p-4">
                   <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs">
-                    {worker.company.name}
+                    {worker.company?.name || '-'}
                   </span>
                 </td>
+                <td className="p-4 text-gray-600">{worker.department?.name || '-'}</td>
+                <td className="p-4 text-gray-600">{worker.section?.name || '-'}</td>
+                <td className="p-4 text-gray-600">{worker.subSection?.name || '-'}</td>
                 <td className="p-4 text-gray-600">{worker.designation || '-'}</td>
-                <td className="p-4 text-gray-600">{worker.phone || '-'}</td>
-                <td className="p-4 text-gray-600">{worker.bloodGroup || '-'}</td>
                 <td className="p-4 text-right flex justify-end gap-2">
                   <Link 
                     href={`/workers/${worker.id}/id-card`} 
@@ -120,3 +128,5 @@ export default async function WorkersPage({ searchParams }: { searchParams: { q?
     </div>
   );
 }
+
+
