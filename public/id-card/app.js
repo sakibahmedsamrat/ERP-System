@@ -459,6 +459,18 @@ function loadAssets() {
       assetsLoaded = true;
       const hasSaved = loadSavedState();
 
+      // Apply URL params
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('name')) state.name = params.get('name');
+      if (params.has('designation')) state.designation = params.get('designation');
+      if (params.has('section')) state.section = params.get('section');
+      if (params.has('id')) state.employeeId = params.get('id');
+      if (params.has('joinDate')) state.dateOfJoin = params.get('joinDate');
+      if (params.has('blood')) state.bloodGroup = params.get('blood');
+      if (params.has('phone')) state.emergencyContact = params.get('phone');
+      if (params.has('nid')) state.nid = params.get('nid');
+      if (typeof syncInputsFromState === 'function') syncInputsFromState();
+
       // Restore photo
       if (hasSaved && state.photoDataUrl) {
         const img = new Image();
@@ -1672,27 +1684,5 @@ function initLiveBackground() {
 
 // Start Live Background Animation
 initLiveBackground();
-
-// Auto-populate from URL params
-setTimeout(() => {
-  const params = new URLSearchParams(window.location.search);
-  const setVal = (id, val) => {
-    if (val && document.getElementById(id)) {
-      document.getElementById(id).value = val;
-      document.getElementById(id).dispatchEvent(new Event('input', { bubbles: true }));
-    }
-  };
-  setVal('inputName', params.get('name'));
-  setVal('inputDesignation', params.get('designation'));
-  setVal('inputSection', params.get('section'));
-  setVal('inputEmployeeId', params.get('id'));
-  setVal('inputDateOfJoin', params.get('joinDate'));
-  setVal('inputBloodGroup', params.get('blood'));
-  setVal('inputEmergencyContact', params.get('phone'));
-  setVal('inputNID', params.get('nid'));
-  
-  if (typeof renderFrontCard === 'function') renderFrontCard();
-  if (typeof renderBackCard === 'function') renderBackCard();
-});
 
 
