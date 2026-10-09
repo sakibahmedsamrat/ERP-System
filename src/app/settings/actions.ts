@@ -40,3 +40,16 @@ export async function changePassword(formData: FormData) {
 
   return { success: true };
 }
+export async function updateProfileImage(base64: string) {
+  const session = await getSession();
+  if (!session?.user) throw new Error('Unauthorized');
+
+  await prisma.user.update({
+    where: { id: session.user.id },
+    data: { profileImage: base64 }
+  });
+
+  // Revalidate layout to pick up new image
+  const { revalidatePath } = await import('next/cache');
+  revalidatePath('/', 'layout');
+}

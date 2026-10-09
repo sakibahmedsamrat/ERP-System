@@ -39,9 +39,13 @@ export default function Header({ user }: { user?: any }) {
               <span className="text-sm font-semibold text-gray-700">{user?.name || 'User'}</span>
               <span className="text-xs text-blue-600 font-medium">{user?.role || 'Guest'}</span>
             </div>
-            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md">
-              <UserCircle size={24} />
-            </div>
+            {user?.profileImage ? (
+              <img src={user.profileImage} alt="Profile" className="w-10 h-10 rounded-full object-cover shadow-md border-2 border-white" />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md">
+                <UserCircle size={24} />
+              </div>
+            )}
             <form action={logoutAction} className="ml-2">
               <button title="Logout" type="submit" className="text-gray-400 hover:text-red-600 transition p-2 rounded-full hover:bg-red-50">
                 <LogOut size={18} />

@@ -2,9 +2,19 @@ import { getSession } from '@/lib/auth';
 import { Settings, Lock } from 'lucide-react';
 import { changePassword } from './actions';
 import PasswordChangeForm from './PasswordChangeForm';
+import ProfileImageUpload from './ProfileImageUpload';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 export default async function SettingsPage() {
   const session = await getSession();
+  
+  let profileImage = null;
+  if (session?.user?.id) {
+    const dbUser = await prisma.user.findUnique({ where: { id: session.user.id } });
+    if (dbUser) profileImage = dbUser.profileImage;
+  }
 
   return (
     <div className="p-8 max-w-2xl mx-auto">
@@ -14,6 +24,8 @@ export default async function SettingsPage() {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
+        <ProfileImageUpload currentImage={profileImage} />
+        
         <h2 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2 flex items-center gap-2">
           <UserIcon /> Profile Information
         </h2>

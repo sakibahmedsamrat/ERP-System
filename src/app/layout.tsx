@@ -6,7 +6,10 @@ import MainLayout from "@/components/MainLayout";
 import { getSession } from "@/lib/auth";
 import NextTopLoader from 'nextjs-toploader';
 
+import { PrismaClient } from '@prisma/client';
+
 const inter = Inter({ subsets: ["latin"] });
+const prisma = new PrismaClient();
 
 export const metadata: Metadata = {
   title: "ERP System",
@@ -19,6 +22,13 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const session = await getSession();
+  let fullUser = session?.user;
+  if (session?.user?.id) {
+    const dbUser = await prisma.user.findUnique({ where: { id: session.user.id } });
+    if (dbUser) {
+      fullUser = { ...session.user, profileImage: dbUser.profileImage };
+    }
+  }
 
   return (
     <html lang="en">
@@ -34,7 +44,7 @@ export default async function RootLayout({
           speed={200}
           shadow="0 0 10px #2563eb,0 0 5px #2563eb"
         />
-        <MainLayout user={session?.user}>
+        <MainLayout user={fullUser}>
           {children}
         </MainLayout>
       </body>
