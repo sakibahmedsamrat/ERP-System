@@ -1674,7 +1674,7 @@ function initLiveBackground() {
 initLiveBackground();
 
 // Auto-populate from URL params
-window.addEventListener('DOMContentLoaded', () => {
+setTimeout(() => {
   const params = new URLSearchParams(window.location.search);
   const setVal = (id, val) => {
     if (val && document.getElementById(id)) {
@@ -1694,4 +1694,5 @@ window.addEventListener('DOMContentLoaded', () => {
   if (typeof renderFrontCard === 'function') renderFrontCard();
   if (typeof renderBackCard === 'function') renderBackCard();
 });
+
 
