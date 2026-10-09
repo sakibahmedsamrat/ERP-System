@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { formatDate } from '@/lib/formatDate';
 import Link from 'next/link';
 import { Search, Save, Check, RotateCcw } from 'lucide-react';
 import { createSettlement } from '../actions';
@@ -490,4 +491,5 @@ export default function NewSettlementPage() {
     </div>
   );
 }
+
 
