@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import Link from 'next/link';
+import { formatDate } from '@/lib/formatDate';
 import PrintButton from './PrintButton';
 
 const prisma = new PrismaClient();
@@ -66,15 +67,15 @@ export default async function SettlementPrintPage({ params }: { params: { id: st
           <div className="flex"><strong className="w-44 print:w-36">Section :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{w.section?.name || ''}</span></div>
           
           {/* Row 4 */}
-          <div className="flex"><strong className="w-44 print:w-36">Join Date :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{new Date(w.joinDate).toLocaleDateString()}</span></div>
+          <div className="flex"><strong className="w-44 print:w-36">Join Date :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{formatDate(w.joinDate)}</span></div>
           <div className="flex"><strong className="w-44 print:w-36">Sub-Section :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{w.subSection?.name || ''}</span></div>
           
           {/* Row 5 */}
-          <div className="flex"><strong className="w-44 print:w-36">Resign Apply Date :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{settlement.resignApplyDate ? new Date(settlement.resignApplyDate).toLocaleDateString() : ''}</span></div>
+          <div className="flex"><strong className="w-44 print:w-36">Resign Apply Date :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{formatDate(settlement.resignApplyDate)}</span></div>
           <div className="flex"><strong className="w-44 print:w-36">Basic Salary :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{settlement.basicSalary || 0}</span></div>
           
           {/* Row 6 */}
-          <div className="flex"><strong className="w-44 print:w-36">Last Working Day :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{settlement.lastWorkingDay ? new Date(settlement.lastWorkingDay).toLocaleDateString() : ''}</span></div>
+          <div className="flex"><strong className="w-44 print:w-36">Last Working Day :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{formatDate(settlement.lastWorkingDay)}</span></div>
           <div className="flex"><strong className="w-44 print:w-36">House Rent :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{settlement.houseRent || 0}</span></div>
           
           {/* Row 7 */}
@@ -161,3 +162,4 @@ export default async function SettlementPrintPage({ params }: { params: { id: st
     </div>
   );
 }
+

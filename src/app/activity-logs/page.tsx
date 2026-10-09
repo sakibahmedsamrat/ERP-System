@@ -1,4 +1,5 @@
-﻿import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
+import { formatDateTime } from '@/lib/formatDate';
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
 
@@ -37,7 +38,7 @@ export default async function ActivityLogsPage() {
           <tbody>
             {logs.map((log) => (
               <tr key={log.id} className="border-b border-gray-50 hover:bg-gray-50 transition">
-                <td className="p-4 text-sm text-gray-500">{new Date(log.createdAt).toLocaleString()}</td>
+                <td className="p-4 text-sm text-gray-500">{formatDateTime(log.createdAt)}</td>
                 <td className="p-4 text-sm text-gray-800 font-medium">{log.userName}</td>
                 <td className="p-4 text-sm text-gray-500">{log.userId}</td>
                 <td className="p-4 text-sm">
@@ -62,3 +63,4 @@ export default async function ActivityLogsPage() {
     </div>
   );
 }
+

@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { notFound, redirect } from 'next/navigation';
+import { formatDate } from '@/lib/formatDate';
 
 const prisma = new PrismaClient();
 
@@ -18,7 +19,7 @@ export default async function IDCardPage({ params }: { params: { id: string } })
     designation: worker.designation || '',
     section: worker.section?.name || worker.department?.name || '',
     id: worker.workerId || '',
-    joinDate: worker.joinDate ? new Date(worker.joinDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '',
+    joinDate: formatDate(worker.joinDate),
     blood: worker.bloodGroup || '',
     phone: worker.phone || '',
     nid: worker.nationalId || ''
@@ -26,3 +27,4 @@ export default async function IDCardPage({ params }: { params: { id: string } })
 
   redirect(`/id-card/index.html?${queryParams.toString()}`);
 }
+

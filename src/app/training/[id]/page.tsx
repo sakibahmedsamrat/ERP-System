@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { PrismaClient } from '@prisma/client';
+import { formatDateTime } from '@/lib/formatDate';
 import { notFound } from 'next/navigation';
 import { Users, Calendar, MapPin, CheckCircle, Clock } from 'lucide-react';
 
@@ -41,7 +42,7 @@ export default async function TrainingDetailsPage({ params }: { params: { id: st
           <div className="flex flex-wrap gap-6 text-sm text-gray-700">
             <div className="flex items-center gap-2">
               <Calendar className="text-blue-500" size={18} />
-              <span className="font-medium">{new Date(training.date).toLocaleString()}</span>
+              <span className="font-medium">{formatDateTime(training.date)}</span>
             </div>
             {training.location && (
               <div className="flex items-center gap-2">
@@ -111,3 +112,4 @@ export default async function TrainingDetailsPage({ params }: { params: { id: st
     </div>
   );
 }
+

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Bell, Check, Trash2 } from 'lucide-react';
 import { getNotifications, markAsRead, markAllAsRead } from '@/app/actions/notifications';
 import Link from 'next/link';
+import { formatDateTime } from '@/lib/formatDate';
 import { useRouter } from 'next/navigation';
 
 export default function NotificationBell() {
@@ -98,7 +99,7 @@ export default function NotificationBell() {
                       {n.message}
                     </p>
                     <p className="text-xs text-gray-400 mt-1">
-                      {new Date(n.createdAt).toLocaleString()}
+                      {formatDateTime(n.createdAt)}
                     </p>
                   </div>
                 </div>
@@ -110,3 +111,4 @@ export default function NotificationBell() {
     </div>
   );
 }
+

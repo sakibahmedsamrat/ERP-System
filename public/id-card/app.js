@@ -11,10 +11,9 @@ const THEME_STORAGE_KEY = 'mep_id_theme';
 function getFormattedTodayDate(targetDate = new Date()) {
   const d = (targetDate instanceof Date && !isNaN(targetDate)) ? targetDate : new Date();
   const day = String(d.getDate()).padStart(2, '0');
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const month = months[d.getMonth()];
+  const month = String(d.getMonth() + 1).padStart(2, '0');
   const year = d.getFullYear();
-  return `${day} ${month} ${year}`;
+  return `${day}-${month}-${year}`;
 }
 
 const DEFAULT_HEAD_OFFICE = `Head Office :
@@ -1684,5 +1683,8 @@ function initLiveBackground() {
 
 // Start Live Background Animation
 initLiveBackground();
+
+
+
 
 

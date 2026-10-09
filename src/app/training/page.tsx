@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { PrismaClient } from '@prisma/client';
+import { formatDateTime } from '@/lib/formatDate';
 import { Plus, MapPin, Calendar, Eye, Edit, Trash2, Users } from 'lucide-react';
 import DeleteTrainingButton from './DeleteTrainingButton';
 
@@ -54,7 +55,7 @@ export default async function TrainingPage() {
 
               <div className="flex flex-col gap-2 text-sm text-gray-600">
                 <span className="flex items-center gap-2">
-                  <Calendar size={16} className="text-gray-400" /> {new Date(training.date).toLocaleString()}
+                  <Calendar size={16} className="text-gray-400" /> {formatDateTime(training.date)}
                 </span>
                 {training.location && (
                   <span className="flex items-center gap-2">
@@ -103,3 +104,4 @@ export default async function TrainingPage() {
     </div>
   );
 }
+

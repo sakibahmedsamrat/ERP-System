@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { formatDate } from '@/lib/formatDate';
 import { PrismaClient } from '@prisma/client';
 import { Plus } from 'lucide-react';
 import DeleteSettlementButton from '@/components/DeleteSettlementButton';
@@ -49,7 +50,7 @@ export default async function SettlementsPage() {
                     {settlement.status}
                   </span>
                 </td>
-                <td className="p-4 text-gray-500">{new Date(settlement.createdAt).toLocaleDateString()}</td>
+                <td className="p-4 text-gray-500">{formatDate(settlement.createdAt)}</td>
                 <td className="p-4 text-right flex items-center justify-end gap-4">
                   <Link href={`/settlements/${settlement.id}`} className="text-sm text-blue-600 hover:underline">
                     View / Print
@@ -75,5 +76,6 @@ export default async function SettlementsPage() {
     </div>
   );
 }
+
 
 

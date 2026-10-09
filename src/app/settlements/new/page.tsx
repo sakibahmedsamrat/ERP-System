@@ -384,7 +384,7 @@ export default function NewSettlementPage() {
             <div className="flex"><strong className="w-40">Section :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{selectedWorker.section?.name || ''}</span></div>
             
             {/* Row 4 */}
-            <div className="flex"><strong className="w-40">Join Date :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{new Date(selectedWorker.joinDate).toLocaleDateString()}</span></div>
+            <div className="flex"><strong className="w-40">Join Date :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{formatDate(selectedWorker.joinDate)}</span></div>
             <div className="flex"><strong className="w-40">Sub-Section :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{selectedWorker.subSection?.name || ''}</span></div>
             
             {/* Row 5 */}
@@ -490,3 +490,4 @@ export default function NewSettlementPage() {
     </div>
   );
 }
+

@@ -1,5 +1,6 @@
 import { Users, Building2, CalendarCheck, CheckSquare, Clock } from 'lucide-react';
 import { PrismaClient } from '@prisma/client';
+import { formatDate } from '@/lib/formatDate';
 import { getSession } from '@/lib/auth';
 import { markTaskDone } from './tasks/actions';
 
@@ -112,7 +113,7 @@ export default async function Dashboard() {
                       {task.deadline ? (
                         <div className="text-xs font-semibold text-red-500 flex items-center gap-1 bg-red-50 px-2 py-1 rounded-lg">
                           <Clock size={12} /> 
-                          {new Date(task.deadline).toLocaleDateString()}
+                          {formatDate(task.deadline)}
                         </div>
                       ) : <div />}
                       <form action={markTaskDone.bind(null, task.id)}>
@@ -131,5 +132,6 @@ export default async function Dashboard() {
     </div>
   );
 }
+
 
 

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { PrismaClient } from '@prisma/client';
+import { formatDate } from '@/lib/formatDate';
 import { Plus, Clock, Trash2, CheckCircle } from 'lucide-react';
 import { getSession } from '@/lib/auth';
 import { deleteTask, markTaskDone } from './actions';
@@ -70,7 +71,7 @@ export default async function TasksPage() {
                 {task.deadline && (
                   <div className="flex items-center gap-1 text-sm text-red-600 font-medium">
                     <Clock size={16} /> 
-                    Deadline: {new Date(task.deadline).toLocaleDateString()}
+                    Deadline: {formatDate(task.deadline)}
                   </div>
                 )}
                 
@@ -98,3 +99,4 @@ export default async function TasksPage() {
     </div>
   );
 }
+

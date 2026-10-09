@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { formatDate } from '@/lib/formatDate';
 import { NextResponse } from 'next/server';
 
 const prisma = new PrismaClient();
@@ -26,7 +27,7 @@ export async function GET() {
     const row = [
       w.workerId, w.name, w.designation || '', w.gender || '', w.bloodGroup || '',
       w.religion || '', w.nationalId || '', w.phone || '', w.address || '', w.permanentAddress || '',
-      w.joinDate.toISOString().split('T')[0], w.department?.name || '', w.section?.name || '', w.subSection?.name || '', 
+      formatDate(w.joinDate), w.department?.name || '', w.section?.name || '', w.subSection?.name || '', 
       w.grade || '', w.company?.name || '', w.grossSalary || 0, w.basicSalary || 0, w.houseRent || 0, w.conveyanceAllowance || 0, w.medicalAllowance || 0
     ];
     // escape commas
@@ -43,4 +44,5 @@ export async function GET() {
 }
 
 export const dynamic = 'force-dynamic';
+
 
