@@ -75,7 +75,7 @@ export default async function NewWorkerPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">National ID (NID)</label>
-                <input type="text" name="nationalId" className="w-full border rounded p-2 outline-none focus:border-blue-500" />
+                <input type="number" name="nationalId" className="w-full border rounded p-2 outline-none focus:border-blue-500" />
               </div>
             </div>
           </div>
