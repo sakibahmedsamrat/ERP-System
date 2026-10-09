@@ -1,8 +1,9 @@
-﻿'use client'
+'use client'
 
 import { usePathname } from 'next/navigation';
 import { Bell, Search, UserCircle, LogOut } from 'lucide-react';
 import { logoutAction } from '@/app/logout/actions';
+import NotificationBell from './NotificationBell';
 
 export default function Header({ user }: { user?: any }) {
   const pathname = usePathname();
@@ -29,10 +30,7 @@ export default function Header({ user }: { user?: any }) {
             />
           </div>
           
-          <button className="text-gray-500 hover:text-blue-600 transition relative">
-            <Bell size={20} />
-            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
-          </button>
+          <NotificationBell />
           
           <div className="h-6 w-px bg-gray-200"></div>
           
@@ -55,3 +53,4 @@ export default function Header({ user }: { user?: any }) {
     </header>
   );
 }
+

@@ -39,7 +39,7 @@ export async function createTask(formData: FormData) {
 
   const deadline = deadlineStr ? new Date(deadlineStr) : null;
 
-  await prisma.task.create({
+  const task = await prisma.task.create({
     data: {
       title,
       description,
@@ -50,6 +50,16 @@ export async function createTask(formData: FormData) {
     }
   });
 
+  if (assigneeId) {
+    await prisma.notification.create({
+      data: {
+        userId: assigneeId,
+        message: `You have been assigned a new task: ${title}`,
+        link: '/tasks'
+      }
+    });
+  }
+
   revalidatePath('/tasks');
   redirect('/tasks');
 }
@@ -58,10 +68,27 @@ export async function markTaskDone(taskId: string) {
   const session = await getSession();
   if (!session?.user) return { error: 'Unauthorized' };
 
-  await prisma.task.update({
+  const task = await prisma.task.update({
     where: { id: taskId },
-    data: { status: 'DONE' }
+    data: { status: 'DONE' },
+    include: { assignee: true }
   });
+
+  const admins = await prisma.user.findMany({
+    where: { role: { in: ['SUPER_ADMIN', 'ADMIN'] } }
+  });
+
+  const userName = task.assignee?.name || session.user.name || 'A user';
+  
+  if (admins.length > 0) {
+    await prisma.notification.createMany({
+      data: admins.map(admin => ({
+        userId: admin.id,
+        message: `${userName} has completed the task: ${task.title}`,
+        link: '/tasks'
+      }))
+    });
+  }
   
   revalidatePath('/tasks');
   revalidatePath('/');
