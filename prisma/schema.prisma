@@ -46,6 +46,7 @@ model Worker {
   subSection SubSection? @relation(fields: [subSectionId], references: [id])
   grade      String?
   photoUrl   String?
+  trainings  Training[] @relation("TrainingParticipants")
   signatureUrl String?
   
   // Salary Information
@@ -169,6 +170,7 @@ model Training {
   status      String   @default("SCHEDULED") // SCHEDULED, COMPLETED, CANCELLED
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  workers     Worker[]   @relation("TrainingParticipants")
 }
 
 model Recruitment {
@@ -230,4 +232,5 @@ model Notification {
 
   user      User     @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
 }
+
 
