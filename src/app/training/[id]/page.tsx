@@ -13,8 +13,7 @@ export default async function TrainingDetailsPage({ params }: { params: { id: st
       include: {
         workers: {
           include: {
-            department: true,
-            designation: true
+            department: true
           }
         }
       }
