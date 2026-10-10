@@ -3,10 +3,21 @@
 import { useState, useEffect } from 'react';
 import { X, Search } from 'lucide-react';
 
-export default function EmployeeSelect({ initialSelected = [] }: { initialSelected?: any[] }) {
+export default function EmployeeSelect({ 
+  initialSelected = [], 
+  mode = 'multiple', 
+  inputName = 'workerIds[]',
+  placeholder = 'Search Employee by Name or Card No...'
+}: { 
+  initialSelected?: any | any[], 
+  mode?: 'single' | 'multiple',
+  inputName?: string,
+  placeholder?: string
+}) {
+  const initialArr = Array.isArray(initialSelected) ? initialSelected : (initialSelected ? [initialSelected] : []);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<any[]>([]);
-  const [selected, setSelected] = useState<any[]>(initialSelected);
+  const [selected, setSelected] = useState<any[]>(initialArr);
   const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
@@ -29,8 +40,12 @@ export default function EmployeeSelect({ initialSelected = [] }: { initialSelect
   }, [query]);
 
   const addWorker = (w: any) => {
-    if (!selected.find((s) => s.id === w.id)) {
-      setSelected([...selected, w]);
+    if (mode === 'single') {
+      setSelected([w]);
+    } else {
+      if (!selected.find((s) => s.id === w.id)) {
+        setSelected([...selected, w]);
+      }
     }
     setQuery('');
     setResults([]);
@@ -43,7 +58,7 @@ export default function EmployeeSelect({ initialSelected = [] }: { initialSelect
   return (
     <div className="space-y-3">
       {selected.map(w => (
-        <input key={w.id} type="hidden" name="workerIds[]" value={w.id} />
+        <input key={w.id} type="hidden" name={inputName} value={w.id} />
       ))}
       
       <div className="flex flex-wrap gap-2">
@@ -65,7 +80,7 @@ export default function EmployeeSelect({ initialSelected = [] }: { initialSelect
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search Employee by Name or Card No..."
+          placeholder={placeholder}
           className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
         />
         {isSearching && (
@@ -96,3 +111,4 @@ export default function EmployeeSelect({ initialSelected = [] }: { initialSelect
     </div>
   );
 }
+

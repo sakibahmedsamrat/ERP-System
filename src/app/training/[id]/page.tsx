@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { PrismaClient } from '@prisma/client';
 import { formatDateTime } from '@/lib/formatDate';
 import { notFound } from 'next/navigation';
-import { Users, Calendar, MapPin, CheckCircle, Clock } from 'lucide-react';
+import { Users, Calendar, MapPin, CheckCircle, Clock, User } from 'lucide-react';
 
 const prisma = new PrismaClient();
 
@@ -15,7 +15,8 @@ export default async function TrainingDetailsPage({ params }: { params: { id: st
           include: {
             department: true
           }
-        }
+        },
+        trainer: true
       }
     }),
     prisma.worker.count()
@@ -44,6 +45,12 @@ export default async function TrainingDetailsPage({ params }: { params: { id: st
               <Calendar className="text-blue-500" size={18} />
               <span className="font-medium">{formatDateTime(training.date)}</span>
             </div>
+            {training.trainer && (
+              <div className="flex items-center gap-2">
+                <User className="text-blue-500" size={18} />
+                <span className="font-medium">Trainer: {training.trainer.name}</span>
+              </div>
+            )}
             {training.location && (
               <div className="flex items-center gap-2">
                 <MapPin className="text-blue-500" size={18} />
@@ -112,5 +119,6 @@ export default async function TrainingDetailsPage({ params }: { params: { id: st
     </div>
   );
 }
+
 
 

@@ -1,4 +1,4 @@
-﻿import { editTraining } from '@/app/training/actions';
+import { editTraining } from '@/app/training/actions';
 import Link from 'next/link';
 import { PrismaClient } from '@prisma/client';
 import EmployeeSelect from '@/components/EmployeeSelect';
@@ -9,7 +9,7 @@ const prisma = new PrismaClient();
 export default async function EditTrainingPage({ params }: { params: { id: string } }) {
   const training = await prisma.training.findUnique({
     where: { id: params.id },
-    include: { workers: true }
+    include: { workers: true, trainer: true }
   });
 
   if (!training) {
@@ -86,6 +86,13 @@ export default async function EditTrainingPage({ params }: { params: { id: strin
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
+              Trainer (Search by Name or ID)
+            </label>
+            <EmployeeSelect mode="single" inputName="trainerId" placeholder="Search Trainer..." initialSelected={training.trainer || undefined} />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Select Employees
             </label>
             <EmployeeSelect initialSelected={training.workers} />
@@ -104,3 +111,4 @@ export default async function EditTrainingPage({ params }: { params: { id: strin
     </div>
   );
 }
+

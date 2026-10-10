@@ -62,6 +62,13 @@ export default function NewTrainingPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
+              Trainer (Search by Name or ID)
+            </label>
+            <EmployeeSelect mode="single" inputName="trainerId" placeholder="Search Trainer..." />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Select Employees
             </label>
             <EmployeeSelect />
@@ -80,4 +87,5 @@ export default function NewTrainingPage() {
     </div>
   );
 }
+
 

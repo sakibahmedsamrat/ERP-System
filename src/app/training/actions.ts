@@ -1,4 +1,4 @@
-﻿'use server'
+'use server'
 
 import { PrismaClient } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
@@ -12,6 +12,7 @@ export async function createTraining(formData: FormData) {
   const location = formData.get('location') as string;
   const dateStr = formData.get('date') as string;
   const workerIds = formData.getAll('workerIds[]') as string[];
+  const trainerId = formData.get('trainerId') as string;
   
   if (!title || !dateStr) {
     return { error: 'Title and date are required' };
@@ -26,6 +27,7 @@ export async function createTraining(formData: FormData) {
       location,
       date,
       status: 'SCHEDULED',
+      ...(trainerId ? { trainer: { connect: { id: trainerId } } } : {}),
       workers: {
         connect: workerIds.map(id => ({ id }))
       }
@@ -42,6 +44,7 @@ export async function editTraining(id: string, formData: FormData) {
   const location = formData.get('location') as string;
   const dateStr = formData.get('date') as string;
   const workerIds = formData.getAll('workerIds[]') as string[];
+  const trainerId = formData.get('trainerId') as string;
   
   if (!title || !dateStr) {
     return { error: 'Title and date are required' };
@@ -56,6 +59,7 @@ export async function editTraining(id: string, formData: FormData) {
       description,
       location,
       date,
+      trainerId: trainerId || null,
       workers: {
         set: workerIds.map(id => ({ id }))
       }
@@ -72,3 +76,4 @@ export async function deleteTraining(id: string) {
   });
   revalidatePath('/training');
 }
+

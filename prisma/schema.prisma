@@ -47,6 +47,7 @@ model Worker {
   grade      String?
   photoUrl   String?
   trainings  Training[] @relation("TrainingParticipants")
+    trainingsLed Training[] @relation("TrainingTrainer")
   signatureUrl String?
   
   // Salary Information
@@ -171,6 +172,8 @@ model Training {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   workers     Worker[]   @relation("TrainingParticipants")
+  trainerId   String?
+  trainer     Worker?    @relation("TrainingTrainer", fields: [trainerId], references: [id])
 }
 
 model Recruitment {
@@ -232,5 +235,6 @@ model Notification {
 
   user      User     @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
 }
+
 
 
