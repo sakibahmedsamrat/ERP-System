@@ -7,16 +7,17 @@ import DeleteTrainingButton from './DeleteTrainingButton';
 const prisma = new PrismaClient();
 
 export default async function TrainingPage() {
-  const trainings = await prisma.training.findMany({
-    orderBy: { date: 'asc' },
-    include: {
-      _count: {
-        select: { workers: true }
+  const [trainings, totalWorkers] = await Promise.all([
+    prisma.training.findMany({
+      orderBy: { date: 'asc' },
+      include: {
+        _count: {
+          select: { workers: true }
+        }
       }
-    }
-  });
-
-  const totalWorkers = await prisma.worker.count();
+    }),
+    prisma.worker.count()
+  ]);
 
   return (
     <div className="p-8">
@@ -104,4 +105,5 @@ export default async function TrainingPage() {
     </div>
   );
 }
+
 

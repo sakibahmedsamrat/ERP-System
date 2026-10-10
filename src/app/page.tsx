@@ -18,8 +18,6 @@ export default async function Dashboard() {
     return mods.includes(modName);
   };
 
-  const totalWorkers = await prisma.worker.count();
-  const totalCompanies = await prisma.company.count();
   let taskWhere: any = {};
   if (user && user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN') {
     taskWhere = {
@@ -29,16 +27,18 @@ export default async function Dashboard() {
       ]
     };
   }
-  const totalTasks = await prisma.task.count({ where: taskWhere });
-  const todayAttendanceCount = await prisma.attendance.count({
-    where: { status: 'PRESENT' }
-  });
-
-  const myTasks = user ? await prisma.task.findMany({
-    where: { assigneeId: user.id, status: { not: 'DONE' } },
-    orderBy: { deadline: 'asc' },
-    take: 5
-  }) : [];
+  
+  const [totalWorkers, totalCompanies, totalTasks, todayAttendanceCount, myTasks] = await Promise.all([
+    prisma.worker.count(),
+    prisma.company.count(),
+    prisma.task.count({ where: taskWhere }),
+    prisma.attendance.count({ where: { status: 'PRESENT' } }),
+    user ? prisma.task.findMany({
+      where: { assigneeId: user.id, status: { not: 'DONE' } },
+      orderBy: { deadline: 'asc' },
+      take: 5
+    }) : Promise.resolve([])
+  ]);
 
   const cards = [
     { title: "Total Employees", value: totalWorkers, icon: Users, color: "text-blue-600", bg: "bg-blue-100", mod: 'WORKERS' },
@@ -132,6 +132,7 @@ export default async function Dashboard() {
     </div>
   );
 }
+
 
 
 

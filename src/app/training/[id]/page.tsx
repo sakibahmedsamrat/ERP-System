@@ -7,21 +7,22 @@ import { Users, Calendar, MapPin, CheckCircle, Clock } from 'lucide-react';
 const prisma = new PrismaClient();
 
 export default async function TrainingDetailsPage({ params }: { params: { id: string } }) {
-  const training = await prisma.training.findUnique({
-    where: { id: params.id },
-    include: {
-      workers: {
-        include: {
-          department: true,
-          designation: true
+  const [training, totalWorkers] = await Promise.all([
+    prisma.training.findUnique({
+      where: { id: params.id },
+      include: {
+        workers: {
+          include: {
+            department: true,
+            designation: true
+          }
         }
       }
-    }
-  });
+    }),
+    prisma.worker.count()
+  ]);
 
   if (!training) notFound();
-
-  const totalWorkers = await prisma.worker.count();
   const participantCount = training.workers.length;
   const percentage = totalWorkers > 0 ? Math.round((participantCount / totalWorkers) * 100) : 0;
 
@@ -112,4 +113,5 @@ export default async function TrainingDetailsPage({ params }: { params: { id: st
     </div>
   );
 }
+
 

@@ -33,13 +33,14 @@ export default async function WorkersPage({ searchParams }: { searchParams: { wo
     queryOptions.where = whereClause;
   }
 
-  const workers = await prisma.worker.findMany(queryOptions);
-
-  const companies = await prisma.company.findMany({ select: { name: true }, distinct: ['name'] });
-  const departments = await prisma.department.findMany({ select: { name: true }, distinct: ['name'] });
-  const sections = await prisma.section.findMany({ select: { name: true }, distinct: ['name'] });
-  const subSections = await prisma.subSection.findMany({ select: { name: true }, distinct: ['name'] });
-  const designations = await prisma.worker.findMany({ where: { designation: { not: null } }, distinct: ['designation'], select: { designation: true } });
+  const [workers, companies, departments, sections, subSections, designations] = await Promise.all([
+    prisma.worker.findMany(queryOptions),
+    prisma.company.findMany({ select: { name: true }, distinct: ['name'] }),
+    prisma.department.findMany({ select: { name: true }, distinct: ['name'] }),
+    prisma.section.findMany({ select: { name: true }, distinct: ['name'] }),
+    prisma.subSection.findMany({ select: { name: true }, distinct: ['name'] }),
+    prisma.worker.findMany({ where: { designation: { not: null } }, distinct: ['designation'], select: { designation: true } })
+  ]);
 
   return (
     <div className="p-8">
@@ -209,6 +210,7 @@ export default async function WorkersPage({ searchParams }: { searchParams: { wo
     </div>
   );
 }
+
 
 
 
