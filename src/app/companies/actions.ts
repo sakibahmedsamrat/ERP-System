@@ -3,6 +3,7 @@
 import { PrismaClient } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { getSession } from '@/lib/auth';
 
 const prisma = new PrismaClient();
 
@@ -26,6 +27,10 @@ export async function createCompany(formData: FormData) {
 }
 
 export async function deleteCompany(id: string) {
+  const session = await getSession();
+  if (session?.user?.role !== 'SUPER_ADMIN') {
+    return { error: 'Unauthorized. Only Super Admin can delete companies.' };
+  }
   try {
     const workerCount = await prisma.worker.count({ where: { companyId: id } });
     if (workerCount > 0) {
@@ -45,6 +50,10 @@ export async function deleteCompany(id: string) {
 }
 
 export async function updateCompany(id: string, formData: FormData) {
+  const session = await getSession();
+  if (session?.user?.role !== 'SUPER_ADMIN') {
+    return { error: 'Unauthorized. Only Super Admin can edit companies.' };
+  }
   const name = formData.get('name') as string;
   const location = formData.get('location') as string;
 
@@ -63,3 +72,4 @@ export async function updateCompany(id: string, formData: FormData) {
   revalidatePath('/companies');
   redirect('/companies');
 }
+

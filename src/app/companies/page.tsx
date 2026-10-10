@@ -11,6 +11,7 @@ export default async function CompaniesPage() {
   const session = await getSession();
   const role = session?.user?.role;
   const isAdmin = role === 'SUPER_ADMIN' || role === 'ADMIN';
+  const isSuperAdmin = role === 'SUPER_ADMIN';
   const companies = await prisma.company.findMany({
     orderBy: { createdAt: 'desc' },
     include: {
@@ -70,14 +71,18 @@ export default async function CompaniesPage() {
                   </span>
                 </div>
                 <div className="border-l pl-4 border-gray-200 flex items-center gap-2">
-                  <Link 
-                    href={`/companies/${company.id}/edit`}
-                    className="text-blue-500 hover:text-blue-700 transition flex items-center"
-                    title="Edit Company"
-                  >
-                    <Pencil size={18} />
-                  </Link>
-                  <DeleteCompanyButton id={company.id} onDelete={deleteCompany} />
+                  {isSuperAdmin && (
+                      <>
+                        <Link 
+                          href={/companies//edit}
+                          className="text-blue-500 hover:text-blue-700 transition flex items-center"
+                          title="Edit Company"
+                        >
+                          <Pencil size={18} />
+                        </Link>
+                        <DeleteCompanyButton id={company.id} onDelete={deleteCompany} />
+                      </>
+                    )}
                 </div>
               </div>
             </div>
@@ -127,4 +132,5 @@ export default async function CompaniesPage() {
     </div>
   );
 }
+
 

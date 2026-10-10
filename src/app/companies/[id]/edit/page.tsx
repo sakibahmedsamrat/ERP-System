@@ -1,10 +1,15 @@
 import { PrismaClient } from '@prisma/client';
 import Link from 'next/link';
 import { updateCompany } from '../../actions';
+import { getSession } from '@/lib/auth';
 
 const prisma = new PrismaClient();
 
 export default async function EditCompanyPage({ params }: { params: { id: string } }) {
+  const session = await getSession();
+  if (session?.user?.role !== 'SUPER_ADMIN') {
+    return <div className="p-8 text-center text-red-600 font-bold">Access Denied. Only Super Admin can edit companies.</div>;
+  }
   const company = await prisma.company.findUnique({ where: { id: params.id } });
 
   if (!company) {
@@ -64,3 +69,4 @@ export default async function EditCompanyPage({ params }: { params: { id: string
     </div>
   );
 }
+
