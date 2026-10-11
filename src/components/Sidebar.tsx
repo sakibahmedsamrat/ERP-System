@@ -49,7 +49,7 @@ export default function Sidebar({ user }: { user?: any }) {
   };
 
   return (
-    <div className="w-72 bg-[#0F172A] text-white min-h-screen flex flex-col print:hidden shadow-2xl relative overflow-hidden">
+    <div className="w-72 bg-[#0F172A] text-white h-screen shrink-0 flex flex-col print:hidden shadow-2xl relative overflow-hidden">
       {/* Decorative background gradients */}
       <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-blue-600/20 to-transparent pointer-events-none"></div>
       
