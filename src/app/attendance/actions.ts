@@ -1,10 +1,10 @@
 'use server'
 
-import { PrismaClient } from '@prisma/client';
+
+import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
-const prisma = new PrismaClient();
 
 export async function markAttendance(formData: FormData) {
   const dateStr = formData.get('date') as string;

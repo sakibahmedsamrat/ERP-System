@@ -1,3 +1,4 @@
+import prisma from '@/lib/prisma';
 export const dynamic = 'force-dynamic';
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
@@ -6,10 +7,8 @@ import MainLayout from "@/components/MainLayout";
 import { getSession } from "@/lib/auth";
 import NextTopLoader from 'nextjs-toploader';
 
-import { PrismaClient } from '@prisma/client';
 
 const inter = Inter({ subsets: ["latin"] });
-const prisma = new PrismaClient();
 
 export const metadata: Metadata = {
   title: "ERP System",

@@ -1,11 +1,10 @@
+import prisma from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
 import { Settings, Lock } from 'lucide-react';
 import { changePassword } from './actions';
 import PasswordChangeForm from './PasswordChangeForm';
 import ProfileImageUpload from './ProfileImageUpload';
-import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
 
 export default async function SettingsPage() {
   const session = await getSession();

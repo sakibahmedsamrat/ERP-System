@@ -1,8 +1,7 @@
+import prisma from '@/lib/prisma';
 import { createTask } from '../actions';
 import Link from 'next/link';
-import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
 
 export default async function NewTaskPage() {
   const users = await prisma.user.findMany({ select: { id: true, name: true, userId: true }, orderBy: { name: 'asc' } });

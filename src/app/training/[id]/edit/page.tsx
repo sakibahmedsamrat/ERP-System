@@ -1,10 +1,9 @@
+import prisma from '@/lib/prisma';
 import { editTraining } from '@/app/training/actions';
 import Link from 'next/link';
-import { PrismaClient } from '@prisma/client';
 import EmployeeSelect from '@/components/EmployeeSelect';
 import { notFound } from 'next/navigation';
 
-const prisma = new PrismaClient();
 
 export default async function EditTrainingPage({ params }: { params: { id: string } }) {
   const training = await prisma.training.findUnique({

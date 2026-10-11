@@ -1,11 +1,10 @@
+import prisma from '@/lib/prisma';
 import Link from 'next/link';
-import { PrismaClient } from '@prisma/client';
 import { getSession } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { updateUser } from '../../actions';
 import EditUserForm from './EditUserForm';
 
-const prisma = new PrismaClient();
 
 export default async function EditUserPage({ params }: { params: { id: string } }) {
   const session = await getSession();

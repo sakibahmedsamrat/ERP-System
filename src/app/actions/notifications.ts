@@ -1,10 +1,10 @@
 ﻿'use server'
 
-import { PrismaClient } from '@prisma/client';
+
+import prisma from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 
-const prisma = new PrismaClient();
 
 export async function getNotifications() {
   const session = await getSession();

@@ -1,12 +1,11 @@
+import prisma from '@/lib/prisma';
 import Link from 'next/link';
-import { PrismaClient } from '@prisma/client';
 import { Plus, Shield, User, Pencil } from 'lucide-react';
 import { getSession } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import DeleteUserButton from './DeleteUserButton';
 import { deleteUser } from './actions';
 
-const prisma = new PrismaClient();
 
 export default async function UsersPage() {
   const session = await getSession();

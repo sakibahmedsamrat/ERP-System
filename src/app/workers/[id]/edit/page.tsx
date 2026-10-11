@@ -1,11 +1,10 @@
+import prisma from '@/lib/prisma';
 import { updateWorker } from '../../actions';
 import Link from 'next/link';
-import { PrismaClient } from '@prisma/client';
 import DynamicCompanySelectors from '@/components/DynamicCompanySelectors';
 import SalaryFields from '../../new/SalaryFields';
 import { notFound } from 'next/navigation';
 
-const prisma = new PrismaClient();
 
 export default async function EditWorkerPage({ params }: { params: { id: string } }) {
   const worker = await prisma.worker.findUnique({

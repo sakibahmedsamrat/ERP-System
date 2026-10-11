@@ -1,11 +1,10 @@
+import prisma from '@/lib/prisma';
 import Link from 'next/link';
-import { PrismaClient } from '@prisma/client';
 import { getSession } from '@/lib/auth';
 import { Plus, Upload, Layers, Pencil } from 'lucide-react';
 import DeleteCompanyButton from '@/components/DeleteCompanyButton';
 import { deleteCompany } from './actions';
 
-const prisma = new PrismaClient();
 
 export default async function CompaniesPage() {
   const session = await getSession();

@@ -1,9 +1,8 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { formatDateTime } from '@/lib/formatDate';
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
 
-const prisma = new PrismaClient();
 
 export default async function ActivityLogsPage() {
   const session = await getSession();

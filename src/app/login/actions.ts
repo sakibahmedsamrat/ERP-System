@@ -1,11 +1,11 @@
 'use server'
 
-import { PrismaClient } from '@prisma/client';
+
+import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { login } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 
-const prisma = new PrismaClient();
 
 export async function loginAction(prevState: any, formData: FormData) {
   const userId = formData.get('userId') as string;

@@ -1,8 +1,7 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { formatDate } from '@/lib/formatDate';
 import { NextResponse } from 'next/server';
 
-const prisma = new PrismaClient();
 
 export async function GET() {
   const workers = await prisma.worker.findMany({

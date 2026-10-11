@@ -1,8 +1,7 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { markAttendance } from '../actions';
 import Link from 'next/link';
 
-const prisma = new PrismaClient();
 
 export default async function MarkAttendancePage({ searchParams }: { searchParams: { companyId?: string } }) {
   const companies = await prisma.company.findMany({ orderBy: { name: 'asc' } });

@@ -1,11 +1,10 @@
+import prisma from '@/lib/prisma';
 import Link from 'next/link';
-import { PrismaClient } from '@prisma/client';
 import { Plus, User, Building2, Trash2, Search, Download, Upload, Hash, Briefcase, Layers, Network, FolderTree, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { deleteWorker } from './actions';
 import { getSession } from '@/lib/auth';
 import DeleteWorkerButton from '@/components/DeleteWorkerButton';
 
-const prisma = new PrismaClient();
 
 export default async function WorkersPage({ 
   searchParams 

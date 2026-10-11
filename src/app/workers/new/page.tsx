@@ -1,10 +1,9 @@
+import prisma from '@/lib/prisma';
 import { createWorker } from '../actions';
 import Link from 'next/link';
-import { PrismaClient } from '@prisma/client';
 import DynamicCompanySelectors from '@/components/DynamicCompanySelectors';
 import SalaryFields from './SalaryFields';
 
-const prisma = new PrismaClient();
 
 export default async function NewWorkerPage() {
   const companies = await prisma.company.findMany({ 

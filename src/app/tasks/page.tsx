@@ -1,11 +1,10 @@
+import prisma from '@/lib/prisma';
 import Link from 'next/link';
-import { PrismaClient } from '@prisma/client';
 import { formatDate } from '@/lib/formatDate';
 import { Plus, Clock, Trash2, CheckCircle } from 'lucide-react';
 import { getSession } from '@/lib/auth';
 import { deleteTask, markTaskDone } from './actions';
 
-const prisma = new PrismaClient();
 
 export default async function TasksPage() {
   const session = await getSession();

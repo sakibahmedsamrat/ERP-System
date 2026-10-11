@@ -1,7 +1,6 @@
-﻿import { PrismaClient } from '@prisma/client';
-import { getSession } from './auth';
+import prisma from '@/lib/prisma';
+﻿import { getSession } from './auth';
 
-const prisma = new PrismaClient();
 
 export async function logAction(module: string, action: string, details: string) {
   try {

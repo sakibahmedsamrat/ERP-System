@@ -1,11 +1,10 @@
+import prisma from '@/lib/prisma';
 import Link from 'next/link';
 import { formatDate } from '@/lib/formatDate';
-import { PrismaClient } from '@prisma/client';
 import { Plus } from 'lucide-react';
 import DeleteSettlementButton from '@/components/DeleteSettlementButton';
 import { deleteSettlement } from './actions';
 
-const prisma = new PrismaClient();
 
 export default async function SettlementsPage() {
   const settlements = await prisma.settlement.findMany({

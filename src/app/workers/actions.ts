@@ -1,13 +1,13 @@
 'use server'
 
-import { PrismaClient } from '@prisma/client';
+
+import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { logAction } from '@/lib/audit';
 import { writeFile } from 'fs/promises';
 import { join } from 'path';
 
-const prisma = new PrismaClient();
 
 async function uploadFile(file: any): Promise<string | null> {
   if (!file || !file.name || file.size === 0) return null;

@@ -1,10 +1,9 @@
+import prisma from '@/lib/prisma';
 import Link from 'next/link';
-import { PrismaClient } from '@prisma/client';
 import { formatDateTime } from '@/lib/formatDate';
 import { Plus, MapPin, Calendar, Eye, Edit, Trash2, Users } from 'lucide-react';
 import DeleteTrainingButton from './DeleteTrainingButton';
 
-const prisma = new PrismaClient();
 
 export default async function TrainingPage() {
   const [trainings, totalWorkers] = await Promise.all([

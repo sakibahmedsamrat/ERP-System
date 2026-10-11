@@ -1,8 +1,7 @@
+import prisma from '@/lib/prisma';
 import Link from 'next/link';
-import { PrismaClient } from '@prisma/client';
 import { Plus } from 'lucide-react';
 
-const prisma = new PrismaClient();
 
 export default async function RecruitmentPage() {
   const recruitments = await prisma.recruitment.findMany({

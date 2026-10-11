@@ -1,9 +1,8 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import Link from 'next/link';
 import { updateCompany } from '../../actions';
 import { getSession } from '@/lib/auth';
 
-const prisma = new PrismaClient();
 
 export default async function EditCompanyPage({ params }: { params: { id: string } }) {
   const session = await getSession();

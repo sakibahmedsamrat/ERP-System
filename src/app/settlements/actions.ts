@@ -1,11 +1,11 @@
 'use server'
 
-import { PrismaClient } from '@prisma/client';
+
+import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { logAction } from '@/lib/audit';
 
-const prisma = new PrismaClient();
 
 export async function createSettlement(formData: FormData) {
   const workerId = formData.get('workerId') as string;

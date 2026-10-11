@@ -1,8 +1,7 @@
+import prisma from '@/lib/prisma';
 import Link from 'next/link';
-import { PrismaClient } from '@prisma/client';
 import { ClipboardCheck } from 'lucide-react';
 
-const prisma = new PrismaClient();
 
 export default async function AttendancePage({ searchParams }: { searchParams: { date?: string } }) {
   const dateStr = searchParams.date || new Date().toISOString().split('T')[0];

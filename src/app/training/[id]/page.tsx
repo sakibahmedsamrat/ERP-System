@@ -1,10 +1,9 @@
+import prisma from '@/lib/prisma';
 import Link from 'next/link';
-import { PrismaClient } from '@prisma/client';
 import { formatDateTime } from '@/lib/formatDate';
 import { notFound } from 'next/navigation';
 import { Users, Calendar, MapPin, CheckCircle, Clock, User } from 'lucide-react';
 
-const prisma = new PrismaClient();
 
 export default async function TrainingDetailsPage({ params }: { params: { id: string } }) {
   const [training, totalWorkers] = await Promise.all([

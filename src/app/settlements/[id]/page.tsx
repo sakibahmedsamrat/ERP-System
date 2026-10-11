@@ -1,9 +1,8 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import Link from 'next/link';
 import { formatDate } from '@/lib/formatDate';
 import PrintButton from './PrintButton';
 
-const prisma = new PrismaClient();
 
 export default async function SettlementPrintPage({ params }: { params: { id: string } }) {
   const settlement = await prisma.settlement.findUnique({

@@ -1,8 +1,7 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { notFound, redirect } from 'next/navigation';
 import { formatDate } from '@/lib/formatDate';
 
-const prisma = new PrismaClient();
 
 export default async function IDCardPage({ params }: { params: { id: string } }) {
   const worker = await prisma.worker.findUnique({

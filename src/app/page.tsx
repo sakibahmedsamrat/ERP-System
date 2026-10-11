@@ -1,10 +1,9 @@
+import prisma from '@/lib/prisma';
 import { Users, Building2, CalendarCheck, CheckSquare, Clock } from 'lucide-react';
-import { PrismaClient } from '@prisma/client';
 import { formatDate } from '@/lib/formatDate';
 import { getSession } from '@/lib/auth';
 import { markTaskDone } from './tasks/actions';
 
-const prisma = new PrismaClient();
 
 export default async function Dashboard() {
   const session = await getSession();
