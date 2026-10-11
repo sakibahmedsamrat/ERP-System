@@ -256,6 +256,7 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
   const totalPayAmount = payableSubTotal - deductionSubTotal;
 
   const [amountInWords, setAmountInWords] = useState('');
+  const [bankAccNo, setBankAccNo] = useState('');
 
   useEffect(() => {
     if (totalPayAmount > 0) {
@@ -277,6 +278,7 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
         if (data.lastWorkingDay) setLastWorkingDay(new Date(data.lastWorkingDay).toISOString().split('T')[0]);
         setServiceAge(data.serviceAge || '');
         setAmountInWords(data.amountInWords || '');
+        setBankAccNo(data.bankAccNo || '');
         
         setFormVals({
           grossSalary: data.grossSalary,
@@ -334,6 +336,7 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
       setServiceAgeMonths(0);
       setServiceAgeDays(0);
       setAmountInWords('');
+      setBankAccNo('');
       setFormVals({
         grossSalary: 0,
         basicSalary: 0,
@@ -506,6 +509,10 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
 
           <div className="flex items-center mb-10">
             <strong className="w-40">Amount in Word :</strong> <input type="text" name="amountInWords" value={amountInWords} onChange={(e) => setAmountInWords(e.target.value)} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" />
+          </div>
+
+          <div className="flex items-center mb-10">
+            <strong className="w-40">Banck Acc. No. :</strong> <input type="text" name="bankAccNo" value={bankAccNo} onChange={(e) => setBankAccNo(e.target.value)} placeholder="Enter Bank Account Number" className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50 font-medium text-gray-800" />
           </div>
 
           <div className="pt-6 border-t border-gray-200 flex justify-between items-center gap-4">

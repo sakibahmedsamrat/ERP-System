@@ -136,9 +136,14 @@ export default async function SettlementPrintPage({ params }: { params: { id: st
           <span className="flex-1 text-left">{settlement.totalPayAmount || 0} Taka</span>
         </div>
 
-        <div className="flex font-bold text-[15px] print:text-[14px] mb-12 print:mb-6">
+        <div className="flex font-bold text-[15px] print:text-[14px] mb-6 print:mb-4">
           <strong className="w-40 print:w-32 text-left">Amount in Word :</strong> 
           <span className="border-b border-dashed border-gray-400 flex-1 px-2">{settlement.amountInWords || ''}</span>
+        </div>
+
+        <div className="flex font-bold text-[15px] print:text-[14px] mb-8 print:mb-6">
+          <strong className="w-40 print:w-32 text-left">Banck Acc. No. :</strong> 
+          <span className="border-b border-dashed border-gray-400 flex-1 px-2 min-h-[24px] inline-block">{settlement.bankAccNo || ''}</span>
         </div>
 
         <div className="mt-16 print:mt-10 flex justify-start mb-8 print:mb-4">

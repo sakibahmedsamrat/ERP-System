@@ -154,6 +154,7 @@ model Settlement {
   deductionSubTotal Float? @default(0)
   totalPayAmount    Float? @default(0)
   amountInWords     String?
+  bankAccNo         String?
   
   // Approvals & Status
   paymentReceiverDate DateTime?

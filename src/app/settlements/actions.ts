@@ -52,6 +52,7 @@ export async function createSettlement(formData: FormData) {
       deductionSubTotal: getFloat('deductionSubTotal'),
       totalPayAmount: getFloat('totalPayAmount'),
       amountInWords: formData.get('amountInWords') as string,
+      bankAccNo: (formData.get('bankAccNo') as string) || null,
       
       paymentReceiverDate: getDate('paymentReceiverDate'),
       status: 'PENDING'
@@ -117,6 +118,7 @@ export async function updateSettlement(id: string, formData: FormData) {
       deductionSubTotal: getFloat('deductionSubTotal'),
       totalPayAmount: getFloat('totalPayAmount'),
       amountInWords: formData.get('amountInWords') as string,
+      bankAccNo: (formData.get('bankAccNo') as string) || null,
       
       paymentReceiverDate: getDate('paymentReceiverDate'),
     }
