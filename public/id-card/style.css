@@ -474,9 +474,9 @@ html[data-theme="dark"] .theme-icon.icon-moon {
    ---------------------------------------------------- */
 .app-container {
   display: grid;
-  grid-template-columns: 480px 1fr;
+  grid-template-columns: 440px 1fr;
   gap: 28px;
-  padding: 24px 36px;
+  padding: 20px 28px;
   max-width: 1720px;
   margin: 0 auto;
   width: 100%;
@@ -484,11 +484,11 @@ html[data-theme="dark"] .theme-icon.icon-moon {
   contain: layout style;
 }
 
-@media (max-width: 1280px) {
+@media (max-width: 860px) {
   .app-container {
     grid-template-columns: 1fr;
-    padding: 20px 24px;
-    gap: 24px;
+    padding: 16px;
+    gap: 20px;
   }
 }
 
@@ -514,7 +514,7 @@ html[data-theme="dark"] .theme-icon.icon-moon {
   top: 92px;
 }
 
-@media (max-width: 1280px) {
+@media (max-width: 860px) {
   .form-panel {
     height: auto;
     position: static;
@@ -1888,7 +1888,41 @@ html.embedded-mode .app-header {
 }
 
 html.embedded-mode .app-container {
-  padding-top: 10px !important;
+  display: grid !important;
+  grid-template-columns: minmax(380px, 440px) 1fr !important;
+  gap: 24px !important;
+  padding: 8px 16px 24px 16px !important;
   max-width: 100% !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+html.embedded-mode .form-panel {
+  height: auto !important;
+  max-height: 960px !important;
+  position: sticky !important;
+  top: 8px !important;
+}
+
+html.embedded-mode .preview-panel {
+  min-width: 0 !important;
+}
+
+html.embedded-mode .cards-container {
+  gap: 24px !important;
+  justify-content: center !important;
+  flex-wrap: wrap !important;
+}
+
+html.embedded-mode .id-card-canvas {
+  width: 310px !important;
+  max-width: 100% !important;
+}
+
+@media (max-width: 860px) {
+  html.embedded-mode .app-container {
+    grid-template-columns: 1fr !important;
+    padding: 10px !important;
+  }
 }
 

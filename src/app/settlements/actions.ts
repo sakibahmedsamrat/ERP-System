@@ -21,12 +21,26 @@ export async function createSettlement(formData: FormData) {
     return val ? new Date(val) : null;
   };
 
-  await prisma.settlement.create({
-    data: {
-      workerId,
-      resignApplyDate: getDate('resignApplyDate'),
-      lastWorkingDay: getDate('lastWorkingDay'),
-      serviceAge: formData.get('serviceAge') as string,
+    const joinDateVal = formData.get('joinDate') as string;
+    if (joinDateVal && workerId) {
+      const parsedJoin = new Date(joinDateVal);
+      if (!isNaN(parsedJoin.getTime())) {
+        await prisma.worker.update({
+          where: { id: workerId },
+          data: { joinDate: parsedJoin }
+        }).catch(() => {});
+      }
+    }
+
+    let serviceAge = (formData.get('serviceAge') as string) || '';
+    if (serviceAge === 'Invalid Date') serviceAge = '';
+
+    await prisma.settlement.create({
+      data: {
+        workerId,
+        resignApplyDate: getDate('resignApplyDate'),
+        lastWorkingDay: getDate('lastWorkingDay'),
+        serviceAge,
       
       grossSalary: getFloat('grossSalary'),
       basicSalary: getFloat('basicSalary'),
@@ -87,12 +101,27 @@ export async function updateSettlement(id: string, formData: FormData) {
     return val ? new Date(val) : null;
   };
 
-  await prisma.settlement.update({
-    where: { id },
-    data: {
-      resignApplyDate: getDate('resignApplyDate'),
-      lastWorkingDay: getDate('lastWorkingDay'),
-      serviceAge: formData.get('serviceAge') as string,
+    const workerId = formData.get('workerId') as string;
+    const joinDateVal = formData.get('joinDate') as string;
+    if (joinDateVal && workerId) {
+      const parsedJoin = new Date(joinDateVal);
+      if (!isNaN(parsedJoin.getTime())) {
+        await prisma.worker.update({
+          where: { id: workerId },
+          data: { joinDate: parsedJoin }
+        }).catch(() => {});
+      }
+    }
+
+    let serviceAge = (formData.get('serviceAge') as string) || '';
+    if (serviceAge === 'Invalid Date') serviceAge = '';
+
+    await prisma.settlement.update({
+      where: { id },
+      data: {
+        resignApplyDate: getDate('resignApplyDate'),
+        lastWorkingDay: getDate('lastWorkingDay'),
+        serviceAge,
       
       grossSalary: getFloat('grossSalary'),
       basicSalary: getFloat('basicSalary'),

@@ -15,7 +15,7 @@ export default function IdCardsClient({
   const [activeTab, setActiveTab] = useState<'employee' | 'visitor'>(initialTab);
 
   return (
-    <div className="p-4 md:p-6 w-full max-w-[1720px] mx-auto space-y-4">
+    <div className="p-2 sm:p-4 md:p-6 w-full max-w-full mx-auto space-y-4">
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2">
         <div>

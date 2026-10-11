@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma';
 import Link from 'next/link';
-import { formatDate } from '@/lib/formatDate';
+import { formatDate, calculateServiceAge } from '@/lib/formatDate';
 import PrintButton from './PrintButton';
 
 
@@ -77,8 +77,14 @@ export default async function SettlementPrintPage({ params }: { params: { id: st
           <div className="flex"><strong className="w-44 print:w-36">Last Working Day :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{formatDate(settlement.lastWorkingDay)}</span></div>
           <div className="flex"><strong className="w-44 print:w-36">House Rent :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{settlement.houseRent || 0}</span></div>
           
-          {/* Row 7 */}
-          <div className="flex"><strong className="w-44 print:w-36">Service Age :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{settlement.serviceAge || ''}</span></div>
+          <div className="flex">
+            <strong className="w-44 print:w-36">Service Age :</strong>
+            <span className="border-b border-dashed border-gray-400 flex-1">
+              {settlement.serviceAge && settlement.serviceAge !== 'Invalid Date'
+                ? settlement.serviceAge
+                : (w?.joinDate && settlement.lastWorkingDay ? calculateServiceAge(w.joinDate, settlement.lastWorkingDay).text : '')}
+            </span>
+          </div>
           <div className="flex"><strong className="w-44 print:w-36">Medical Allowance :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{settlement.medicalAllowance || 0}</span></div>
           
           {/* Row 8 */}

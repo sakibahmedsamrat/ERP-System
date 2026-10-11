@@ -3,6 +3,7 @@
 
 import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
+import { parseFlexibleDate } from '@/lib/formatDate';
 
 
 export async function bulkImportWorkers(workers: any[]) {
@@ -80,8 +81,8 @@ export async function bulkImportWorkers(workers: any[]) {
       let jDate = new Date();
       const rawDate = getVal(['joindate', 'join date', 'date of join']);
       if (rawDate) {
-         const d = new Date(rawDate);
-         if (!isNaN(d.getTime())) jDate = d;
+         const d = parseFlexibleDate(rawDate);
+         if (d) jDate = d;
       }
 
       const rawGross = parseFloat(getVal(['grosssalary', 'gross salary', 'gross']) || '0');

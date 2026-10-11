@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { formatDate } from '@/lib/formatDate';
+import { formatDate, calculateServiceAge, parseFlexibleDate } from '@/lib/formatDate';
 import Link from 'next/link';
 import { Search, Save, Check, RotateCcw } from 'lucide-react';
 import { createSettlement } from '../actions';
@@ -35,48 +35,35 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
   const [loading, setLoading] = useState(false);
   const [lastWorkingDay, setLastWorkingDay] = useState('');
   const [resignApplyDate, setResignApplyDate] = useState('');
+  const [joinDateOverride, setJoinDateOverride] = useState('');
   const [serviceAge, setServiceAge] = useState('');
+  const [isDateInverted, setIsDateInverted] = useState(false);
 
   useEffect(() => {
-    if (selectedWorker?.joinDate && lastWorkingDay) {
-      const start = new Date(selectedWorker.joinDate);
-      const end = new Date(lastWorkingDay);
-      if (end >= start) {
-        let years = end.getFullYear() - start.getFullYear();
-        let months = end.getMonth() - start.getMonth();
-        let days = end.getDate() - start.getDate();
-
-        if (days < 0) {
-          months -= 1;
-          const prevMonth = new Date(end.getFullYear(), end.getMonth(), 0);
-          days += prevMonth.getDate();
-        }
-        if (months < 0) {
-          years -= 1;
-          months += 12;
-        }
-
-        let parts = [];
-        if (years > 0) parts.push(`${years} Years`);
-        if (months > 0) parts.push(`${months} Months`);
-        if (days > 0) parts.push(`${days} Days`);
-        setServiceAge(parts.join(', ') || '0 Days');
-        setServiceAgeYears(years);
-        setServiceAgeMonths(months);
-        setServiceAgeDays(days);
+    const effectiveJoin = joinDateOverride || selectedWorker?.joinDate;
+    if (effectiveJoin && lastWorkingDay) {
+      const res = calculateServiceAge(effectiveJoin, lastWorkingDay);
+      if (res.isValid) {
+        setServiceAge(res.text);
+        setServiceAgeYears(res.years);
+        setServiceAgeMonths(res.months);
+        setServiceAgeDays(res.days);
+        setIsDateInverted(res.isInverted);
       } else {
-        setServiceAge('Invalid Date');
+        setServiceAge('');
         setServiceAgeYears(0);
         setServiceAgeMonths(0);
         setServiceAgeDays(0);
+        setIsDateInverted(false);
       }
     } else {
       setServiceAge('');
       setServiceAgeYears(0);
       setServiceAgeMonths(0);
       setServiceAgeDays(0);
+      setIsDateInverted(false);
     }
-  }, [selectedWorker, lastWorkingDay]);
+  }, [selectedWorker, lastWorkingDay, joinDateOverride]);
 
   // Form states for live calculation
   const [formVals, setFormVals] = useState({
@@ -128,6 +115,16 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
     setSelectedWorker(worker);
     setSearchResults([]);
     setSearchQuery('');
+    if (worker.joinDate) {
+      const parsed = parseFlexibleDate(worker.joinDate);
+      if (parsed) {
+        setJoinDateOverride(parsed.toISOString().split('T')[0]);
+      } else {
+        setJoinDateOverride('');
+      }
+    } else {
+      setJoinDateOverride('');
+    }
     setFormVals(prev => ({
       ...prev,
       grossSalary: worker.grossSalary || 0,
@@ -276,7 +273,16 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
         setSelectedWorker(data.worker);
         if (data.resignApplyDate) setResignApplyDate(new Date(data.resignApplyDate).toISOString().split('T')[0]);
         if (data.lastWorkingDay) setLastWorkingDay(new Date(data.lastWorkingDay).toISOString().split('T')[0]);
-        setServiceAge(data.serviceAge || '');
+        if (data.worker?.joinDate) {
+          const parsed = parseFlexibleDate(data.worker.joinDate);
+          if (parsed) setJoinDateOverride(parsed.toISOString().split('T')[0]);
+        }
+        let currentServiceAge = data.serviceAge || '';
+        if ((!currentServiceAge || currentServiceAge === 'Invalid Date') && data.worker?.joinDate && data.lastWorkingDay) {
+          const calc = calculateServiceAge(data.worker.joinDate, data.lastWorkingDay);
+          if (calc.isValid) currentServiceAge = calc.text;
+        }
+        setServiceAge(currentServiceAge);
         setAmountInWords(data.amountInWords || '');
         setBankAccNo(data.bankAccNo || '');
         
@@ -430,7 +436,17 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
             <div className="flex"><strong className="w-40">Section :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{selectedWorker.section?.name || ''}</span></div>
             
             {/* Row 4 */}
-            <div className="flex"><strong className="w-40">Join Date :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{formatDate(selectedWorker.joinDate)}</span></div>
+            <div className="flex items-center">
+              <strong className="w-40">Join Date :</strong>
+              <input
+                type="date"
+                name="joinDate"
+                value={joinDateOverride}
+                onChange={(e) => setJoinDateOverride(e.target.value)}
+                className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50"
+                title="Employee Join Date (editable if adjustments needed)"
+              />
+            </div>
             <div className="flex"><strong className="w-40">Sub-Section :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{selectedWorker.subSection?.name || ''}</span></div>
             
             {/* Row 5 */}
@@ -442,7 +458,28 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
             <div className="flex items-center"><strong className="w-40">House Rent :</strong> <input type="number" name="houseRent" defaultValue={selectedWorker.houseRent || 0} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
             
             {/* Row 7 */}
-            <div className="flex items-center"><strong className="w-40">Service Age :</strong> <input type="text" name="serviceAge" value={serviceAge} readOnly className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50 text-blue-700 font-bold" /></div>
+            <div className="flex items-center">
+              <strong className="w-40">Service Age :</strong>
+              <div className="flex-1 flex flex-col">
+                <input
+                  type="text"
+                  name="serviceAge"
+                  value={serviceAge}
+                  onChange={(e) => {
+                    setServiceAge(e.target.value);
+                    const m = e.target.value.match(/(\d+)\s*(?:years|year|yr)/i);
+                    if (m) setServiceAgeYears(parseInt(m[1], 10));
+                  }}
+                  className="border-b border-dashed border-gray-400 w-full outline-none px-1 bg-gray-50 text-blue-700 font-bold"
+                  placeholder="Auto-calculated or enter manually..."
+                />
+                {isDateInverted && (
+                  <span className="text-[11px] text-amber-600 font-semibold mt-0.5">
+                    ⚠️ Note: Last Working Day is earlier than Join Date. Please verify.
+                  </span>
+                )}
+              </div>
+            </div>
             <div className="flex items-center"><strong className="w-40">Medical Allowance :</strong> <input type="number" name="medicalAllowance" defaultValue={selectedWorker.medicalAllowance || 0} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
             
             {/* Row 8 */}
