@@ -12,6 +12,7 @@ export default function Header({ user }: { user?: any }) {
   const getPageTitle = () => {
     if (pathname === '/') return 'Dashboard';
     const path = pathname.split('/')[1];
+    if (path === 'id-cards') return 'ID Card';
     return path.charAt(0).toUpperCase() + path.slice(1);
   };
 

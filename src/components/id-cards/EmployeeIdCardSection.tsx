@@ -1,12 +1,14 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { Search, User, X, CheckCircle2, RefreshCw } from 'lucide-react';
 import { formatDate } from '@/lib/formatDate';
 
-export default function EmployeeIdCardSection({ initialWorkerId }: { initialWorkerId?: string }) {
-  const searchParams = useSearchParams();
+export default function EmployeeIdCardSection({ 
+  searchParams 
+}: { 
+  searchParams?: Record<string, string | undefined> 
+}) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -14,7 +16,13 @@ export default function EmployeeIdCardSection({ initialWorkerId }: { initialWork
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  const initialParams = searchParams?.toString();
+  const queryParams = new URLSearchParams();
+  if (searchParams) {
+    Object.entries(searchParams).forEach(([k, v]) => {
+      if (v) queryParams.set(k, v);
+    });
+  }
+  const initialParams = queryParams.toString();
   const iframeSrc = `/id-card/index.html?embedded=true${initialParams ? '&' + initialParams : ''}`;
 
   // Live Employee Search
