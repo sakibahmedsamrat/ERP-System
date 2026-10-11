@@ -25,6 +25,6 @@ export default async function IDCardPage({ params }: { params: { id: string } })
     nid: worker.nationalId || ''
   });
 
-  redirect(`/id-card/index.html?${queryParams.toString()}`);
+  redirect(`/id-cards?tab=employee&${queryParams.toString()}`);
 }
 

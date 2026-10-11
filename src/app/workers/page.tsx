@@ -223,13 +223,6 @@ export default async function WorkersPage({
                 <td className="p-4 text-gray-600">{worker.designation || '-'}</td>
                 <td className="p-4 text-right flex justify-end gap-2">
                   <Link 
-                    href={`/workers/${worker.id}/id-card`} 
-                    className="text-xs bg-indigo-100 text-indigo-700 hover:bg-indigo-200 px-3 py-1.5 rounded transition"
-                    target="_blank"
-                  >
-                    ID Card
-                  </Link>
-                  <Link 
                     href={`/workers/${worker.id}/edit`} 
                     className="text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-1.5 rounded transition"
                   >

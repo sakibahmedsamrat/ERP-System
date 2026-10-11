@@ -14,7 +14,8 @@ import {
   Shield,
   Settings,
   Activity,
-  Layers
+  Layers,
+  Contact
 } from 'lucide-react';
 import { logoutAction } from '@/app/logout/actions';
 
@@ -65,6 +66,7 @@ export default function Sidebar({ user }: { user?: any }) {
         <NavItem href="/" icon={LayoutDashboard} label="Dashboard" />
         
         {hasModule('WORKERS') && <NavItem href="/workers" icon={Users} label="Employees" />}
+        {(hasModule('IDCARD') || hasModule('WORKERS')) && <NavItem href="/id-cards" icon={Contact} label="ID Card" />}
         {hasModule('COMPANIES') && <NavItem href="/companies" icon={Building2} label="Companies" />}
         {hasModule('ATTENDANCE') && <NavItem href="/attendance" icon={CalendarCheck} label="Attendance" />}
         {hasModule('SETTLEMENTS') && <NavItem href="/settlements" icon={CreditCard} label="Settlements" />}

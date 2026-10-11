@@ -1688,3 +1688,37 @@ initLiveBackground();
 
 
 
+
+
+// Listen for postMessage from parent ERP application
+window.addEventListener('message', function(event) {
+  if (event.data && event.data.type === 'LOAD_EMPLOYEE') {
+    const p = event.data.payload || {};
+    if (p.name !== undefined) state.name = p.name;
+    if (p.designation !== undefined) state.designation = p.designation;
+    if (p.section !== undefined) state.section = p.section;
+    if (p.id !== undefined) state.employeeId = p.id;
+    if (p.joinDate !== undefined) state.dateOfJoin = p.joinDate;
+    if (p.blood !== undefined) state.bloodGroup = p.blood;
+    if (p.phone !== undefined) state.emergencyContact = p.phone;
+    if (p.nid !== undefined) state.nid = p.nid;
+
+    if (p.photoUrl) {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = function() {
+        state.photoImg = img;
+        state.photoScale = 1.0;
+        state.photoOffsetX = 0;
+        state.photoOffsetY = 0;
+        if (typeof updatePhotoUploaderUI === 'function') updatePhotoUploaderUI();
+        if (typeof scheduleRenderFront === 'function') scheduleRenderFront();
+      };
+      img.src = p.photoUrl;
+    }
+
+    if (typeof syncInputsFromState === 'function') syncInputsFromState();
+    if (typeof scheduleRenderFront === 'function') scheduleRenderFront();
+    if (typeof scheduleRenderBack === 'function') scheduleRenderBack();
+  }
+});

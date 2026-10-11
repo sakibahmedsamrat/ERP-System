@@ -1869,3 +1869,26 @@ body::-webkit-scrollbar,
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ----------------------------------------------------
+   Embedded ERP Mode
+   ---------------------------------------------------- */
+html.embedded-mode,
+html.embedded-mode body {
+  background: #F4F7FE !important;
+  background-color: #F4F7FE !important;
+  min-height: auto !important;
+}
+
+html.embedded-mode .liquid-background,
+html.embedded-mode #liveBackgroundCanvas,
+html.embedded-mode .theme-ripple-overlay,
+html.embedded-mode .app-header {
+  display: none !important;
+}
+
+html.embedded-mode .app-container {
+  padding-top: 10px !important;
+  max-width: 100% !important;
+}
+

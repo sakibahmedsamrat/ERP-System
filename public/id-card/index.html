@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MEP GROUP - ID Card Generator</title>
   <link rel="stylesheet" href="style.css">
+  <script>
+    if (new URLSearchParams(window.location.search).get('embedded') === 'true') {
+      document.documentElement.classList.add('embedded-mode');
+    }
+  </script>
 </head>
 <body>
 
