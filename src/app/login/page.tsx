@@ -62,6 +62,9 @@ export default function LoginPage() {
           </form>
         </div>
       </div>
+      <div className="absolute bottom-4 right-6 text-xs text-gray-400 select-none print:hidden">
+        Created by <span className="text-gray-500 font-medium">Sakib Ahmed Samrat</span> (Executive-HR)
+      </div>
     </div>
   );
 }

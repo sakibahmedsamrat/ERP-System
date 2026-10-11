@@ -15,10 +15,15 @@ export default function MainLayout({ children, user }: { children: React.ReactNo
   return (
     <div className="flex min-h-screen bg-[#F4F7FE] print:bg-white font-sans text-gray-800 selection:bg-blue-100">
       <Sidebar user={user} />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
         <Header user={user} />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto print:overflow-visible">
-          {children}
+        <main className="flex-1 overflow-x-hidden overflow-y-auto print:overflow-visible flex flex-col justify-between">
+          <div className="flex-1">
+            {children}
+          </div>
+          <footer className="py-3 px-8 text-right text-xs text-gray-400 print:hidden select-none">
+            Created by <span className="text-gray-500 font-medium">Sakib Ahmed Samrat</span> (Executive-HR)
+          </footer>
         </main>
       </div>
     </div>
