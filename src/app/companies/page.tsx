@@ -74,7 +74,7 @@ export default async function CompaniesPage() {
                   {isSuperAdmin && (
                       <>
                         <Link 
-                          href={/companies//edit}
+                          href={`/companies/${company.id}/edit`}
                           className="text-blue-500 hover:text-blue-700 transition flex items-center"
                           title="Edit Company"
                         >
