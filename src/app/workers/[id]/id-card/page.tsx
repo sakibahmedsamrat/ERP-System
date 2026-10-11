@@ -21,7 +21,8 @@ export default async function IDCardPage({ params }: { params: { id: string } })
     joinDate: formatDate(worker.joinDate),
     blood: worker.bloodGroup || '',
     phone: worker.phone || '',
-    nid: worker.nationalId || ''
+    nid: worker.nationalId || '',
+    workerDbId: worker.id
   });
 
   redirect(`/id-cards?tab=employee&${queryParams.toString()}`);

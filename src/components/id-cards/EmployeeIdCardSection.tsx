@@ -25,6 +25,22 @@ export default function EmployeeIdCardSection({
   const initialParams = queryParams.toString();
   const iframeSrc = `/id-card/index.html?embedded=true${initialParams ? '&' + initialParams : ''}`;
 
+  // Auto-load worker if workerDbId or worker ID is in URL
+  useEffect(() => {
+    const targetId = searchParams?.workerDbId || searchParams?.id;
+    if (targetId) {
+      fetch(`/api/workers/search?${searchParams?.workerDbId ? `id=${searchParams.workerDbId}` : `q=${searchParams?.id}`}`)
+        .then(res => res.json())
+        .then(data => {
+          const w = data.worker || (data.workers && data.workers[0]);
+          if (w) {
+            handleSelectWorker(w);
+          }
+        })
+        .catch(console.error);
+    }
+  }, [searchParams?.workerDbId, searchParams?.id]);
+
   // Live Employee Search
   useEffect(() => {
     if (query.trim().length < 2) {
@@ -60,13 +76,24 @@ export default function EmployeeIdCardSection({
       blood: worker.bloodGroup || '',
       phone: worker.phone || '',
       nid: worker.nationalId || '',
-      photoUrl: worker.photoUrl || ''
+      photoUrl: worker.photoUrl || '',
+      signatureUrl: worker.signatureUrl || ''
     };
 
-    iframeRef.current.contentWindow.postMessage({
-      type: 'LOAD_EMPLOYEE',
-      payload
-    }, '*');
+    const post = () => {
+      try {
+        iframeRef.current?.contentWindow?.postMessage({
+          type: 'LOAD_EMPLOYEE',
+          payload
+        }, '*');
+      } catch (e) {
+        console.error('postMessage error:', e);
+      }
+    };
+
+    post();
+    // Re-send after slight delay to ensure iframe canvas fully rendered
+    setTimeout(post, 350);
   };
 
   const handleSelectWorker = (worker: any) => {
@@ -129,9 +156,13 @@ export default function EmployeeIdCardSection({
                     className="p-3.5 hover:bg-blue-50/60 cursor-pointer border-b border-gray-50 last:border-0 transition flex items-center justify-between gap-3 group"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm shrink-0">
-                        {w.name?.charAt(0) || <User size={16} />}
-                      </div>
+                      {w.photoUrl ? (
+                        <img src={w.photoUrl} alt={w.name} className="w-10 h-10 rounded-full object-cover border border-gray-200 shrink-0" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm shrink-0">
+                          {w.name?.charAt(0) || <User size={16} />}
+                        </div>
+                      )}
                       <div>
                         <div className="font-semibold text-gray-800 group-hover:text-blue-600 transition text-sm">
                           {w.name}
@@ -189,7 +220,7 @@ export default function EmployeeIdCardSection({
           onLoad={handleIframeLoad}
           src={iframeSrc}
           title="MEP Employee ID Card Generator"
-          className="w-full h-[950px] border-0 rounded-2xl bg-transparent"
+          className="w-full min-h-[1000px] h-[1050px] border-0 rounded-2xl bg-transparent"
         />
       </div>
     </div>

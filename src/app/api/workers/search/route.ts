@@ -5,6 +5,20 @@ import { NextResponse } from 'next/server';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const q = searchParams.get('q');
+  const id = searchParams.get('id');
+
+  if (id) {
+    const worker = await prisma.worker.findUnique({
+      where: { id },
+      include: {
+        company: true,
+        department: true,
+        section: true,
+        subSection: true
+      }
+    });
+    return NextResponse.json({ worker, workers: worker ? [worker] : [] });
+  }
 
   if (!q) {
     return NextResponse.json({ workers: [] });
@@ -13,9 +27,9 @@ export async function GET(request: Request) {
   const workers = await prisma.worker.findMany({
     where: {
       OR: [
-        { workerId: { contains: q } },
-        { name: { contains: q } },
-        { phone: { contains: q } }
+        { workerId: { contains: q, mode: 'insensitive' } },
+        { name: { contains: q, mode: 'insensitive' } },
+        { phone: { contains: q, mode: 'insensitive' } }
       ]
     },
     include: {

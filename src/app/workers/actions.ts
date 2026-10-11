@@ -14,11 +14,20 @@ async function uploadFile(file: any): Promise<string | null> {
   try {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    const ext = file.name.split('.').pop();
-    const filename = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
-    const path = join(process.cwd(), 'public/uploads', filename);
-    await writeFile(path, buffer);
-    return `/uploads/${filename}`;
+    const mime = file.type || 'image/jpeg';
+    
+    // Save to disk if filesystem is writable
+    try {
+      const ext = file.name.split('.').pop() || 'jpg';
+      const filename = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
+      const path = join(process.cwd(), 'public/uploads', filename);
+      await writeFile(path, buffer);
+    } catch (diskErr) {
+      // Ignore disk write errors in serverless environments
+    }
+
+    // Return Data URL for 100% reliable image loading without 404s or CORS blocks
+    return `data:${mime};base64,${buffer.toString('base64')}`;
   } catch (err) {
     console.error("File upload error:", err);
     return null;

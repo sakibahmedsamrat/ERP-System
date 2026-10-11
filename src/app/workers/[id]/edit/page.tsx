@@ -95,12 +95,24 @@ export default async function EditWorkerPage({ params }: { params: { id: string 
             <h3 className="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Documents</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Employee Photo {worker.photoUrl && <span className="text-blue-500 text-xs">(Existing photo saved)</span>}</label>
-                <input type="file" name="photo" accept="image/*" className="w-full border rounded p-2 outline-none focus:border-blue-500" />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Employee Photo</label>
+                {worker.photoUrl && (
+                  <div className="mb-2 flex items-center gap-3 p-2 bg-gray-50 rounded-lg border border-gray-200">
+                    <img src={worker.photoUrl} alt="Employee Photo" className="w-12 h-12 rounded-full object-cover border border-gray-300" />
+                    <span className="text-xs text-green-700 font-semibold">✓ Saved Profile Photo</span>
+                  </div>
+                )}
+                <input type="file" name="photo" accept="image/*" className="w-full border rounded p-2 outline-none focus:border-blue-500 text-sm" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Signature {worker.signatureUrl && <span className="text-blue-500 text-xs">(Existing signature saved)</span>}</label>
-                <input type="file" name="signature" accept="image/*" className="w-full border rounded p-2 outline-none focus:border-blue-500" />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Signature</label>
+                {worker.signatureUrl && (
+                  <div className="mb-2 flex items-center gap-3 p-2 bg-gray-50 rounded-lg border border-gray-200">
+                    <img src={worker.signatureUrl} alt="Employee Signature" className="h-10 max-w-[120px] object-contain border bg-white p-1 rounded" />
+                    <span className="text-xs text-green-700 font-semibold">✓ Saved Signature</span>
+                  </div>
+                )}
+                <input type="file" name="signature" accept="image/*" className="w-full border rounded p-2 outline-none focus:border-blue-500 text-sm" />
               </div>
             </div>
           </div>

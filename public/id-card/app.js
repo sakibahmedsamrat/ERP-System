@@ -468,6 +468,14 @@ function loadAssets() {
       if (params.has('blood')) state.bloodGroup = params.get('blood');
       if (params.has('phone')) state.emergencyContact = params.get('phone');
       if (params.has('nid')) state.nid = params.get('nid');
+      if (params.has('photo') || params.has('photoUrl')) {
+        const photoParam = params.get('photo') || params.get('photoUrl');
+        loadPhotoIntoState(photoParam);
+      }
+      if (params.has('signature') || params.has('signatureUrl')) {
+        const sigParam = params.get('signature') || params.get('signatureUrl');
+        loadSignatureIntoState(sigParam);
+      }
       if (typeof syncInputsFromState === 'function') syncInputsFromState();
 
       // Restore photo
@@ -1690,6 +1698,75 @@ initLiveBackground();
 
 
 
+// Robust Photo Loading Helper (Supports Base64 Data URL, Relative URLs, and Remote Images)
+function loadPhotoIntoState(url) {
+  if (!url) return;
+  const img = new Image();
+  // Do NOT set crossOrigin on Data URLs (causes Chromium security error)
+  if (!url.startsWith('data:')) {
+    img.crossOrigin = 'anonymous';
+  }
+  img.onload = function() {
+    state.photoImg = img;
+    state.photoDataUrl = url;
+    state.photoScale = 1.0;
+    state.photoOffsetX = 0;
+    state.photoOffsetY = 0;
+    const zoomInput = document.getElementById('photoZoom');
+    if (zoomInput) zoomInput.value = 1.0;
+    const panX = document.getElementById('photoPanX');
+    if (panX) panX.value = 0;
+    const panY = document.getElementById('photoPanY');
+    if (panY) panY.value = 0;
+    if (typeof updateSliderBadges === 'function') updateSliderBadges();
+    if (typeof updatePhotoUploaderUI === 'function') updatePhotoUploaderUI();
+    if (typeof scheduleRenderFront === 'function') scheduleRenderFront();
+    if (typeof scheduleSaveState === 'function') scheduleSaveState();
+  };
+  img.onerror = function() {
+    if (!url.startsWith('data:')) {
+      const fallback = new Image();
+      fallback.onload = function() {
+        state.photoImg = fallback;
+        state.photoDataUrl = url;
+        if (typeof updatePhotoUploaderUI === 'function') updatePhotoUploaderUI();
+        if (typeof scheduleRenderFront === 'function') scheduleRenderFront();
+      };
+      fallback.src = url;
+    }
+  };
+  img.src = url;
+}
+
+// Robust Signature Loading Helper
+function loadSignatureIntoState(url) {
+  if (!url) return;
+  const img = new Image();
+  if (!url.startsWith('data:')) {
+    img.crossOrigin = 'anonymous';
+  }
+  img.onload = function() {
+    state.signatureImg = img;
+    state.signatureDataUrl = url;
+    if (typeof renderSignatureToPad === 'function') renderSignatureToPad(img);
+    if (typeof scheduleRenderFront === 'function') scheduleRenderFront();
+    if (typeof scheduleSaveState === 'function') scheduleSaveState();
+  };
+  img.onerror = function() {
+    if (!url.startsWith('data:')) {
+      const fallback = new Image();
+      fallback.onload = function() {
+        state.signatureImg = fallback;
+        state.signatureDataUrl = url;
+        if (typeof renderSignatureToPad === 'function') renderSignatureToPad(fallback);
+        if (typeof scheduleRenderFront === 'function') scheduleRenderFront();
+      };
+      fallback.src = url;
+    }
+  };
+  img.src = url;
+}
+
 // Listen for postMessage from parent ERP application
 window.addEventListener('message', function(event) {
   if (event.data && event.data.type === 'LOAD_EMPLOYEE') {
@@ -1703,18 +1780,12 @@ window.addEventListener('message', function(event) {
     if (p.phone !== undefined) state.emergencyContact = p.phone;
     if (p.nid !== undefined) state.nid = p.nid;
 
-    if (p.photoUrl) {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = function() {
-        state.photoImg = img;
-        state.photoScale = 1.0;
-        state.photoOffsetX = 0;
-        state.photoOffsetY = 0;
-        if (typeof updatePhotoUploaderUI === 'function') updatePhotoUploaderUI();
-        if (typeof scheduleRenderFront === 'function') scheduleRenderFront();
-      };
-      img.src = p.photoUrl;
+    if (p.photoUrl || p.photo) {
+      loadPhotoIntoState(p.photoUrl || p.photo);
+    }
+
+    if (p.signatureUrl || p.signature) {
+      loadSignatureIntoState(p.signatureUrl || p.signature);
     }
 
     if (typeof syncInputsFromState === 'function') syncInputsFromState();
