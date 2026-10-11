@@ -1004,10 +1004,167 @@ function processPhotoFile(file) {
   }
 }
 
+// Helper to trim transparent borders from canvas
+function getTrimmedCanvas(sourceCanvas) {
+  const sCtx = sourceCanvas.getContext('2d', { willReadFrequently: true });
+  const w = sourceCanvas.width;
+  const h = sourceCanvas.height;
+  let imgData;
+  try {
+    imgData = sCtx.getImageData(0, 0, w, h);
+  } catch (e) {
+    return null;
+  }
+  const data = imgData.data;
+  let minX = w, maxX = 0, minY = h, maxY = 0;
+  let found = false;
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const alpha = data[(y * w + x) * 4 + 3];
+      if (alpha > 12) {
+        found = true;
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+    }
+  }
+
+  if (!found) return null;
+
+  minX = Math.max(0, minX - 6);
+  minY = Math.max(0, minY - 6);
+  maxX = Math.min(w - 1, maxX + 6);
+  maxY = Math.min(h - 1, maxY + 6);
+
+  const trimW = maxX - minX + 1;
+  const trimH = maxY - minY + 1;
+
+  const trimmed = document.createElement('canvas');
+  trimmed.width = trimW;
+  trimmed.height = trimH;
+  trimmed.getContext('2d').drawImage(sourceCanvas, minX, minY, trimW, trimH, 0, 0, trimW, trimH);
+  return trimmed;
+}
+
+// Intelligent Signature Background Removal (Clean White/Transparent + Contrast Boost)
+function removeSignatureBackground(sourceImg) {
+  const canvas = document.createElement('canvas');
+  const w = sourceImg.naturalWidth || sourceImg.width;
+  const h = sourceImg.naturalHeight || sourceImg.height;
+  if (!w || !h) return null;
+
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(sourceImg, 0, 0, w, h);
+
+  let imgData;
+  try {
+    imgData = ctx.getImageData(0, 0, w, h);
+  } catch (e) {
+    console.warn('Canvas getImageData failed:', e);
+    return null;
+  }
+  const data = imgData.data;
+
+  // 1. Check if the image is already largely transparent
+  let transparentCount = 0;
+  const sampleStep = Math.max(1, Math.floor((w * h) / 1000));
+  for (let i = 3; i < data.length; i += 4 * sampleStep) {
+    if (data[i] < 30) transparentCount++;
+  }
+  const isAlreadyTransparent = (transparentCount / (data.length / (4 * sampleStep))) > 0.20;
+
+  // 2. Sample background luminance along the edges to detect paper tone
+  let bgLuminanceSum = 0;
+  let bgSamples = 0;
+  const stepX = Math.max(1, Math.floor(w / 40));
+  const stepY = Math.max(1, Math.floor(h / 40));
+
+  for (let x = 0; x < w; x += stepX) {
+    const topIdx = (0 * w + x) * 4;
+    const btmIdx = ((h - 1) * w + x) * 4;
+    if (data[topIdx + 3] > 100) {
+      bgLuminanceSum += 0.299 * data[topIdx] + 0.587 * data[topIdx + 1] + 0.114 * data[topIdx + 2];
+      bgSamples++;
+    }
+    if (data[btmIdx + 3] > 100) {
+      bgLuminanceSum += 0.299 * data[btmIdx] + 0.587 * data[btmIdx + 1] + 0.114 * data[btmIdx + 2];
+      bgSamples++;
+    }
+  }
+
+  for (let y = 0; y < h; y += stepY) {
+    const leftIdx = (y * w + 0) * 4;
+    const rightIdx = (y * w + (w - 1)) * 4;
+    if (data[leftIdx + 3] > 100) {
+      bgLuminanceSum += 0.299 * data[leftIdx] + 0.587 * data[leftIdx + 1] + 0.114 * data[leftIdx + 2];
+      bgSamples++;
+    }
+    if (data[rightIdx + 3] > 100) {
+      bgLuminanceSum += 0.299 * data[rightIdx] + 0.587 * data[rightIdx + 1] + 0.114 * data[rightIdx + 2];
+      bgSamples++;
+    }
+  }
+
+  const avgBgLuminance = bgSamples > 0 ? (bgLuminanceSum / bgSamples) : 240;
+  const threshold = isAlreadyTransparent ? 235 : Math.max(145, Math.min(235, avgBgLuminance - 20));
+  const ramp = 30;
+
+  for (let i = 0; i < data.length; i += 4) {
+    const a = data[i + 3];
+    if (a < 10) continue;
+
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+
+    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+
+    if (lum >= threshold) {
+      // Paper background -> completely transparent!
+      data[i + 3] = 0;
+    } else {
+      // Ink stroke: smooth anti-aliased alpha
+      let newAlpha = 255;
+      if (lum > (threshold - ramp)) {
+        const factor = (threshold - lum) / ramp;
+        newAlpha = Math.round(factor * 255);
+      }
+
+      // Preserve pen color (blue or black) with enriched contrast
+      const isBluePen = (b > r + 15 && b > g);
+      if (isBluePen) {
+        data[i] = Math.max(0, Math.round(r * 0.7));
+        data[i + 1] = Math.max(0, Math.round(g * 0.7));
+        data[i + 2] = Math.min(215, Math.round(b * 1.1));
+      } else {
+        data[i] = Math.max(0, Math.round(r * 0.55));
+        data[i + 1] = Math.max(0, Math.round(g * 0.55));
+        data[i + 2] = Math.max(0, Math.round(b * 0.55));
+      }
+      data[i + 3] = Math.min(a, newAlpha);
+    }
+  }
+
+  ctx.putImageData(imgData, 0, 0);
+
+  // Auto-trim outer margins
+  const trimmed = getTrimmedCanvas(canvas);
+  return trimmed || canvas;
+}
+
 // Helper to render signature cleanly fitted and centered in signature pad
 function renderSignatureToPad(img) {
   if (!sigCtx || !signatureCanvas || !img) return;
   sigCtx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+  // Fill clean white background
+  sigCtx.fillStyle = '#ffffff';
+  sigCtx.fillRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+
   const aspect = img.width / img.height;
   let drawW = signatureCanvas.width * 0.82;
   let drawH = drawW / aspect;
@@ -1023,23 +1180,42 @@ function renderSignatureToPad(img) {
   if (placeholder) placeholder.style.display = 'none';
 }
 
-// Handle Signature Upload
+// Handle Signature Upload with Auto Background Removal
 function handleSignatureUpload(e) {
   const file = e.target.files[0];
   if (!file) return;
+
+  showToast('Removing signature background... Please wait.');
+
   const reader = new FileReader();
   reader.onload = (evt) => {
-    const dataUrl = evt.target.result;
-    const img = new Image();
-    img.onload = () => {
-      state.signatureImg = img;
-      state.signatureDataUrl = dataUrl;
-      renderSignatureToPad(img);
-      scheduleRenderFront();
-      scheduleSaveState();
-      showToast('Signature added successfully!');
+    const rawDataUrl = evt.target.result;
+    const rawImg = new Image();
+    rawImg.onload = () => {
+      try {
+        const cleanCanvas = removeSignatureBackground(rawImg);
+        const finalDataUrl = cleanCanvas ? cleanCanvas.toDataURL('image/png') : rawDataUrl;
+        const finalImg = new Image();
+        finalImg.onload = () => {
+          state.signatureImg = finalImg;
+          state.signatureDataUrl = finalDataUrl;
+          renderSignatureToPad(finalImg);
+          scheduleRenderFront();
+          scheduleSaveState();
+          showToast('Signature uploaded & background removed!');
+        };
+        finalImg.src = finalDataUrl;
+      } catch (err) {
+        console.error('Signature BG removal error:', err);
+        state.signatureImg = rawImg;
+        state.signatureDataUrl = rawDataUrl;
+        renderSignatureToPad(rawImg);
+        scheduleRenderFront();
+        scheduleSaveState();
+        showToast('Signature added successfully!');
+      }
     };
-    img.src = dataUrl;
+    rawImg.src = rawDataUrl;
   };
   reader.readAsDataURL(file);
 }
@@ -1085,45 +1261,6 @@ function initSignaturePad() {
     const pos = getPos(e);
     sigCtx.lineTo(pos.x, pos.y);
     sigCtx.stroke();
-  }
-
-  function getTrimmedCanvas(sourceCanvas) {
-    const sCtx = sourceCanvas.getContext('2d');
-    const w = sourceCanvas.width;
-    const h = sourceCanvas.height;
-    const imgData = sCtx.getImageData(0, 0, w, h);
-    const data = imgData.data;
-    let minX = w, maxX = 0, minY = h, maxY = 0;
-    let found = false;
-
-    for (let y = 0; y < h; y++) {
-      for (let x = 0; x < w; x++) {
-        const alpha = data[(y * w + x) * 4 + 3];
-        if (alpha > 10) {
-          found = true;
-          if (x < minX) minX = x;
-          if (x > maxX) maxX = x;
-          if (y < minY) minY = y;
-          if (y > maxY) maxY = y;
-        }
-      }
-    }
-
-    if (!found) return null;
-
-    minX = Math.max(0, minX - 4);
-    minY = Math.max(0, minY - 4);
-    maxX = Math.min(w - 1, maxX + 4);
-    maxY = Math.min(h - 1, maxY + 4);
-
-    const trimW = maxX - minX + 1;
-    const trimH = maxY - minY + 1;
-
-    const trimmed = document.createElement('canvas');
-    trimmed.width = trimW;
-    trimmed.height = trimH;
-    trimmed.getContext('2d').drawImage(sourceCanvas, minX, minY, trimW, trimH, 0, 0, trimW, trimH);
-    return trimmed;
   }
 
   function stopDrawing() {
@@ -1746,6 +1883,25 @@ function loadSignatureIntoState(url) {
     img.crossOrigin = 'anonymous';
   }
   img.onload = function() {
+    try {
+      const cleanCanvas = removeSignatureBackground(img);
+      if (cleanCanvas) {
+        const cleanDataUrl = cleanCanvas.toDataURL('image/png');
+        const cleanImg = new Image();
+        cleanImg.onload = function() {
+          state.signatureImg = cleanImg;
+          state.signatureDataUrl = cleanDataUrl;
+          if (typeof renderSignatureToPad === 'function') renderSignatureToPad(cleanImg);
+          if (typeof scheduleRenderFront === 'function') scheduleRenderFront();
+          if (typeof scheduleSaveState === 'function') scheduleSaveState();
+        };
+        cleanImg.src = cleanDataUrl;
+        return;
+      }
+    } catch (e) {
+      console.warn('Auto bg removal on load failed:', e);
+    }
+
     state.signatureImg = img;
     state.signatureDataUrl = url;
     if (typeof renderSignatureToPad === 'function') renderSignatureToPad(img);
@@ -1756,6 +1912,22 @@ function loadSignatureIntoState(url) {
     if (!url.startsWith('data:')) {
       const fallback = new Image();
       fallback.onload = function() {
+        try {
+          const cleanCanvas = removeSignatureBackground(fallback);
+          if (cleanCanvas) {
+            const cleanDataUrl = cleanCanvas.toDataURL('image/png');
+            const cleanImg = new Image();
+            cleanImg.onload = function() {
+              state.signatureImg = cleanImg;
+              state.signatureDataUrl = cleanDataUrl;
+              if (typeof renderSignatureToPad === 'function') renderSignatureToPad(cleanImg);
+              if (typeof scheduleRenderFront === 'function') scheduleRenderFront();
+            };
+            cleanImg.src = cleanDataUrl;
+            return;
+          }
+        } catch (e) {}
+
         state.signatureImg = fallback;
         state.signatureDataUrl = url;
         if (typeof renderSignatureToPad === 'function') renderSignatureToPad(fallback);
