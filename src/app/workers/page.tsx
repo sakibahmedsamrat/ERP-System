@@ -1,18 +1,35 @@
 import Link from 'next/link';
 import { PrismaClient } from '@prisma/client';
-import { Plus, User, Building2, Trash2, Search, Download, Upload, Hash, Briefcase, Layers, Network, FolderTree, X } from 'lucide-react';
+import { Plus, User, Building2, Trash2, Search, Download, Upload, Hash, Briefcase, Layers, Network, FolderTree, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { deleteWorker } from './actions';
 import { getSession } from '@/lib/auth';
 import DeleteWorkerButton from '@/components/DeleteWorkerButton';
 
 const prisma = new PrismaClient();
 
-export default async function WorkersPage({ searchParams }: { searchParams: { workerId?: string; name?: string; designation?: string; department?: string; section?: string; subSection?: string; company?: string; } }) {
+export default async function WorkersPage({ 
+  searchParams 
+}: { 
+  searchParams: { 
+    workerId?: string; 
+    name?: string; 
+    designation?: string; 
+    department?: string; 
+    section?: string; 
+    subSection?: string; 
+    company?: string; 
+    page?: string;
+  } 
+}) {
   const session = await getSession();
   const role = session?.user?.role;
   const isAdmin = role === 'SUPER_ADMIN' || role === 'ADMIN';
 
   const { workerId, name, designation, department, section, subSection, company } = searchParams;
+
+  const page = Math.max(1, parseInt(searchParams.page || '1', 10));
+  const pageSize = 50;
+  const skip = (page - 1) * pageSize;
 
   const whereClause: any = { AND: [] };
 
@@ -33,8 +50,13 @@ export default async function WorkersPage({ searchParams }: { searchParams: { wo
     queryOptions.where = whereClause;
   }
 
-  const [workers, companies, departments, sections, subSections, designations] = await Promise.all([
-    prisma.worker.findMany(queryOptions),
+  const [totalWorkers, workers, companies, departments, sections, subSections, designations] = await Promise.all([
+    prisma.worker.count({ where: queryOptions.where }),
+    prisma.worker.findMany({
+      ...queryOptions,
+      skip,
+      take: pageSize
+    }),
     prisma.company.findMany({ select: { name: true }, distinct: ['name'] }),
     prisma.department.findMany({ select: { name: true }, distinct: ['name'] }),
     prisma.section.findMany({ select: { name: true }, distinct: ['name'] }),
@@ -42,10 +64,30 @@ export default async function WorkersPage({ searchParams }: { searchParams: { wo
     prisma.worker.findMany({ where: { designation: { not: null } }, distinct: ['designation'], select: { designation: true } })
   ]);
 
+  const totalPages = Math.ceil(totalWorkers / pageSize);
+
+  const createPageURL = (newPage: number) => {
+    const params = new URLSearchParams();
+    if (workerId) params.set('workerId', workerId);
+    if (name) params.set('name', name);
+    if (company) params.set('company', company);
+    if (designation) params.set('designation', designation);
+    if (department) params.set('department', department);
+    if (section) params.set('section', section);
+    if (subSection) params.set('subSection', subSection);
+    params.set('page', newPage.toString());
+    return `/workers?${params.toString()}`;
+  };
+
   return (
     <div className="p-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-        <h1 className="text-3xl font-bold text-gray-800">Employees</h1>
+        <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
+          Employees 
+          <span className="text-sm font-semibold bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
+            {totalWorkers} Total
+          </span>
+        </h1>
         
         <div className="flex gap-2">
           {isAdmin && (
@@ -199,7 +241,7 @@ export default async function WorkersPage({ searchParams }: { searchParams: { wo
             ))}
             {workers.length === 0 && (
               <tr>
-                <td colSpan={7} className="p-8 text-center text-gray-500">
+                <td colSpan={8} className="p-8 text-center text-gray-500">
                   No workers found matching your criteria.
                 </td>
               </tr>
@@ -207,11 +249,49 @@ export default async function WorkersPage({ searchParams }: { searchParams: { wo
           </tbody>
         </table>
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+          <div className="text-sm text-gray-500">
+            Showing <span className="font-semibold text-gray-800">{totalWorkers === 0 ? 0 : skip + 1}</span> to{' '}
+            <span className="font-semibold text-gray-800">{Math.min(skip + pageSize, totalWorkers)}</span> of{' '}
+            <span className="font-semibold text-gray-800">{totalWorkers}</span> employees
+          </div>
+
+          <div className="flex items-center gap-2">
+            {page > 1 ? (
+              <Link
+                href={createPageURL(page - 1)}
+                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 flex items-center gap-1 transition"
+              >
+                <ChevronLeft size={16} /> Previous
+              </Link>
+            ) : (
+              <span className="px-3 py-1.5 border border-gray-100 rounded-lg text-sm text-gray-300 flex items-center gap-1 cursor-not-allowed">
+                <ChevronLeft size={16} /> Previous
+              </span>
+            )}
+
+            <div className="text-sm font-medium px-3 text-gray-700">
+              Page {page} of {totalPages}
+            </div>
+
+            {page < totalPages ? (
+              <Link
+                href={createPageURL(page + 1)}
+                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 flex items-center gap-1 transition"
+              >
+                Next <ChevronRight size={16} />
+              </Link>
+            ) : (
+              <span className="px-3 py-1.5 border border-gray-100 rounded-lg text-sm text-gray-300 flex items-center gap-1 cursor-not-allowed">
+                Next <ChevronRight size={16} />
+              </span>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
-
-
-
-
