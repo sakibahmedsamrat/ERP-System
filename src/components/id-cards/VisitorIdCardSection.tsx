@@ -22,7 +22,7 @@ export default function VisitorIdCardSection() {
 
     const bImg = new Image();
     bImg.crossOrigin = 'anonymous';
-    bImg.src = '/visitor-card/visitor_back.jpg';
+    bImg.src = '/visitor-card/visitor_back.jpg?v=2';
     bImg.onload = () => {
       backImgRef.current = bImg;
       drawBack();
