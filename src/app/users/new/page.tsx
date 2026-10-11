@@ -65,6 +65,7 @@ export default function NewUserPage() {
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {[
                 { id: 'WORKERS', label: 'Employees' },
+                { id: 'IDCARD', label: 'ID Card' },
                 { id: 'COMPANIES', label: 'Companies' },
                 { id: 'ATTENDANCE', label: 'Attendance' },
                 { id: 'SETTLEMENTS', label: 'Settlements' },
