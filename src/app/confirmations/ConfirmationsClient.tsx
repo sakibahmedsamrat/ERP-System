@@ -98,7 +98,13 @@ export default function ConfirmationsClient({
   const isEligibleFor3Y = (worker: WorkerItem): boolean => {
     if (!worker.joinDate) return false;
     const des = (worker.designation || '').toLowerCase().trim();
-    const isTargetDesignation = des.includes('helper') || des.includes('quality checker');
+    const dept = (worker.department?.name || '').toLowerCase().trim();
+
+    const isHelper = des.includes('helper');
+    const isQualityChecker = des.includes('quality checker');
+
+    // Rule: Helper must be from Production department; Quality Checker is eligible
+    const isTargetDesignation = (isHelper && dept.includes('production')) || isQualityChecker;
     if (!isTargetDesignation) return false;
 
     const age = calculateServiceAge(worker.joinDate, now);
@@ -283,7 +289,7 @@ export default function ConfirmationsClient({
           Employee Confirmation Report
         </h2>
         <p className="text-sm font-semibold text-gray-700 mt-1">
-          {activeTab === '6m' ? '6 Months Confirmation (Eligibility: ≥ 5 Months 15 Days)' : '3 Years Confirmation (Designation: Helper & Quality Checker, Eligibility: ≥ 2 Years 11 Months)'}
+          {activeTab === '6m' ? '6 Months Confirmation (Eligibility: ≥ 5 Months 15 Days)' : '3 Years Confirmation (Production Helper & Quality Checker, Eligibility: ≥ 2 Years 11 Months)'}
         </p>
         <p className="text-xs text-gray-500 mt-1">
           Status: {viewStatus === 'pending' ? 'Pending for Approval' : 'Confirmed Records'} | Printed on: {formatDateTime(new Date())}
@@ -371,7 +377,7 @@ export default function ConfirmationsClient({
               {activeTab === '6m' ? (
                 <span>6 Months Confirmation Rules</span>
               ) : (
-                <span>3 Years Confirmation Rules (Helper & Quality Checker)</span>
+                <span>3 Years Confirmation Rules (Production Helper & Quality Checker)</span>
               )}
             </div>
             <div className="text-xs text-gray-600 mt-0.5">
@@ -381,7 +387,7 @@ export default function ConfirmationsClient({
                 </span>
               ) : (
                 <span>
-                  শুধুমাত্র পদবী <strong>Helper</strong> এবং <strong>Quality Checker</strong> যাদের চাকরীর বয়স <strong>২ বছর ১১ মাস</strong> বা তার বেশি, তারা এই তালিকায় আসবে।
+                  পদবী <strong>Quality Checker</strong> অথবা <strong>Production ডিপার্টমেন্টের Helper</strong> যাদের চাকরীর বয়স <strong>২ বছর ১১ মাস</strong> বা তার বেশি, শুধুমাত্র তারা এই তালিকায় আসবে।
                 </span>
               )}
             </div>
@@ -475,7 +481,7 @@ export default function ConfirmationsClient({
                       <p className="text-xs text-gray-400 max-w-sm">
                         {viewStatus === 'pending'
                           ? `Currently there are no employees meeting the ${
-                              activeTab === '6m' ? '5 months 15 days' : '2 years 11 months'
+                              activeTab === '6m' ? '5 months 15 days' : '2 years 11 months (Production Helper / Quality Checker)'
                             } pending confirmation criteria.`
                           : 'No confirmation history recorded yet in this category.'}
                       </p>
