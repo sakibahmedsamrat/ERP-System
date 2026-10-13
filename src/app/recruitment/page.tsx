@@ -1,10 +1,78 @@
 import prisma from '@/lib/prisma';
-import Link from 'next/link';
-import { Plus } from 'lucide-react';
+import { getSession } from '@/lib/auth';
+import RecruitmentClient, { SubSectionManpowerItem, HierarchyCompany, JobItem } from './RecruitmentClient';
 
+export const dynamic = 'force-dynamic';
 
 export default async function RecruitmentPage() {
-  const recruitments = await prisma.recruitment.findMany({
+  const session = await getSession();
+  const userRole = session?.user?.role;
+
+  // Fetch companies with departments, sections, and sub-sections with active worker counts
+  const companies = await prisma.company.findMany({
+    orderBy: { name: 'asc' },
+    include: {
+      departments: {
+        orderBy: { name: 'asc' },
+        include: {
+          sections: {
+            orderBy: { name: 'asc' },
+            include: {
+              _count: {
+                select: {
+                  workers: {
+                    where: { isActive: true }
+                  }
+                }
+              },
+              subSections: {
+                orderBy: { name: 'asc' },
+                include: {
+                  _count: {
+                    select: {
+                      workers: {
+                        where: { isActive: true }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // Flatten into table items
+  const items: SubSectionManpowerItem[] = [];
+
+  for (const company of companies) {
+    for (const dept of company.departments) {
+      for (const section of dept.sections) {
+        for (const sub of section.subSections) {
+          const auth = sub.authorizedManpower || 0;
+          const exist = sub._count?.workers || 0;
+          items.push({
+            id: sub.id,
+            name: sub.name,
+            sectionId: section.id,
+            sectionName: section.name,
+            departmentId: dept.id,
+            departmentName: dept.name,
+            companyId: company.id,
+            companyName: company.name,
+            authorizedManpower: auth,
+            existingManpower: exist,
+            remaining: auth - exist,
+          });
+        }
+      }
+    }
+  }
+
+  // Fetch existing job circulars
+  const recruitmentsData = await prisma.recruitment.findMany({
     orderBy: { createdAt: 'desc' },
     include: {
       _count: {
@@ -13,46 +81,45 @@ export default async function RecruitmentPage() {
     }
   });
 
+  const recruitments: JobItem[] = recruitmentsData.map(r => ({
+    id: r.id,
+    title: r.title,
+    description: r.description,
+    status: r.status,
+    createdAt: r.createdAt.toISOString(),
+    _count: r._count
+  }));
+
+  const serializableCompanies: HierarchyCompany[] = companies.map(c => ({
+    id: c.id,
+    name: c.name,
+    departments: c.departments.map(d => ({
+      id: d.id,
+      name: d.name,
+      sections: d.sections.map(s => ({
+        id: s.id,
+        name: s.name,
+        _count: {
+          workers: s._count?.workers || 0
+        },
+        subSections: s.subSections.map(sub => ({
+          id: sub.id,
+          name: sub.name,
+          authorizedManpower: sub.authorizedManpower || 0,
+          _count: {
+            workers: sub._count?.workers || 0
+          }
+        }))
+      }))
+    }))
+  }));
+
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Recruitment</h1>
-        <Link 
-          href="/recruitment/new" 
-          className="bg-blue-600 text-white px-4 py-2 rounded flex items-center gap-2 hover:bg-blue-700 transition"
-        >
-          <Plus size={20} /> Open New Job
-        </Link>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {recruitments.map((job) => (
-          <div key={job.id} className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 flex flex-col">
-            <div className="flex justify-between items-start mb-2">
-              <h2 className="text-xl font-bold text-gray-800">{job.title}</h2>
-              <span className={`text-xs px-2 py-1 rounded-full font-bold ${
-                job.status === 'OPEN' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-              }`}>
-                {job.status}
-              </span>
-            </div>
-            <p className="text-gray-600 text-sm mb-4 flex-1">{job.description}</p>
-            
-            <div className="pt-4 border-t border-gray-100 flex justify-between items-center text-sm">
-              <span className="text-gray-500 font-medium">
-                Applicants: <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">{job._count.applicants}</span>
-              </span>
-              <button className="text-blue-600 hover:underline">View Applicants &rarr;</button>
-            </div>
-          </div>
-        ))}
-
-        {recruitments.length === 0 && (
-          <div className="col-span-full bg-white p-8 text-center rounded-xl shadow-sm text-gray-500">
-            No active recruitment circulars.
-          </div>
-        )}
-      </div>
-    </div>
+    <RecruitmentClient
+      initialItems={items}
+      recruitments={recruitments}
+      companies={serializableCompanies}
+      userRole={userRole}
+    />
   );
 }

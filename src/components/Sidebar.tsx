@@ -16,7 +16,8 @@ import {
   Activity,
   Layers,
   Contact,
-  UserCheck
+  UserCheck,
+  Sliders
 } from 'lucide-react';
 import { logoutAction } from '@/app/logout/actions';
 
@@ -32,20 +33,28 @@ export default function Sidebar({ user }: { user?: any }) {
     return mods.includes(modName);
   };
 
-  const NavItem = ({ href, icon: Icon, label, color = "text-white" }: any) => {
-    const isActive = pathname === href || (href !== '/' && pathname.startsWith(href));
+  const NavItem = ({ href, icon: Icon, label, color = "text-white", exact = false }: any) => {
+    let isActive = false;
+    if (exact) {
+      isActive = pathname === href;
+    } else if (href === '/recruitment') {
+      isActive = pathname === '/recruitment' || (pathname.startsWith('/recruitment') && !pathname.startsWith('/recruitment/manpower'));
+    } else {
+      isActive = pathname === href || (href !== '/' && pathname.startsWith(href));
+    }
+
     return (
       <Link 
         href={href} 
         prefetch={true}
-        className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 font-medium ${
+        className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-300 font-medium ${
           isActive 
             ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-900/50 translate-x-1' 
             : `hover:bg-white/10 ${color} hover:translate-x-1`
         }`}
       >
-        <Icon size={20} className={isActive ? 'text-white' : 'opacity-80'} /> 
-        {label}
+        <Icon size={18} className={isActive ? 'text-white' : 'opacity-80'} /> 
+        <span className="text-sm">{label}</span>
       </Link>
     );
   };
@@ -74,7 +83,12 @@ export default function Sidebar({ user }: { user?: any }) {
         {hasModule('ATTENDANCE') && <NavItem href="/attendance" icon={CalendarCheck} label="Attendance" />}
         {hasModule('SETTLEMENTS') && <NavItem href="/settlements" icon={CreditCard} label="Settlements" />}
         {hasModule('TRAINING') && <NavItem href="/training" icon={GraduationCap} label="Training" />}
-        {hasModule('RECRUITMENT') && <NavItem href="/recruitment" icon={Briefcase} label="Recruitment" />}
+        {hasModule('RECRUITMENT') && (
+          <div className="space-y-1">
+            <NavItem href="/recruitment" icon={Briefcase} label="Recruitment" />
+            <NavItem href="/recruitment/manpower" icon={Sliders} label="Manpower Entry" color="text-blue-200" />
+          </div>
+        )}
         {hasModule('TASKS') && <NavItem href="/tasks" icon={CheckSquare} label="Tasks" />}
         
         <div className="pt-6 mt-6 border-t border-white/10 space-y-2">
