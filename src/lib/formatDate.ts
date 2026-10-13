@@ -118,15 +118,30 @@ export function calculateServiceAge(
   };
 }
 
+const MONTH_NAMES_EN = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
+
+const MONTH_NAMES_BN = [
+  'জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন',
+  'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'
+];
+
 /**
  * Calculates payroll cycle days where a month is counted from the 26th of previous month to the 25th of current month.
- * e.g. 26-09-2026 to 25-10-2026 = 30 days (September has 30 days)
- *      26-10-2026 to 25-11-2026 = 31 days (October has 31 days)
+ * e.g. 26-09-2026 to 25-10-2026 = 30 days (September has 30 days), Month Name = October (অক্টোবর)
+ *      26-10-2026 to 25-11-2026 = 31 days (October has 31 days), Month Name = November (নভেম্বর)
  */
 export function getPayrollCycleDays(dateInput: string | Date | null | undefined): {
   daysInCycle: number;
   cycleStart: Date;
   cycleEnd: Date;
+  monthName: string;
+  monthNameBn: string;
+  cycleYear: number;
+  monthYear: string;
+  monthYearBn: string;
   cycleText: string;
 } {
   const d = parseFlexibleDate(dateInput) || new Date();
@@ -164,12 +179,24 @@ export function getPayrollCycleDays(dateInput: string | Date | null | undefined)
 
   // Total days in the starting month: month M has K days, so (K - 26 + 1) + 25 = K days
   const daysInCycle = new Date(startYear, startMonth + 1, 0).getDate();
-  const cycleText = `${formatDate(cycleStart)} to ${formatDate(cycleEnd)} (${daysInCycle} Days)`;
+  
+  // Month name is determined by the ending month of the cycle (25th of endMonth)
+  const monthName = MONTH_NAMES_EN[endMonth];
+  const monthNameBn = MONTH_NAMES_BN[endMonth];
+  const cycleYear = endYear;
+  const monthYear = `${monthName} ${cycleYear}`;
+  const monthYearBn = `${monthNameBn} ${cycleYear}`;
+  const cycleText = `${monthName} (${daysInCycle} Days: ${formatDate(cycleStart)} to ${formatDate(cycleEnd)})`;
 
   return {
     daysInCycle,
     cycleStart,
     cycleEnd,
+    monthName,
+    monthNameBn,
+    cycleYear,
+    monthYear,
+    monthYearBn,
     cycleText,
   };
 }

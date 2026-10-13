@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma';
 import Link from 'next/link';
-import { formatDate, calculateServiceAge } from '@/lib/formatDate';
+import { formatDate, calculateServiceAge, getPayrollCycleDays } from '@/lib/formatDate';
 import PrintButton from './PrintButton';
 
 
@@ -27,6 +27,7 @@ export default async function SettlementPrintPage({ params }: { params: { id: st
 
   if (!settlement) return <div>Settlement not found</div>;
   const w = settlement.worker;
+  const payrollCycle = settlement.lastWorkingDay ? getPayrollCycleDays(settlement.lastWorkingDay) : null;
 
   return (
     <div className="p-8 max-w-5xl mx-auto print:p-0 print:max-w-full">
@@ -99,12 +100,19 @@ export default async function SettlementPrintPage({ params }: { params: { id: st
         </div>
 
         {/* Leave & Work Day Info Block */}
-        <h3 className="font-bold border-b border-black mb-3 print:mb-2 pb-1">Leave & work day info</h3>
+        <div className="flex justify-between items-end border-b border-black mb-3 print:mb-2 pb-1">
+          <h3 className="font-bold">Leave & work day info</h3>
+          {payrollCycle && (
+            <span className="text-xs font-semibold text-gray-700">
+              Salary Month: {payrollCycle.monthName} {payrollCycle.cycleYear} ({formatDate(payrollCycle.cycleStart)} to {formatDate(payrollCycle.cycleEnd)})
+            </span>
+          )}
+        </div>
         <div className="grid grid-cols-2 gap-x-12 gap-y-3 mb-8 print:mb-4 text-[15px] print:text-[13px]">
           <div className="flex"><strong className="w-64 print:w-48">Total Earn Leave :</strong> <span className="border-b border-dashed border-gray-400 flex-1 text-center">{settlement.totalEarnLeaveDays || 0}</span> <span className="ml-2 w-16">Days</span></div>
           <div className="flex"><strong className="w-64 print:w-48">Total Late/ & Early Time :</strong> <span className="border-b border-dashed border-gray-400 flex-1 text-center">{settlement.totalLateEarlyMinutes || 0}</span> <span className="ml-2 w-16">Minutes</span></div>
           
-          <div className="flex"><strong className="w-64 print:w-48">Current month working days :</strong> <span className="border-b border-dashed border-gray-400 flex-1 text-center">{settlement.currentMonthWorkingDays || 0}</span> <span className="ml-2 w-16">Days</span></div>
+          <div className="flex"><strong className="w-64 print:w-48">Current month working days {payrollCycle ? `(${payrollCycle.monthName})` : ''} :</strong> <span className="border-b border-dashed border-gray-400 flex-1 text-center">{settlement.currentMonthWorkingDays || 0}</span> <span className="ml-2 w-16">Days</span></div>
           <div className="flex"><strong className="w-64 print:w-48">Absent Days :</strong> <span className="border-b border-dashed border-gray-400 flex-1 text-center">{settlement.absentDays || 0}</span> <span className="ml-2 w-16"></span></div>
 
           {(() => {
@@ -130,7 +138,7 @@ export default async function SettlementPrintPage({ params }: { params: { id: st
           <div className="flex"><strong className="w-64 print:w-48 text-left">Service benefit amount :</strong> <span className="border-b border-dashed border-gray-400 flex-1 text-center">{settlement.serviceBenefitAmount || 0}</span> <span className="ml-2 w-12">Taka</span></div>
           <div className="flex"><strong className="w-64 print:w-48 text-left">Deduct Money (Act of 2006, sec 27) :</strong> <span className="border-b border-dashed border-gray-400 flex-1 text-center">{settlement.deductMoneyAct2006 || 0}</span> <span className="ml-2 w-12">Taka</span></div>
           
-          <div className="flex"><strong className="w-64 print:w-48 text-left">Current month work day pay :</strong> <span className="border-b border-dashed border-gray-400 flex-1 text-center">{settlement.currentMonthWorkDayPay || 0}</span> <span className="ml-2 w-12">Taka</span></div>
+          <div className="flex"><strong className="w-64 print:w-48 text-left">Current month work day pay {payrollCycle ? `(${payrollCycle.monthName})` : ''} :</strong> <span className="border-b border-dashed border-gray-400 flex-1 text-center">{settlement.currentMonthWorkDayPay || 0}</span> <span className="ml-2 w-12">Taka</span></div>
           <div className="flex"><strong className="w-64 print:w-48 text-left">Absent Deduction :</strong> <span className="border-b border-dashed border-gray-400 flex-1 text-center">{settlement.absentDeduction || 0}</span> <span className="ml-2 w-12">Taka</span></div>
           
           <div className="flex"><strong className="w-64 print:w-48 text-left">Extra Duty/OT :</strong> <span className="border-b border-dashed border-gray-400 flex-1 text-center">{settlement.extraDutyOTPay || 0}</span> <span className="ml-2 w-12">Taka</span></div>
