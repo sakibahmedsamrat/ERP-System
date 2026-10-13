@@ -1,29 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { formatDate, calculateServiceAge, parseFlexibleDate, getPayrollCycleDays } from '@/lib/formatDate';
+import { formatDate, calculateServiceAge, parseFlexibleDate, getPayrollCycleDays, formatDateToInput, numberToWords } from '@/lib/formatDate';
 import Link from 'next/link';
 import { Search, Save, Check, RotateCcw, RefreshCw } from 'lucide-react';
 import { getSettlement, updateSettlement } from '../../actions';
 import { useRouter } from 'next/navigation';
-
-function numberToWords(num: number): string {
-  if (num === 0) return "Zero";
-  
-  const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
-  const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
-  
-  const convert = (n: number): string => {
-    if (n < 20) return a[n];
-    if (n < 100) return b[Math.floor(n / 10)] + (n % 10 !== 0 ? ' ' + a[n % 10] : '');
-    if (n < 1000) return a[Math.floor(n / 100)] + 'Hundred ' + (n % 100 !== 0 ? convert(n % 100) : '');
-    if (n < 100000) return convert(Math.floor(n / 1000)) + 'Thousand ' + (n % 1000 !== 0 ? convert(n % 1000) : '');
-    if (n < 10000000) return convert(Math.floor(n / 100000)) + 'Lakh ' + (n % 100000 !== 0 ? convert(n % 100000) : '');
-    return convert(Math.floor(n / 10000000)) + 'Crore ' + (n % 10000000 !== 0 ? convert(n % 10000000) : '');
-  };
-
-  return convert(num).trim();
-}
 
 export default function EditSettlementPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -37,6 +19,7 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
   const [joinDateOverride, setJoinDateOverride] = useState('');
   const [serviceAge, setServiceAge] = useState('');
   const [isDateInverted, setIsDateInverted] = useState(false);
+  const [status, setStatus] = useState<string>('PENDING');
 
   // Track which fields the user has manually edited/overridden
   const [manualOverrides, setManualOverrides] = useState<Record<string, boolean>>({});
@@ -126,12 +109,7 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
     setSearchQuery('');
     setManualOverrides({});
     if (worker.joinDate) {
-      const parsed = parseFlexibleDate(worker.joinDate);
-      if (parsed) {
-        setJoinDateOverride(parsed.toISOString().split('T')[0]);
-      } else {
-        setJoinDateOverride('');
-      }
+      setJoinDateOverride(formatDateToInput(worker.joinDate));
     } else {
       setJoinDateOverride('');
     }
@@ -148,11 +126,113 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
   const handleValChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     const numVal = value === '' ? 0 : parseFloat(value);
-    setManualOverrides(prev => ({ ...prev, [name]: true }));
+    setManualOverrides(prev => {
+      const next = { ...prev };
+
+      // Explicitly mark calculated fields as manual overrides when user types in them directly
+      const calculatedFields = [
+        'serviceBenefitAmount', 'deductMoneyAct2006', 'currentMonthWorkDayPay',
+        'absentDeduction', 'extraDutyOTPay', 'lateEarlyDeduction', 'earnLeavePay',
+        'payableSubTotal', 'deductionSubTotal', 'totalPayAmount'
+      ];
+      if (calculatedFields.includes(name)) {
+        next[name] = true;
+      }
+
+      // Re-enable automatic flow for derived components and subtotals when driver inputs are changed
+      if (name === 'currentMonthWorkingDays') {
+        delete next.currentMonthWorkDayPay;
+        delete next.payableSubTotal;
+        delete next.totalPayAmount;
+        delete next.amountInWords;
+      }
+      if (name === 'absentDays') {
+        delete next.absentDeduction;
+        delete next.deductionSubTotal;
+        delete next.totalPayAmount;
+        delete next.amountInWords;
+      }
+      if (name === 'totalEarnLeaveDays') {
+        delete next.earnLeavePay;
+        delete next.payableSubTotal;
+        delete next.totalPayAmount;
+        delete next.amountInWords;
+      }
+      if (name === 'totalLateEarlyMinutes') {
+        delete next.lateEarlyDeduction;
+        delete next.deductionSubTotal;
+        delete next.totalPayAmount;
+        delete next.amountInWords;
+      }
+      if (name === 'otHour' || name === 'extraDutyDays') {
+        delete next.extraDutyOTPay;
+        delete next.payableSubTotal;
+        delete next.totalPayAmount;
+        delete next.amountInWords;
+      }
+      if (name === 'basicSalary') {
+        delete next.serviceBenefitAmount;
+        delete next.deductMoneyAct2006;
+        delete next.extraDutyOTPay;
+        delete next.payableSubTotal;
+        delete next.deductionSubTotal;
+        delete next.totalPayAmount;
+        delete next.amountInWords;
+      }
+      if (name === 'grossSalary') {
+        delete next.currentMonthWorkDayPay;
+        delete next.absentDeduction;
+        delete next.lateEarlyDeduction;
+        delete next.earnLeavePay;
+        delete next.payableSubTotal;
+        delete next.deductionSubTotal;
+        delete next.totalPayAmount;
+        delete next.amountInWords;
+      }
+      return next;
+    });
     setFormVals(prev => ({
       ...prev,
       [name]: isNaN(numVal) ? 0 : numVal
     }));
+  };
+
+  const clearOverride = (fieldName: string) => {
+    setManualOverrides(prev => {
+      const next = { ...prev };
+      delete next[fieldName];
+      return next;
+    });
+  };
+
+  const handleResignDateChange = (val: string) => {
+    setResignApplyDate(val);
+    setManualOverrides(prev => {
+      const next = { ...prev };
+      delete next.deductMoneyAct2006;
+      delete next.deductionSubTotal;
+      delete next.totalPayAmount;
+      delete next.amountInWords;
+      return next;
+    });
+  };
+
+  const handleLastWorkingDayChange = (val: string) => {
+    setLastWorkingDay(val);
+    setManualOverrides(prev => {
+      const next = { ...prev };
+      delete next.serviceAge;
+      delete next.serviceBenefitAmount;
+      delete next.deductMoneyAct2006;
+      delete next.currentMonthWorkDayPay;
+      delete next.absentDeduction;
+      delete next.lateEarlyDeduction;
+      delete next.payableSubTotal;
+      delete next.deductionSubTotal;
+      delete next.totalPayAmount;
+      delete next.amountInWords;
+      return next;
+    });
   };
 
   // Re-calculate fields automatically, respecting manual overrides
@@ -341,18 +421,46 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
       const data = await getSettlement(params.id);
       if (data) {
         setSelectedWorker(data.worker);
-        if (data.resignApplyDate) setResignApplyDate(new Date(data.resignApplyDate).toISOString().split('T')[0]);
-        if (data.lastWorkingDay) setLastWorkingDay(new Date(data.lastWorkingDay).toISOString().split('T')[0]);
+        if (data.resignApplyDate) setResignApplyDate(formatDateToInput(data.resignApplyDate));
+        if (data.lastWorkingDay) setLastWorkingDay(formatDateToInput(data.lastWorkingDay));
         if (data.worker?.joinDate) {
-          const parsed = parseFlexibleDate(data.worker.joinDate);
-          if (parsed) setJoinDateOverride(parsed.toISOString().split('T')[0]);
+          setJoinDateOverride(formatDateToInput(data.worker.joinDate));
         }
+
         let currentServiceAge = data.serviceAge || '';
-        if ((!currentServiceAge || currentServiceAge === 'Invalid Date') && data.worker?.joinDate && data.lastWorkingDay) {
-          const calc = calculateServiceAge(data.worker.joinDate, data.lastWorkingDay);
-          if (calc.isValid) currentServiceAge = calc.text;
+        let sYears = 0;
+        let sMonths = 0;
+        let sDays = 0;
+        let isInvertedDate = false;
+
+        const effectiveJoin = data.worker?.joinDate;
+        if (effectiveJoin && data.lastWorkingDay) {
+          const calc = calculateServiceAge(effectiveJoin, data.lastWorkingDay);
+          if (calc.isValid) {
+            if (!currentServiceAge || currentServiceAge === 'Invalid Date') {
+              currentServiceAge = calc.text;
+            }
+            sYears = calc.years;
+            sMonths = calc.months;
+            sDays = calc.days;
+            isInvertedDate = calc.isInverted;
+          }
         }
+        if (currentServiceAge) {
+          const matchY = currentServiceAge.match(/(\d+)\s*(?:years|year|yr)/i);
+          const matchM = currentServiceAge.match(/(\d+)\s*(?:months|month|mo)/i);
+          const matchD = currentServiceAge.match(/(\d+)\s*(?:days|day|d)/i);
+          if (matchY) sYears = parseInt(matchY[1], 10);
+          if (matchM) sMonths = parseInt(matchM[1], 10);
+          if (matchD) sDays = parseInt(matchD[1], 10);
+        }
+
         setServiceAge(currentServiceAge);
+        setServiceAgeYears(sYears);
+        setServiceAgeMonths(sMonths);
+        setServiceAgeDays(sDays);
+        setIsDateInverted(isInvertedDate);
+
         setAmountInWords(data.amountInWords || '');
         setBankAccNo(data.bankAccNo || '');
         
@@ -381,21 +489,103 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
           extraDutyDays: 0,
         });
 
-        // Set overrides for loaded database values so initial render doesn't wipe them out
-        setManualOverrides({
-          serviceBenefitAmount: true,
-          deductMoneyAct2006: true,
-          currentMonthWorkDayPay: true,
-          absentDeduction: true,
-          extraDutyOTPay: true,
-          lateEarlyDeduction: true,
-          earnLeavePay: true,
-          payableSubTotal: true,
-          deductionSubTotal: true,
-          totalPayAmount: true,
-          amountInWords: true,
-          serviceAge: true
-        });
+        if (data.status) setStatus(data.status);
+
+        // Detect genuine manual overrides (where stored values deviate from default formulas)
+        const daysInCycleLoaded = data.lastWorkingDay ? getPayrollCycleDays(data.lastWorkingDay).daysInCycle : 30;
+        const bSalary = data.basicSalary || 0;
+        const gSalary = data.grossSalary || 0;
+
+        let expectedServiceBenefit = 0;
+        if (bSalary > 0 && !isInvertedDate) {
+          const perDayBasic = bSalary / 30;
+          const isOver10 = sYears > 10 || (sYears === 10 && (sMonths > 0 || sDays > 0));
+          const isOver3 = sYears > 3 || (sYears === 3 && (sMonths > 0 || sDays > 0));
+          if (isOver10) {
+            expectedServiceBenefit = Math.round(perDayBasic * (30 * sYears));
+          } else if (isOver3) {
+            expectedServiceBenefit = Math.round(perDayBasic * (15 * sYears));
+          } else if (sYears === 3) {
+            expectedServiceBenefit = Math.round(perDayBasic * (7 * sYears));
+          }
+        }
+
+        let expectedDeduct2006 = 0;
+        if (bSalary > 0 && data.resignApplyDate && data.lastWorkingDay) {
+          const rDate = parseFlexibleDate(data.resignApplyDate);
+          const lDate = parseFlexibleDate(data.lastWorkingDay);
+          if (rDate && lDate) {
+            const diffDays = Math.floor((lDate.getTime() - rDate.getTime()) / (1000 * 60 * 60 * 24));
+            const shortfall = Math.min(60, Math.max(0, 60 - diffDays));
+            if (shortfall > 0) {
+              expectedDeduct2006 = Math.round(shortfall * (bSalary / 30));
+            }
+          }
+        }
+
+        const expectedWorkPay = (gSalary > 0 && (data.currentMonthWorkingDays || 0) > 0 && daysInCycleLoaded > 0)
+          ? Math.round((gSalary / daysInCycleLoaded) * (data.currentMonthWorkingDays || 0))
+          : 0;
+
+        const expectedAbsent = (gSalary > 0 && (data.absentDays || 0) > 0 && daysInCycleLoaded > 0)
+          ? Math.round((gSalary / daysInCycleLoaded) * (data.absentDays || 0))
+          : 0;
+
+        const expectedEarnLeave = (gSalary > 0 && (data.totalEarnLeaveDays || 0) > 0)
+          ? Math.round((gSalary / 30) * (data.totalEarnLeaveDays || 0))
+          : 0;
+
+        const expectedLateEarly = (gSalary > 0 && (data.totalLateEarlyMinutes || 0) > 0 && daysInCycleLoaded > 0)
+          ? Math.round((gSalary / daysInCycleLoaded / 8 / 60) * (data.totalLateEarlyMinutes || 0))
+          : 0;
+
+        const loadedPayableSub = (data.serviceBenefitAmount || 0) + (data.currentMonthWorkDayPay || 0) + (data.extraDutyOTPay || 0) + (data.earnLeavePay || 0);
+        const loadedDeductionSub = (data.deductMoneyAct2006 || 0) + (data.absentDeduction || 0) + (data.lateEarlyDeduction || 0);
+        const loadedTotal = loadedPayableSub - loadedDeductionSub;
+
+        const loadedOverrides: Record<string, boolean> = {};
+
+        if (data.serviceBenefitAmount != null && Math.round(data.serviceBenefitAmount) !== expectedServiceBenefit) {
+          loadedOverrides.serviceBenefitAmount = true;
+        }
+        if (data.deductMoneyAct2006 != null && Math.round(data.deductMoneyAct2006) !== expectedDeduct2006) {
+          loadedOverrides.deductMoneyAct2006 = true;
+        }
+        if (data.currentMonthWorkDayPay != null && Math.round(data.currentMonthWorkDayPay) !== expectedWorkPay && data.currentMonthWorkDayPay > 0) {
+          loadedOverrides.currentMonthWorkDayPay = true;
+        }
+        if (data.absentDeduction != null && Math.round(data.absentDeduction) !== expectedAbsent && data.absentDeduction > 0) {
+          loadedOverrides.absentDeduction = true;
+        }
+        if (data.earnLeavePay != null && Math.round(data.earnLeavePay) !== expectedEarnLeave && data.earnLeavePay > 0) {
+          loadedOverrides.earnLeavePay = true;
+        }
+        if (data.lateEarlyDeduction != null && Math.round(data.lateEarlyDeduction) !== expectedLateEarly && data.lateEarlyDeduction > 0) {
+          loadedOverrides.lateEarlyDeduction = true;
+        }
+
+        // Subtotals & totals: only mark as manual if they differ from component aggregates
+        if (data.payableSubTotal != null && Math.round(data.payableSubTotal) !== Math.round(loadedPayableSub)) {
+          loadedOverrides.payableSubTotal = true;
+        }
+        if (data.deductionSubTotal != null && Math.round(data.deductionSubTotal) !== Math.round(loadedDeductionSub)) {
+          loadedOverrides.deductionSubTotal = true;
+        }
+        if (data.totalPayAmount != null && Math.round(data.totalPayAmount) !== Math.round(loadedTotal)) {
+          loadedOverrides.totalPayAmount = true;
+        }
+
+        const expectedWords = loadedTotal > 0
+          ? `${numberToWords(Math.round(loadedTotal))} Taka Only.`
+          : loadedTotal < 0
+          ? `Minus ${numberToWords(Math.abs(Math.round(loadedTotal)))} Taka Only.`
+          : '';
+
+        if (data.amountInWords && data.amountInWords.trim() !== expectedWords.trim()) {
+          loadedOverrides.amountInWords = true;
+        }
+
+        setManualOverrides(loadedOverrides);
       }
       setDataLoaded(true);
     }
@@ -413,6 +603,9 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
     setLoading(true);
     const formData = new FormData(e.currentTarget);
     formData.set('workerId', selectedWorker.id);
+    formData.set('status', status);
+    formData.set('resignApplyDate', resignApplyDate);
+    formData.set('lastWorkingDay', lastWorkingDay);
     formData.set('grossSalary', (formVals.grossSalary || 0).toString());
     formData.set('basicSalary', (formVals.basicSalary || 0).toString());
     formData.set('houseRent', (formVals.houseRent || 0).toString());
@@ -501,9 +694,40 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
       {selectedWorker && (
         <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm p-8 border border-gray-100">
           
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold uppercase text-gray-800">{selectedWorker.company?.name || 'MEP GROUP'}</h2>
-            <h3 className="text-lg font-bold underline mt-2">Resign Benefits</h3>
+          <div className="flex flex-col sm:flex-row items-center justify-between mb-8 pb-4 border-b border-gray-100 gap-4">
+            <div className="text-center sm:text-left">
+              <h2 className="text-2xl font-bold uppercase text-gray-800">{selectedWorker.company?.name || 'MEP GROUP'}</h2>
+              <h3 className="text-lg font-bold underline mt-1">Resign Benefits</h3>
+            </div>
+            <div className="flex items-center gap-3">
+              {Object.keys(manualOverrides).length > 0 && (
+                <button
+                  type="button"
+                  onClick={resetToAutoCalculation}
+                  className="text-xs bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow-sm"
+                  title="Reset all manual overrides to standard labour law formulas"
+                >
+                  <RefreshCw size={13} /> Reset All Overrides
+                </button>
+              )}
+              <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 shadow-sm">
+                <label className="text-xs font-bold text-gray-600 uppercase tracking-wide">Status:</label>
+                <select
+                  name="status"
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  className={`text-xs font-bold px-2.5 py-1 rounded border outline-none cursor-pointer ${
+                    status === 'APPROVED' ? 'bg-green-100 text-green-800 border-green-300' :
+                    status === 'PAID' ? 'bg-blue-100 text-blue-800 border-blue-300' :
+                    'bg-yellow-100 text-yellow-800 border-yellow-300'
+                  }`}
+                >
+                  <option value="PENDING">PENDING</option>
+                  <option value="APPROVED">APPROVED</option>
+                  <option value="PAID">PAID</option>
+                </select>
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-x-12 gap-y-4 mb-8">
@@ -534,11 +758,11 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
             <div className="flex"><strong className="w-40">Sub-Section :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{selectedWorker.subSection?.name || ''}</span></div>
             
             {/* Row 5 */}
-            <div className="flex items-center"><strong className="w-40">Resign Apply Date :</strong> <input type="date" name="resignApplyDate" value={resignApplyDate} onChange={(e) => setResignApplyDate(e.target.value)} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
+            <div className="flex items-center"><strong className="w-40">Resign Apply Date :</strong> <input type="date" name="resignApplyDate" value={resignApplyDate} onChange={(e) => handleResignDateChange(e.target.value)} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
             <div className="flex items-center"><strong className="w-40">Basic Salary :</strong> <input type="number" name="basicSalary" value={formVals.basicSalary || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
             
             {/* Row 6 */}
-            <div className="flex items-center"><strong className="w-40">Last Working Day :</strong> <input type="date" name="lastWorkingDay" value={lastWorkingDay} onChange={(e) => setLastWorkingDay(e.target.value)} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
+            <div className="flex items-center"><strong className="w-40">Last Working Day :</strong> <input type="date" name="lastWorkingDay" value={lastWorkingDay} onChange={(e) => handleLastWorkingDayChange(e.target.value)} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
             <div className="flex items-center"><strong className="w-40">House Rent :</strong> <input type="number" name="houseRent" value={formVals.houseRent || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
             
             {/* Row 7 */}
@@ -639,7 +863,9 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
             <div className="flex items-center">
               <strong className="w-56 text-sm flex items-center gap-1">
                 Service benefit amount :
-                {manualOverrides.serviceBenefitAmount && <span className="text-[10px] text-amber-600 font-normal">(Manual)</span>}
+                {manualOverrides.serviceBenefitAmount && (
+                  <button type="button" onClick={() => clearOverride('serviceBenefitAmount')} className="text-[10px] text-amber-700 bg-amber-100 hover:bg-amber-200 px-1.5 py-0.5 rounded font-normal" title="Click to restore formula">(Manual - reset)</button>
+                )}
               </strong> 
               <input type="number" name="serviceBenefitAmount" value={formVals.serviceBenefitAmount || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50 font-medium" /> 
               <span className="text-gray-500 ml-2 text-xs">Taka</span>
@@ -648,7 +874,9 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
             <div className="flex items-center">
               <strong className="w-56 text-sm text-red-600 flex items-center gap-1">
                 Deduct Money (Act of 2006) :
-                {manualOverrides.deductMoneyAct2006 && <span className="text-[10px] text-amber-600 font-normal">(Manual)</span>}
+                {manualOverrides.deductMoneyAct2006 && (
+                  <button type="button" onClick={() => clearOverride('deductMoneyAct2006')} className="text-[10px] text-amber-700 bg-amber-100 hover:bg-amber-200 px-1.5 py-0.5 rounded font-normal" title="Click to restore formula">(Manual - reset)</button>
+                )}
               </strong> 
               <input type="number" name="deductMoneyAct2006" value={formVals.deductMoneyAct2006 || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 text-red-600 bg-red-50 font-medium" /> 
               <span className="text-gray-500 ml-2 text-xs">Taka</span>
@@ -657,7 +885,9 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
             <div className="flex items-center">
               <strong className="w-56 text-sm flex items-center gap-1">
                 Current month {payrollCycle ? `(${payrollCycle.monthName})` : ''} work day pay :
-                {manualOverrides.currentMonthWorkDayPay && <span className="text-[10px] text-amber-600 font-normal">(Manual)</span>}
+                {manualOverrides.currentMonthWorkDayPay && (
+                  <button type="button" onClick={() => clearOverride('currentMonthWorkDayPay')} className="text-[10px] text-amber-700 bg-amber-100 hover:bg-amber-200 px-1.5 py-0.5 rounded font-normal" title="Click to restore formula">(Manual - reset)</button>
+                )}
               </strong> 
               <input type="number" name="currentMonthWorkDayPay" value={formVals.currentMonthWorkDayPay || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50 font-medium" /> 
               <span className="text-gray-500 ml-2 text-xs">Taka ({daysInCycle}d)</span>
@@ -666,7 +896,9 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
             <div className="flex items-center">
               <strong className="w-56 text-sm text-red-600 flex items-center gap-1">
                 Absent Deduction :
-                {manualOverrides.absentDeduction && <span className="text-[10px] text-amber-600 font-normal">(Manual)</span>}
+                {manualOverrides.absentDeduction && (
+                  <button type="button" onClick={() => clearOverride('absentDeduction')} className="text-[10px] text-amber-700 bg-amber-100 hover:bg-amber-200 px-1.5 py-0.5 rounded font-normal" title="Click to restore formula">(Manual - reset)</button>
+                )}
               </strong> 
               <input type="number" name="absentDeduction" value={formVals.absentDeduction || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 text-red-600 bg-red-50 font-medium" /> 
               <span className="text-gray-500 ml-2 text-xs">Taka ({daysInCycle}d)</span>
@@ -675,7 +907,9 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
             <div className="flex items-center">
               <strong className="w-56 text-sm flex items-center gap-1">
                 Extra Duty/OT :
-                {manualOverrides.extraDutyOTPay && <span className="text-[10px] text-amber-600 font-normal">(Manual)</span>}
+                {manualOverrides.extraDutyOTPay && (
+                  <button type="button" onClick={() => clearOverride('extraDutyOTPay')} className="text-[10px] text-amber-700 bg-amber-100 hover:bg-amber-200 px-1.5 py-0.5 rounded font-normal" title="Click to restore formula">(Manual - reset)</button>
+                )}
               </strong> 
               <input type="number" name="extraDutyOTPay" value={formVals.extraDutyOTPay || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50 font-medium" /> 
               <span className="text-gray-500 ml-2 text-xs">Taka</span>
@@ -684,7 +918,9 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
             <div className="flex items-center">
               <strong className="w-56 text-sm text-red-600 flex items-center gap-1">
                 Deduct from Late/Early Min :
-                {manualOverrides.lateEarlyDeduction && <span className="text-[10px] text-amber-600 font-normal">(Manual)</span>}
+                {manualOverrides.lateEarlyDeduction && (
+                  <button type="button" onClick={() => clearOverride('lateEarlyDeduction')} className="text-[10px] text-amber-700 bg-amber-100 hover:bg-amber-200 px-1.5 py-0.5 rounded font-normal" title="Click to restore formula">(Manual - reset)</button>
+                )}
               </strong> 
               <input type="number" name="lateEarlyDeduction" value={formVals.lateEarlyDeduction || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 text-red-600 bg-red-50 font-medium" /> 
               <span className="text-gray-500 ml-2 text-xs">Taka</span>
@@ -693,7 +929,9 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
             <div className="flex items-center">
               <strong className="w-56 text-sm flex items-center gap-1">
                 Earn leave pay :
-                {manualOverrides.earnLeavePay && <span className="text-[10px] text-amber-600 font-normal">(Manual)</span>}
+                {manualOverrides.earnLeavePay && (
+                  <button type="button" onClick={() => clearOverride('earnLeavePay')} className="text-[10px] text-amber-700 bg-amber-100 hover:bg-amber-200 px-1.5 py-0.5 rounded font-normal" title="Click to restore formula">(Manual - reset)</button>
+                )}
               </strong> 
               <input type="number" name="earnLeavePay" value={formVals.earnLeavePay || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50 font-medium" /> 
               <span className="text-gray-500 ml-2 text-xs">Taka</span>
@@ -704,7 +942,9 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
             <div className="flex items-center font-bold border-t pt-2 border-gray-300 mt-2">
               <strong className="w-56 flex items-center gap-1">
                 Sub total (Payable) :
-                {manualOverrides.payableSubTotal && <span className="text-[10px] text-amber-600 font-normal">(Manual)</span>}
+                {manualOverrides.payableSubTotal && (
+                  <button type="button" onClick={() => clearOverride('payableSubTotal')} className="text-[10px] text-amber-700 bg-amber-100 hover:bg-amber-200 px-1.5 py-0.5 rounded font-normal" title="Click to restore sum">(Manual - reset)</button>
+                )}
               </strong> 
               <input 
                 type="number" 
@@ -720,7 +960,9 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
             <div className="flex items-center font-bold border-t pt-2 border-gray-300 mt-2 text-red-700">
               <strong className="w-56 flex items-center gap-1">
                 Sub total (Deductions) :
-                {manualOverrides.deductionSubTotal && <span className="text-[10px] text-amber-600 font-normal">(Manual)</span>}
+                {manualOverrides.deductionSubTotal && (
+                  <button type="button" onClick={() => clearOverride('deductionSubTotal')} className="text-[10px] text-amber-700 bg-amber-100 hover:bg-amber-200 px-1.5 py-0.5 rounded font-normal" title="Click to restore sum">(Manual - reset)</button>
+                )}
               </strong> 
               <input 
                 type="number" 
@@ -773,7 +1015,7 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
           </div>
 
           <div className="flex items-center mb-10">
-            <strong className="w-40">Banck Acc. No. :</strong> 
+            <strong className="w-40">Bank Acc. No. :</strong> 
             <input 
               type="text" 
               name="bankAccNo" 

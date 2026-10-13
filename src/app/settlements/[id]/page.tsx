@@ -41,7 +41,15 @@ export default async function SettlementPrintPage({ params }: { params: { id: st
         <Link href="/settlements" className="text-blue-600 hover:underline">
           &larr; Back to Settlements
         </Link>
-        <PrintButton />
+        <div className="flex items-center gap-3">
+          <Link
+            href={`/settlements/${settlement.id}/edit`}
+            className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-bold text-sm transition"
+          >
+            Edit Form
+          </Link>
+          <PrintButton />
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm p-10 border border-gray-200 print:shadow-none print:border-none print:p-0 print:text-[14px]">
@@ -55,7 +63,15 @@ export default async function SettlementPrintPage({ params }: { params: { id: st
             <h1 className="text-2xl print:text-xl font-bold uppercase">{w.company?.name || 'MOHAMMADI ELECTRIC WIRES & MULTI PRODUCTS (MEP) LTD.'}</h1>
             <h2 className="text-lg print:text-base font-bold underline mt-2 inline-block">Resign Benefits</h2>
           </div>
-          <div className="w-1/4"></div>
+          <div className="w-1/4 text-right">
+            <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
+              settlement.status === 'APPROVED' ? 'bg-green-100 text-green-800 border border-green-300' :
+              settlement.status === 'PAID' ? 'bg-blue-100 text-blue-800 border border-blue-300' :
+              'bg-yellow-100 text-yellow-800 border border-yellow-300'
+            }`}>
+              {settlement.status}
+            </span>
+          </div>
         </div>
 
         {/* Worker Info Block */}
@@ -162,14 +178,14 @@ export default async function SettlementPrintPage({ params }: { params: { id: st
         </div>
 
         <div className="flex font-bold text-[15px] print:text-[14px] mb-8 print:mb-6">
-          <strong className="w-40 print:w-32 text-left">Banck Acc. No. :</strong> 
+          <strong className="w-40 print:w-32 text-left">Bank Acc. No. :</strong> 
           <span className="border-b border-dashed border-gray-400 flex-1 px-2 min-h-[24px] inline-block">{settlement.bankAccNo || ''}</span>
         </div>
 
         <div className="mt-16 print:mt-10 flex justify-start mb-8 print:mb-4">
           <div className="text-center font-bold text-[15px] print:text-[14px]">
             <div className="border-t border-dashed border-gray-500 w-80 print:w-64 pt-2">
-              Payment Reciver Signeture with Date
+              Payment Receiver Signature with Date
             </div>
           </div>
         </div>

@@ -5,9 +5,15 @@ export function parseFlexibleDate(dateStr: string | Date | null | undefined): Da
   const trimmed = String(dateStr).trim();
   if (!trimmed) return null;
 
-  // Standard ISO or YYYY-MM-DD
+  // Standard ISO timestamp with time/zone component (e.g. 2026-10-14T18:00:00.000Z)
+  if (trimmed.includes('T') || trimmed.endsWith('Z')) {
+    const d = new Date(trimmed);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  // Standard ISO date-only format (YYYY-MM-DD)
   if (/^\d{4}[-/.]\d{1,2}[-/.]\d{1,2}/.test(trimmed)) {
-    const parts = trimmed.split('T')[0].split(/[-/.]/);
+    const parts = trimmed.split(/[-/.]/);
     const year = parseInt(parts[0], 10);
     const month = parseInt(parts[1], 10) - 1;
     const day = parseInt(parts[2], 10);
@@ -29,6 +35,16 @@ export function parseFlexibleDate(dateStr: string | Date | null | undefined): Da
 
   const d = new Date(trimmed);
   return isNaN(d.getTime()) ? null : d;
+}
+
+export function formatDateToInput(dateInput: string | Date | null | undefined): string {
+  if (!dateInput) return '';
+  const d = parseFlexibleDate(dateInput);
+  if (!d) return '';
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 export function formatDate(dateStr: string | Date | null | undefined): string {
@@ -196,4 +212,22 @@ export function getPayrollCycleDays(dateInput: string | Date | null | undefined)
     monthYearBn,
     cycleText,
   };
+}
+
+export function numberToWords(num: number): string {
+  if (num === 0) return "Zero";
+  
+  const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
+  const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+  
+  const convert = (n: number): string => {
+    if (n < 20) return a[n];
+    if (n < 100) return b[Math.floor(n / 10)] + (n % 10 !== 0 ? ' ' + a[n % 10] : '');
+    if (n < 1000) return a[Math.floor(n / 100)] + 'Hundred ' + (n % 100 !== 0 ? convert(n % 100) : '');
+    if (n < 100000) return convert(Math.floor(n / 1000)) + 'Thousand ' + (n % 1000 !== 0 ? convert(n % 1000) : '');
+    if (n < 10000000) return convert(Math.floor(n / 100000)) + 'Lakh ' + (n % 100000 !== 0 ? convert(n % 100000) : '');
+    return convert(Math.floor(n / 10000000)) + 'Crore ' + (n % 10000000 !== 0 ? convert(n % 10000000) : '');
+  };
+
+  return convert(num).trim();
 }
