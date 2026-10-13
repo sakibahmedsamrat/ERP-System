@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { formatDate, calculateServiceAge, parseFlexibleDate } from '@/lib/formatDate';
+import { formatDate, calculateServiceAge, parseFlexibleDate, getPayrollCycleDays } from '@/lib/formatDate';
 import Link from 'next/link';
 import { Search, Save, Check, RotateCcw, RefreshCw } from 'lucide-react';
 import { getSettlement, updateSettlement } from '../../actions';
@@ -168,10 +168,8 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
 
       let daysInMonth = 30; // fallback
       if (lastWorkingDay) {
-        const lwd = new Date(lastWorkingDay);
-        if (!isNaN(lwd.getTime())) {
-          daysInMonth = new Date(lwd.getFullYear(), lwd.getMonth() + 1, 0).getDate();
-        }
+        const cycleInfo = getPayrollCycleDays(lastWorkingDay);
+        daysInMonth = cycleInfo.daysInCycle;
       }
 
       // 1. Earn leave pay = (Gross / 30) * Total Earn Leave
@@ -318,6 +316,9 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
   const totalPayAmount = manualOverrides.totalPayAmount 
     ? (Number(formVals.totalPayAmount) || 0)
     : calculatedTotalPayAmount;
+
+  const payrollCycle = lastWorkingDay ? getPayrollCycleDays(lastWorkingDay) : null;
+  const daysInCycle = payrollCycle ? payrollCycle.daysInCycle : 30;
 
   const [amountInWords, setAmountInWords] = useState('');
   const [bankAccNo, setBankAccNo] = useState('');
@@ -571,12 +572,19 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
             <div className="flex items-center"><strong className="w-40">Conveyance Allow :</strong> <input type="number" name="conveyanceAllowance" value={formVals.conveyanceAllowance || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
           </div>
 
-          <h4 className="font-bold text-gray-800 bg-gray-100 p-2 mb-4">Leave & work day info</h4>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-gray-100 p-2 mb-4 gap-2">
+            <h4 className="font-bold text-gray-800">Leave & work day info</h4>
+            {payrollCycle && (
+              <span className="text-xs bg-indigo-50 border border-indigo-200 text-indigo-800 px-2.5 py-1 rounded font-semibold">
+                🗓️ বেতন মাস ({payrollCycle.daysInCycle} দিন): {formatDate(payrollCycle.cycleStart)} হতে {formatDate(payrollCycle.cycleEnd)}
+              </span>
+            )}
+          </div>
           <div className="grid grid-cols-2 gap-x-12 gap-y-4 mb-8">
             <div className="flex items-center"><strong className="w-48 text-sm">Total Earn Leave (Days) :</strong> <input type="number" name="totalEarnLeaveDays" value={formVals.totalEarnLeaveDays || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
             <div className="flex items-center"><strong className="w-48 text-sm">Total Late/Early (Min) :</strong> <input type="number" name="totalLateEarlyMinutes" value={formVals.totalLateEarlyMinutes || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
-            <div className="flex items-center"><strong className="w-48 text-sm">Current month work days :</strong> <input type="number" name="currentMonthWorkingDays" value={formVals.currentMonthWorkingDays || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
-            <div className="flex items-center"><strong className="w-48 text-sm">Absent Days :</strong> <input type="number" name="absentDays" value={formVals.absentDays || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
+            <div className="flex items-center"><strong className="w-48 text-sm">Current month work days :</strong> <input type="number" name="currentMonthWorkingDays" value={formVals.currentMonthWorkingDays || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /> <span className="text-xs text-gray-500 ml-1">/ {daysInCycle} Days</span></div>
+            <div className="flex items-center"><strong className="w-48 text-sm">Absent Days :</strong> <input type="number" name="absentDays" value={formVals.absentDays || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /> <span className="text-xs text-gray-500 ml-1">/ {daysInCycle} Days</span></div>
             {selectedWorker.grade === 'S' && (
               <div className="flex items-center"><strong className="w-48 text-sm">OT Hour :</strong> <input type="number" name="otHour" value={formVals.otHour || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
             )}
@@ -645,7 +653,7 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
                 {manualOverrides.currentMonthWorkDayPay && <span className="text-[10px] text-amber-600 font-normal">(Manual)</span>}
               </strong> 
               <input type="number" name="currentMonthWorkDayPay" value={formVals.currentMonthWorkDayPay || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50 font-medium" /> 
-              <span className="text-gray-500 ml-2 text-xs">Taka</span>
+              <span className="text-gray-500 ml-2 text-xs">Taka ({daysInCycle}d)</span>
             </div>
             
             <div className="flex items-center">
@@ -654,7 +662,7 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
                 {manualOverrides.absentDeduction && <span className="text-[10px] text-amber-600 font-normal">(Manual)</span>}
               </strong> 
               <input type="number" name="absentDeduction" value={formVals.absentDeduction || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 text-red-600 bg-red-50 font-medium" /> 
-              <span className="text-gray-500 ml-2 text-xs">Taka</span>
+              <span className="text-gray-500 ml-2 text-xs">Taka ({daysInCycle}d)</span>
             </div>
             
             <div className="flex items-center">

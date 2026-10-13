@@ -117,3 +117,59 @@ export function calculateServiceAge(
     isValid: true
   };
 }
+
+/**
+ * Calculates payroll cycle days where a month is counted from the 26th of previous month to the 25th of current month.
+ * e.g. 26-09-2026 to 25-10-2026 = 30 days (September has 30 days)
+ *      26-10-2026 to 25-11-2026 = 31 days (October has 31 days)
+ */
+export function getPayrollCycleDays(dateInput: string | Date | null | undefined): {
+  daysInCycle: number;
+  cycleStart: Date;
+  cycleEnd: Date;
+  cycleText: string;
+} {
+  const d = parseFlexibleDate(dateInput) || new Date();
+  const day = d.getDate();
+  const month = d.getMonth(); // 0-11
+  const year = d.getFullYear();
+
+  let startYear = year;
+  let startMonth = month;
+  let endYear = year;
+  let endMonth = month;
+
+  if (day >= 26) {
+    // Current cycle starts on 26th of this month, ends on 25th of next month
+    startMonth = month;
+    startYear = year;
+    endMonth = month + 1;
+    if (endMonth > 11) {
+      endMonth = 0;
+      endYear = year + 1;
+    }
+  } else {
+    // Current cycle started on 26th of previous month, ends on 25th of this month
+    endMonth = month;
+    endYear = year;
+    startMonth = month - 1;
+    if (startMonth < 0) {
+      startMonth = 11;
+      startYear = year - 1;
+    }
+  }
+
+  const cycleStart = new Date(startYear, startMonth, 26);
+  const cycleEnd = new Date(endYear, endMonth, 25);
+
+  // Total days in the starting month: month M has K days, so (K - 26 + 1) + 25 = K days
+  const daysInCycle = new Date(startYear, startMonth + 1, 0).getDate();
+  const cycleText = `${formatDate(cycleStart)} to ${formatDate(cycleEnd)} (${daysInCycle} Days)`;
+
+  return {
+    daysInCycle,
+    cycleStart,
+    cycleEnd,
+    cycleText,
+  };
+}
