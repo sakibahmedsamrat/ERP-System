@@ -36,7 +36,7 @@ export default function ModuleLoading({ title }: { title?: string }) {
 
       <div className="flex justify-center items-center gap-2 mt-6 text-sm text-blue-600 font-medium">
         <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-        <span>{title ? `${title} লোড হচ্ছে...` : 'লোড হচ্ছে...'}</span>
+        <span>{title ? `Loading ${title}...` : 'Loading...'}</span>
       </div>
     </div>
   );

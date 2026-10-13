@@ -15,7 +15,7 @@ export default function NewCompanyPage() {
         <form action={createCompany} className="space-y-4">
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-              Company Name (কোম্পানির নাম) *
+              Company Name *
             </label>
             <input 
               type="text" 
@@ -29,7 +29,7 @@ export default function NewCompanyPage() {
 
           <div>
             <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
-              Location / Address (ঠিকানা)
+              Location / Address
             </label>
             <input 
               type="text" 

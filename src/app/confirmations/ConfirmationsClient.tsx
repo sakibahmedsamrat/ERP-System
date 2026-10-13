@@ -383,11 +383,11 @@ export default function ConfirmationsClient({
             <div className="text-xs text-gray-600 mt-0.5">
               {activeTab === '6m' ? (
                 <span>
-                  চাকরীর বয়স <strong>৫ মাস ১৫ দিন</strong> বা তার বেশি হলে এই তালিকায় আসবে। <strong>Done</strong> বাটনে ক্লিক করলে সম্পন্ন হবে।
+                  Employees with service tenure of <strong>5 months 15 days</strong> or more will appear in this list. Click <strong>Done</strong> to complete confirmation.
                 </span>
               ) : (
                 <span>
-                  পদবী <strong>Quality Checker</strong> অথবা <strong>Production ডিপার্টমেন্টের Helper</strong> যাদের চাকরীর বয়স <strong>২ বছর ১১ মাস</strong> বা তার বেশি, শুধুমাত্র তারা এই তালিকায় আসবে।
+                  Only employees with designation <strong>Quality Checker</strong> or <strong>Helper</strong> in the <strong>Production</strong> department, and service tenure of <strong>2 years 11 months</strong> or more will appear in this list.
                 </span>
               )}
             </div>

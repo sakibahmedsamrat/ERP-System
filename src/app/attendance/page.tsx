@@ -35,7 +35,7 @@ export default async function AttendancePage({ searchParams }: { searchParams: {
   return (
     <div className="p-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Attendance (হাজিরা)</h1>
+        <h1 className="text-3xl font-bold text-gray-800">Attendance</h1>
         <Link 
           href="/attendance/mark" 
           className="bg-blue-600 text-white px-4 py-2 rounded flex items-center gap-2 hover:bg-blue-700 transition"

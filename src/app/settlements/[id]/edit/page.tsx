@@ -489,7 +489,7 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
         <div>
           <h1 className="text-3xl font-bold text-gray-800">Edit Settlement</h1>
           <p className="text-sm text-gray-500 mt-1">
-            যেকোনো ফিল্ডে ম্যানুয়াল পরিবর্তন দিলে তা ডাটাবেজে সংরক্ষিত হবে।
+            Any manual edits made to fields will be saved to the database.
           </p>
         </div>
         <Link href="/settlements" className="text-blue-600 hover:underline">
@@ -577,13 +577,13 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
               <h4 className="font-bold text-gray-800">Leave & work day info</h4>
               {payrollCycle && (
                 <span className="text-xs bg-indigo-600 text-white px-2 py-0.5 rounded font-bold uppercase tracking-wide">
-                  {payrollCycle.monthNameBn} / {payrollCycle.monthName}
+                  {payrollCycle.monthName}
                 </span>
               )}
             </div>
             {payrollCycle && (
               <span className="text-xs bg-indigo-50 border border-indigo-200 text-indigo-900 px-2.5 py-1 rounded font-semibold">
-                🗓️ বেতন মাস ({payrollCycle.monthName}): {formatDate(payrollCycle.cycleStart)} হতে {formatDate(payrollCycle.cycleEnd)} ({payrollCycle.daysInCycle} দিন)
+                🗓️ Salary Month ({payrollCycle.monthName}): {formatDate(payrollCycle.cycleStart)} to {formatDate(payrollCycle.cycleEnd)} ({payrollCycle.daysInCycle} Days)
               </span>
             )}
           </div>
@@ -627,10 +627,10 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
                 type="button"
                 onClick={resetToAutoCalculation}
                 className="text-xs text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1 bg-white px-2.5 py-1 rounded border shadow-sm transition"
-                title="ম্যানুয়াল এন্ট্রি রিসেট করে পুনরায় ফর্মুলা অনুযায়ী গণনা করুন"
+                title="Reset manual entries and recalculate using formulas"
               >
                 <RefreshCw size={12} />
-                🔄 Re-calculate All Automatically (অটো গণনা করুন)
+                🔄 Re-calculate All Automatically
               </button>
             )}
           </div>

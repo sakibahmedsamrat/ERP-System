@@ -123,15 +123,12 @@ const MONTH_NAMES_EN = [
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
-const MONTH_NAMES_BN = [
-  'জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন',
-  'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'
-];
+const MONTH_NAMES_BN = MONTH_NAMES_EN;
 
 /**
  * Calculates payroll cycle days where a month is counted from the 26th of previous month to the 25th of current month.
- * e.g. 26-09-2026 to 25-10-2026 = 30 days (September has 30 days), Month Name = October (অক্টোবর)
- *      26-10-2026 to 25-11-2026 = 31 days (October has 31 days), Month Name = November (নভেম্বর)
+ * e.g. 26-09-2026 to 25-10-2026 = 30 days (September has 30 days), Month Name = October
+ *      26-10-2026 to 25-11-2026 = 31 days (October has 31 days), Month Name = November
  */
 export function getPayrollCycleDays(dateInput: string | Date | null | undefined): {
   daysInCycle: number;

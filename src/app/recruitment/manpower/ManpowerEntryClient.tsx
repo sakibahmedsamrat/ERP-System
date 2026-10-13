@@ -141,7 +141,7 @@ export default function ManpowerEntryClient({
   const handleSubmitSingle = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedSubSectionId) {
-      showToast('Please select a Sub-Section (অনুগ্রহ করে উপ-শাখা নির্বাচন করুন)', 'error');
+      showToast('Please select a Sub-Section', 'error');
       return;
     }
 
@@ -296,10 +296,10 @@ export default function ManpowerEntryClient({
           </div>
           <div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-              Sub Section Manpower Entry (উপ-শাখা ভিত্তিক জনবল এন্ট্রি)
+              Sub Section Manpower Entry
             </h1>
             <p className="text-sm text-gray-500 mt-1 leading-relaxed">
-              কোম্পানি &gt; বিভাগ &gt; শাখা &gt; উপ-শাখা নির্বাচন করে অনুমোদিত জনবল (Authorized Manpower) সংখ্যা এন্ট্রি বা পরিবর্তন করুন।
+              Select Company &gt; Department &gt; Section &gt; Sub Section to define or adjust authorized manpower count.
             </p>
           </div>
         </div>
@@ -311,7 +311,7 @@ export default function ManpowerEntryClient({
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-1.5 flex items-center gap-1.5">
                 <span className="w-5 h-5 rounded-full bg-blue-600 text-white text-xs inline-flex items-center justify-center font-bold">1</span>
-                <span>Select Company (কোম্পানি নির্বাচন) *</span>
+                <span>Select Company *</span>
               </label>
               <select
                 required
@@ -324,7 +324,7 @@ export default function ManpowerEntryClient({
                 }}
                 className="w-full text-sm border border-gray-300 rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition font-medium"
               >
-                <option value="">-- Choose Company (কোম্পানি নির্বাচন করুন) --</option>
+                <option value="">-- Choose Company --</option>
                 {companyList.map(c => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
@@ -335,7 +335,7 @@ export default function ManpowerEntryClient({
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-1.5 flex items-center gap-1.5">
                 <span className="w-5 h-5 rounded-full bg-blue-600 text-white text-xs inline-flex items-center justify-center font-bold">2</span>
-                <span>Select Department (বিভাগ নির্বাচন) *</span>
+                <span>Select Department *</span>
               </label>
               <select
                 required
@@ -353,7 +353,7 @@ export default function ManpowerEntryClient({
                     ? '-- Select Company First --' 
                     : departments.length === 0 
                     ? '-- No Departments Found --' 
-                    : '-- Choose Department (বিভাগ নির্বাচন করুন) --'}
+                    : '-- Choose Department --'}
                 </option>
                 {departments.map(d => (
                   <option key={d.id} value={d.id}>{d.name}</option>
@@ -365,7 +365,7 @@ export default function ManpowerEntryClient({
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-1.5 flex items-center gap-1.5">
                 <span className="w-5 h-5 rounded-full bg-blue-600 text-white text-xs inline-flex items-center justify-center font-bold">3</span>
-                <span>Select Section (শাখা নির্বাচন) *</span>
+                <span>Select Section *</span>
               </label>
               <select
                 required
@@ -382,7 +382,7 @@ export default function ManpowerEntryClient({
                     ? '-- Select Department First --' 
                     : sections.length === 0 
                     ? '-- No Sections Found --' 
-                    : '-- Choose Section (শাখা নির্বাচন করুন) --'}
+                    : '-- Choose Section --'}
                 </option>
                 {sections.map(s => (
                   <option key={s.id} value={s.id}>{s.name}</option>
@@ -394,7 +394,7 @@ export default function ManpowerEntryClient({
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-1.5 flex items-center gap-1.5">
                 <span className="w-5 h-5 rounded-full bg-blue-600 text-white text-xs inline-flex items-center justify-center font-bold">4</span>
-                <span>Select Sub Section (উপ-শাখা নির্বাচন) *</span>
+                <span>Select Sub Section *</span>
               </label>
               <select
                 required
@@ -408,7 +408,7 @@ export default function ManpowerEntryClient({
                     ? '-- Select Section First --' 
                     : subSections.length === 0 
                     ? '-- No Sub-Sections Found in this Section --' 
-                    : '-- Choose Sub Section (উপ-শাখা নির্বাচন করুন) --'}
+                    : '-- Choose Sub Section --'}
                 </option>
                 {subSections.map(sub => (
                   <option key={sub.id} value={sub.id}>
@@ -442,7 +442,7 @@ export default function ManpowerEntryClient({
                     <span className="text-base font-extrabold text-emerald-700">{currentExisting}</span>
                   </div>
                   <div className="bg-white px-3 py-1.5 rounded-xl border border-gray-200 shadow-xs text-center">
-                    <span className="text-[10px] text-gray-500 uppercase font-bold block">Vacancy / বাকি</span>
+                    <span className="text-[10px] text-gray-500 uppercase font-bold block">Vacancy</span>
                     <span className={`text-base font-extrabold ${currentAuth - currentExisting > 0 ? 'text-rose-600' : 'text-gray-700'}`}>
                       {currentAuth - currentExisting > 0 ? `+${currentAuth - currentExisting}` : currentAuth - currentExisting}
                     </span>
@@ -454,7 +454,7 @@ export default function ManpowerEntryClient({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-1">
                 <div>
                   <label className="block text-sm font-bold text-gray-800 mb-1.5">
-                    Authorized Manpower Count (অনুমোদিত জনবল সংখ্যা) *
+                    Authorized Manpower Count *
                   </label>
                   <input
                     type="number"
@@ -468,8 +468,8 @@ export default function ManpowerEntryClient({
                   />
                   <div className="mt-2 text-xs flex items-center justify-between text-gray-500">
                     <span>
-                      Projected Vacancy / বাকি: <strong className={newDiff > 0 ? 'text-rose-600' : newDiff === 0 ? 'text-emerald-600' : 'text-indigo-600'}>
-                        {newDiff > 0 ? `+${newDiff} Vacancy (বাকি আছে)` : newDiff === 0 ? '0 Fulfilled (পূর্ণ)' : `${Math.abs(newDiff)} Surplus (উদ্বৃত্ত)`}
+                      Projected Vacancy: <strong className={newDiff > 0 ? 'text-rose-600' : newDiff === 0 ? 'text-emerald-600' : 'text-indigo-600'}>
+                        {newDiff > 0 ? `+${newDiff} Vacancy` : newDiff === 0 ? '0 Fulfilled' : `${Math.abs(newDiff)} Surplus`}
                       </strong>
                     </span>
                     <span>Active workers: <strong>{currentExisting}</strong></span>
@@ -478,7 +478,7 @@ export default function ManpowerEntryClient({
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                    Remarks / Justification (মন্তব্য - ঐচ্ছিক)
+                    Remarks / Justification (Optional)
                   </label>
                   <input
                     type="text"
@@ -510,7 +510,7 @@ export default function ManpowerEntryClient({
                   ) : (
                     <Save size={16} />
                   )}
-                  <span>Save Authorized Manpower (সংরক্ষণ করুন)</span>
+                  <span>Save Authorized Manpower</span>
                 </button>
               </div>
             </div>
@@ -604,15 +604,15 @@ export default function ManpowerEntryClient({
                           </span>
                         ) : diff > 0 ? (
                           <span className="text-xs text-rose-700 bg-rose-50 px-2.5 py-1 rounded-full border border-rose-200 font-bold">
-                            +{diff} Vacancy (বাকি আছে)
+                            +{diff} Vacancy
                           </span>
                         ) : diff === 0 ? (
                           <span className="text-xs text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 font-bold">
-                            0 Fulfilled (পূর্ণ)
+                            0 Fulfilled
                           </span>
                         ) : (
                           <span className="text-xs text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-full border border-indigo-200 font-bold">
-                            {Math.abs(diff)} Surplus (উদ্বৃত্ত)
+                            {Math.abs(diff)} Surplus
                           </span>
                         )}
                       </td>

@@ -19,15 +19,15 @@ export default function ErrorBoundary({
       <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-4">
         <AlertTriangle size={32} />
       </div>
-      <h2 className="text-2xl font-bold text-gray-800 mb-2">পেজটি লোড করা যায়নি (Something went wrong)</h2>
+      <h2 className="text-2xl font-bold text-gray-800 mb-2">Something went wrong</h2>
       <p className="text-gray-600 mb-6 max-w-md text-sm">
-        সার্ভার বা ডেটাবেজে সাময়িক সংযোগ বিঘ্ন ঘটেছে। দয়া করে নিচের বাটনে ক্লিক করে আবার চেষ্টা করুন।
+        A temporary connection error occurred with the server or database. Please click the button below to try again.
       </p>
       <button
         onClick={() => reset()}
         className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition flex items-center gap-2 shadow-sm shadow-blue-500/20 active:scale-95"
       >
-        <RotateCcw size={18} /> আবার লোড করুন (Retry)
+        <RotateCcw size={18} /> Retry
       </button>
     </div>
   );

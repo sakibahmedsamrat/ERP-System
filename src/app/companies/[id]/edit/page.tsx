@@ -30,7 +30,7 @@ export default async function EditCompanyPage({ params }: { params: { id: string
         <form action={updateAction} className="space-y-4">
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-              Company Name (কোম্পানির নাম) *
+              Company Name *
             </label>
             <input 
               type="text" 
@@ -44,7 +44,7 @@ export default async function EditCompanyPage({ params }: { params: { id: string
 
           <div>
             <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
-              Location / Address (ঠিকানা)
+              Location / Address
             </label>
             <input 
               type="text" 

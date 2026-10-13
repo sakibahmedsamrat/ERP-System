@@ -92,7 +92,7 @@ export function getManpowerStatus(auth: number, exist: number) {
   if (auth === 0 && exist === 0) {
     return {
       type: 'NOT_SET' as const,
-      label: '0 Not Set (নির্ধারিত নয়)',
+      label: '0 Not Set',
       badgeClass: 'bg-gray-100 text-gray-500 border border-gray-200',
       vacancy: 0,
       surplus: 0
@@ -101,7 +101,7 @@ export function getManpowerStatus(auth: number, exist: number) {
   if (auth === 0 && exist > 0) {
     return {
       type: 'UNSET_ACTIVE' as const,
-      label: `${exist} Active (অনুমোদন শূন্য)`,
+      label: `${exist} Active (Unset)`,
       badgeClass: 'bg-amber-50 text-amber-800 border border-amber-200',
       vacancy: 0,
       surplus: exist
@@ -110,7 +110,7 @@ export function getManpowerStatus(auth: number, exist: number) {
   if (auth > exist) {
     return {
       type: 'VACANCY' as const,
-      label: `+${diff} Vacancy (বাকি আছে)`,
+      label: `+${diff} Vacancy`,
       badgeClass: 'bg-rose-50 text-rose-700 border border-rose-200',
       vacancy: diff,
       surplus: 0
@@ -119,7 +119,7 @@ export function getManpowerStatus(auth: number, exist: number) {
   if (auth === exist) {
     return {
       type: 'FULFILLED' as const,
-      label: '0 Fulfilled (পরিপূর্ণ)',
+      label: '0 Fulfilled',
       badgeClass: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
       vacancy: 0,
       surplus: 0
@@ -129,7 +129,7 @@ export function getManpowerStatus(auth: number, exist: number) {
   const surplusCount = exist - auth;
   return {
     type: 'SURPLUS' as const,
-    label: `${surplusCount} Surplus (উদ্বৃত্ত)`,
+    label: `${surplusCount} Surplus`,
     badgeClass: 'bg-indigo-50 text-indigo-700 border border-indigo-200',
     vacancy: 0,
     surplus: surplusCount
@@ -391,11 +391,11 @@ export default function RecruitmentClient({
       'Department',
       'Section',
       'Sub Section',
-      'Authorized Manpower (অনুমোদিত)',
-      'Existing Manpower (বর্তমান)',
-      'Remaining Vacancy (বাকি পদ)',
-      'Surplus (উদ্বৃত্ত)',
-      'Status (অবস্থা)'
+      'Authorized Manpower',
+      'Existing Manpower',
+      'Remaining Vacancy',
+      'Surplus',
+      'Status'
     ];
 
     const rows = filteredItems.map((item, idx) => {
@@ -445,10 +445,10 @@ export default function RecruitmentClient({
             </div>
             <div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-                Recruitment & Manpower (নিয়োগ ও জনবল বিবরণী)
+                Recruitment & Manpower
               </h1>
               <p className="text-sm text-gray-500 font-medium">
-                কোম্পানি, বিভাগ, শাখা ও উপ-শাখা ভিত্তিক অনুমোদিত জনবল, বর্তমান জনবল ও বাকি (ঘাটতি) বিস্তারিত বিবরণী
+                Detailed summary of authorized, existing, and remaining (vacancy) manpower by company, department, section, and sub-section
               </p>
             </div>
           </div>
@@ -465,7 +465,7 @@ export default function RecruitmentClient({
             }`}
           >
             <Sliders size={18} />
-            <span>Set Authorized Manpower (ম্যানপাওয়ার এন্ট্রি)</span>
+            <span>Set Authorized Manpower</span>
           </button>
 
           <Link
@@ -508,7 +508,7 @@ export default function RecruitmentClient({
           }`}
         >
           <Users size={18} />
-          <span>Manpower Details & Analysis (জনবল বিবরণী)</span>
+          <span>Manpower Details & Analysis</span>
           <span className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full font-bold">
             {items.length}
           </span>
@@ -523,7 +523,7 @@ export default function RecruitmentClient({
           }`}
         >
           <Sliders size={18} />
-          <span>Cascading Manpower Entry (আলাদা এন্ট্রি অপশন)</span>
+          <span>Cascading Manpower Entry</span>
           <span className="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded-full font-bold">
             Step-by-Step
           </span>
@@ -538,7 +538,7 @@ export default function RecruitmentClient({
           }`}
         >
           <Briefcase size={18} />
-          <span>Job Circulars (নিয়োগ বিজ্ঞপ্তি)</span>
+          <span>Job Circulars</span>
           <span className="bg-gray-100 text-gray-700 text-xs px-2 py-0.5 rounded-full font-bold">
             {recruitments.length}
           </span>
@@ -556,7 +556,7 @@ export default function RecruitmentClient({
                   <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
                     Authorized Manpower
                   </p>
-                  <p className="text-xs text-gray-400 font-medium mb-1">মোট অনুমোদিত জনবল</p>
+                  <p className="text-xs text-gray-400 font-medium mb-1">Total Authorized Manpower</p>
                   <p className="text-3xl font-extrabold text-gray-900">{metrics.totalAuthorized}</p>
                 </div>
                 <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -575,7 +575,7 @@ export default function RecruitmentClient({
                   <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
                     Existing Manpower
                   </p>
-                  <p className="text-xs text-gray-400 font-medium mb-1">মোট বর্তমান জনবল</p>
+                  <p className="text-xs text-gray-400 font-medium mb-1">Total Existing Manpower</p>
                   <p className="text-3xl font-extrabold text-emerald-600">{metrics.totalExisting}</p>
                 </div>
                 <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -594,7 +594,7 @@ export default function RecruitmentClient({
                   <p className="text-xs font-bold text-rose-600 uppercase tracking-wider">
                     Remaining / Vacancy
                   </p>
-                  <p className="text-xs text-gray-400 font-medium mb-1">বাকি কত আছে (ঘাটতি পদ)</p>
+                  <p className="text-xs text-gray-400 font-medium mb-1">Remaining Shortfall</p>
                   <p className="text-3xl font-extrabold text-rose-600">
                     {metrics.totalVacancy > 0 ? `+${metrics.totalVacancy}` : 0}
                   </p>
@@ -605,9 +605,9 @@ export default function RecruitmentClient({
               </div>
               <div className="mt-3 flex items-center gap-2 text-xs text-rose-600 font-medium">
                 {metrics.totalVacancy > 0 ? (
-                  <span>নিয়োগের জন্য অবশিষ্ট পদ বাকি আছে</span>
+                  <span>Vacancies remaining to be filled</span>
                 ) : (
-                  <span className="text-emerald-600">কোনো শূন্যপদ বাকি নেই</span>
+                  <span className="text-emerald-600">No open vacancies</span>
                 )}
               </div>
             </div>
@@ -619,7 +619,7 @@ export default function RecruitmentClient({
                   <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
                     Surplus / Fulfilled
                   </p>
-                  <p className="text-xs text-gray-400 font-medium mb-1">উদ্বৃত্ত ও পরিপূর্ণ শাখা</p>
+                  <p className="text-xs text-gray-400 font-medium mb-1">Surplus & Fulfilled Sections</p>
                   <div className="flex items-baseline gap-2">
                     <p className="text-3xl font-extrabold text-indigo-600">
                       {metrics.totalSurplus > 0 ? `+${metrics.totalSurplus}` : 0}
@@ -651,7 +651,7 @@ export default function RecruitmentClient({
                   }`}
                 >
                   <FolderTree size={15} />
-                  <span>Hierarchy Breakdown (শাখাভিত্তিক সম্পূর্ণ বিবরণী)</span>
+                  <span>Hierarchy Breakdown</span>
                 </button>
                 <button
                   onClick={() => setViewMode('table')}
@@ -662,7 +662,7 @@ export default function RecruitmentClient({
                   }`}
                 >
                   <TableIcon size={15} />
-                  <span>Flat Table View (তালিকা ভিউ)</span>
+                  <span>Flat Table View</span>
                 </button>
               </div>
             </div>
@@ -689,7 +689,7 @@ export default function RecruitmentClient({
             )}
           </div>
 
-          {/* VIEW MODE 1: HIERARCHY TREE (কোম্পানি ও বিভাগ ভিত্তিক সম্পূর্ণ বিবরণী) */}
+          {/* VIEW MODE 1: HIERARCHY TREE */}
           {viewMode === 'hierarchy' ? (
             <div className="space-y-4">
               {companiesState.map(company => {
@@ -752,7 +752,7 @@ export default function RecruitmentClient({
                           <span className="text-sm font-extrabold text-emerald-300">{compExist}</span>
                         </div>
                         <div className="bg-white/10 px-3 py-1.5 rounded-xl border border-white/10 text-center">
-                          <span className="text-[10px] text-slate-300 uppercase block font-semibold">Remaining / বাকি</span>
+                          <span className="text-[10px] text-slate-300 uppercase block font-semibold">Remaining</span>
                           <span className={`text-sm font-extrabold ${compVacancy > 0 ? 'text-rose-300' : 'text-slate-200'}`}>
                             {compVacancy > 0 ? `+${compVacancy} Vacancy` : '0 Fulfilled'}
                           </span>
@@ -825,7 +825,7 @@ export default function RecruitmentClient({
                                         ? 'bg-rose-50 text-rose-700 border-rose-200' 
                                         : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                     }`}>
-                                      {deptVacancy > 0 ? `+${deptVacancy} Vacancy (বাকি)` : '0 Fulfilled'}
+                                      {deptVacancy > 0 ? `+${deptVacancy} Vacancy` : '0 Fulfilled'}
                                     </span>
                                     <div className="text-gray-400">
                                       {isDeptOpen ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
@@ -882,7 +882,7 @@ export default function RecruitmentClient({
                                                 </span>
                                                 <span className="text-gray-300">|</span>
                                                 <span className={`font-bold ${secVacancy > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                                                  {secVacancy > 0 ? `+${secVacancy} Vacancy (বাকি)` : 'Fulfilled'}
+                                                  {secVacancy > 0 ? `+${secVacancy} Vacancy` : 'Fulfilled'}
                                                 </span>
                                                 <div className="text-gray-400 ml-1">
                                                   {isSecOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
@@ -897,10 +897,10 @@ export default function RecruitmentClient({
                                                   <thead className="bg-gray-50/60 text-gray-600 font-semibold border-b border-gray-200">
                                                     <tr>
                                                       <th className="py-2.5 px-4 w-10 text-center">#</th>
-                                                      <th className="py-2.5 px-4">Sub Section Name (উপ-শাখা)</th>
-                                                      <th className="py-2.5 px-4 text-center w-36">Authorized (অনুমোদিত)</th>
-                                                      <th className="py-2.5 px-4 text-center w-36">Existing (বর্তমান)</th>
-                                                      <th className="py-2.5 px-4 text-center">Remaining Vacancy (বাকি কত আছে)</th>
+                                                      <th className="py-2.5 px-4">Sub Section Name</th>
+                                                      <th className="py-2.5 px-4 text-center w-36">Authorized</th>
+                                                      <th className="py-2.5 px-4 text-center w-36">Existing</th>
+                                                      <th className="py-2.5 px-4 text-center">Remaining Vacancy</th>
                                                       <th className="py-2.5 px-4 text-center print:hidden w-36">Action</th>
                                                     </tr>
                                                   </thead>
@@ -1015,7 +1015,7 @@ export default function RecruitmentClient({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-sm font-bold text-gray-700">
                     <Filter size={16} className="text-blue-600" />
-                    <span>Filters & Search (ফিল্টার ও অনুসন্ধান)</span>
+                    <span>Filters & Search</span>
                   </div>
                   {(selectedCompanyId || selectedDeptId || selectedSectionId || statusFilter !== 'ALL' || searchQuery) && (
                     <button
@@ -1046,7 +1046,7 @@ export default function RecruitmentClient({
                       }}
                       className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
                     >
-                      <option value="">All Companies (সকল কোম্পানি)</option>
+                      <option value="">All Companies</option>
                       {companiesState.map(c => (
                         <option key={c.id} value={c.id}>{c.name}</option>
                       ))}
@@ -1065,7 +1065,7 @@ export default function RecruitmentClient({
                       disabled={!selectedCompanyId}
                       className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition disabled:bg-gray-50 disabled:text-gray-400"
                     >
-                      <option value="">All Departments (সকল বিভাগ)</option>
+                      <option value="">All Departments</option>
                       {availableDepts.map(d => (
                         <option key={d.id} value={d.id}>{d.name}</option>
                       ))}
@@ -1081,7 +1081,7 @@ export default function RecruitmentClient({
                       disabled={!selectedDeptId}
                       className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition disabled:bg-gray-50 disabled:text-gray-400"
                     >
-                      <option value="">All Sections (সকল শাখা)</option>
+                      <option value="">All Sections</option>
                       {availableSections.map(s => (
                         <option key={s.id} value={s.id}>{s.name}</option>
                       ))}
@@ -1090,17 +1090,17 @@ export default function RecruitmentClient({
 
                   {/* Status Filter */}
                   <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Status (অবস্থা)</label>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Status</label>
                     <select
                       value={statusFilter}
                       onChange={(e: any) => setStatusFilter(e.target.value)}
                       className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
                     >
-                      <option value="ALL">All Statuses (সকল)</option>
-                      <option value="VACANCY">Vacancy / Needs Hiring (বাকি আছে)</option>
-                      <option value="FULFILLED">Fulfilled (পরিপূর্ণ)</option>
-                      <option value="SURPLUS">Surplus (উদ্বৃত্ত জনবল)</option>
-                      <option value="NOT_SET">Not Set (অনুমোদন শূন্য)</option>
+                      <option value="ALL">All Statuses</option>
+                      <option value="VACANCY">Vacancy / Needs Hiring</option>
+                      <option value="FULFILLED">Fulfilled</option>
+                      <option value="SURPLUS">Surplus</option>
+                      <option value="NOT_SET">Not Set</option>
                     </select>
                   </div>
 
@@ -1134,7 +1134,7 @@ export default function RecruitmentClient({
                 <div className="px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
                     <h2 className="text-lg font-bold text-gray-900">
-                      Sub Section Manpower Details (উপ-শাখা ভিত্তিক জনবল বিবরণী)
+                      Sub Section Manpower Details
                     </h2>
                     <p className="text-xs text-gray-500 mt-0.5">
                       Showing {filteredItems.length} of {items.length} sub-sections
@@ -1142,13 +1142,13 @@ export default function RecruitmentClient({
                   </div>
                   <div className="flex items-center gap-3 text-xs">
                     <span className="inline-flex items-center gap-1.5 text-gray-600">
-                      <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Vacancy (বাকি আছে)
+                      <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Vacancy
                     </span>
                     <span className="inline-flex items-center gap-1.5 text-gray-600">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Fulfilled (পরিপূর্ণ)
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Fulfilled
                     </span>
                     <span className="inline-flex items-center gap-1.5 text-gray-600">
-                      <span className="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> Surplus (উদ্বৃত্ত)
+                      <span className="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> Surplus
                     </span>
                   </div>
                 </div>
@@ -1163,16 +1163,13 @@ export default function RecruitmentClient({
                         <th className="py-3.5 px-4">Section</th>
                         <th className="py-3.5 px-4">Sub Section</th>
                         <th className="py-3.5 px-4 text-center">
-                          Authorized<br />
-                          <span className="text-xs font-normal text-gray-400">অনুমোদিত</span>
+                          Authorized
                         </th>
                         <th className="py-3.5 px-4 text-center">
-                          Existing<br />
-                          <span className="text-xs font-normal text-gray-400">বর্তমান</span>
+                          Existing
                         </th>
                         <th className="py-3.5 px-4 text-center">
-                          Remaining / Vacancy<br />
-                          <span className="text-xs font-normal text-gray-400">বাকি কত আছে</span>
+                          Remaining / Vacancy
                         </th>
                         <th className="py-3.5 px-4 text-center">Fulfillment</th>
                         <th className="py-3.5 px-4 text-center print:hidden">Action</th>
@@ -1312,7 +1309,7 @@ export default function RecruitmentClient({
         </>
       )}
 
-      {/* TAB 2: CASCADING MANPOWER ENTRY (আলাদা এন্ট্রি অপশন) */}
+      {/* TAB 2: CASCADING MANPOWER ENTRY */}
       {activeTab === 'entry' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between bg-blue-50/70 p-4 rounded-2xl border border-blue-100">
@@ -1322,7 +1319,7 @@ export default function RecruitmentClient({
               </div>
               <div>
                 <h3 className="text-base font-bold text-gray-900">
-                  Dedicated Sub-Section Manpower Entry (উপ-শাখা জনবল নির্ধারণ)
+                  Dedicated Sub-Section Manpower Entry
                 </h3>
                 <p className="text-xs text-gray-600">
                   Select Company &gt; Department &gt; Section &gt; Sub Section to define or adjust authorized manpower
@@ -1348,11 +1345,11 @@ export default function RecruitmentClient({
         </div>
       )}
 
-      {/* TAB 3: JOB CIRCULARS (নিয়োগ বিজ্ঞপ্তি) */}
+      {/* TAB 3: JOB CIRCULARS */}
       {activeTab === 'jobs' && (
         <div className="space-y-6">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold text-gray-800">Job Circulars (নিয়োগ বিজ্ঞপ্তি সমূহ)</h2>
+            <h2 className="text-xl font-bold text-gray-800">Job Circulars</h2>
             <Link 
               href="/recruitment/new" 
               className="bg-blue-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-blue-700 transition font-semibold text-sm shadow-sm"
@@ -1407,7 +1404,7 @@ export default function RecruitmentClient({
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-gray-900">Set Authorized Manpower</h3>
-                  <p className="text-xs text-gray-500">উপ-শাখার অনুমোদিত জনবল সংখ্যা নির্ধারণ</p>
+                  <p className="text-xs text-gray-500">Define authorized manpower count for sub-section</p>
                 </div>
               </div>
               <button
@@ -1441,7 +1438,7 @@ export default function RecruitmentClient({
             <form onSubmit={handleSaveAuthorized} className="space-y-4">
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-1">
-                  Authorized Manpower (অনুমোদিত জনবল সংখ্যা) *
+                  Authorized Manpower *
                 </label>
                 <input
                   type="number"
@@ -1464,10 +1461,10 @@ export default function RecruitmentClient({
                         : 'text-indigo-600'
                     }>
                       {(Number(newAuthorized) || 0) - editingItem.existingManpower > 0 
-                        ? `+${(Number(newAuthorized) || 0) - editingItem.existingManpower} Vacancy (বাকি)` 
+                        ? `+${(Number(newAuthorized) || 0) - editingItem.existingManpower} Vacancy` 
                         : (Number(newAuthorized) || 0) - editingItem.existingManpower === 0 
-                        ? '0 Fulfilled (পূর্ণ)' 
-                        : `${Math.abs((Number(newAuthorized) || 0) - editingItem.existingManpower)} Surplus (উদ্বৃত্ত)`}
+                        ? '0 Fulfilled' 
+                        : `${Math.abs((Number(newAuthorized) || 0) - editingItem.existingManpower)} Surplus`}
                     </strong>
                   </span>
                 </div>
@@ -1475,7 +1472,7 @@ export default function RecruitmentClient({
 
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1">
-                  Remarks / Note (মন্তব্য - ঐচ্ছিক)
+                  Remarks / Note (Optional)
                 </label>
                 <input
                   type="text"
@@ -1501,7 +1498,7 @@ export default function RecruitmentClient({
                   className="px-6 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md transition flex items-center gap-2"
                 >
                   {isSaving && <RefreshCw size={14} className="animate-spin" />}
-                  <span>Save Changes (সংরক্ষণ করুন)</span>
+                  <span>Save Changes</span>
                 </button>
               </div>
             </form>

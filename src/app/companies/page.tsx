@@ -30,7 +30,7 @@ export default async function CompaniesPage() {
   return (
     <div className="p-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Companies (কোম্পানি)</h1>
+        <h1 className="text-3xl font-bold text-gray-800">Companies</h1>
         <div className="flex gap-2">
           {isAdmin && (
             <>
