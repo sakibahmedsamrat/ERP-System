@@ -8,7 +8,16 @@ import { notFound } from 'next/navigation';
 export default async function EditTrainingPage({ params }: { params: { id: string } }) {
   const training = await prisma.training.findUnique({
     where: { id: params.id },
-    include: { workers: true, trainer: true }
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      location: true,
+      date: true,
+      trainerId: true,
+      trainer: { select: { id: true, name: true, workerId: true, designation: true } },
+      workers: { select: { id: true, name: true, workerId: true, designation: true } }
+    }
   });
 
   if (!training) {

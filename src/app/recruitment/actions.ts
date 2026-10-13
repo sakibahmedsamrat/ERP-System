@@ -6,12 +6,12 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 
-export async function createRecruitment(formData: FormData) {
+export async function createRecruitment(formData: FormData): Promise<void> {
   const title = formData.get('title') as string;
   const description = formData.get('description') as string;
   
   if (!title) {
-    return { error: 'Title is required' };
+    return;
   }
 
   await prisma.recruitment.create({

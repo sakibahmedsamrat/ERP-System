@@ -58,7 +58,12 @@ export async function deleteUser(id: string) {
   }
 
   try {
-    await prisma.user.delete({ where: { id } });
+    await prisma.$transaction([
+      prisma.task.deleteMany({ where: { OR: [{ creatorId: id }, { assigneeId: id }] } }),
+      prisma.company.updateMany({ where: { managerId: id }, data: { managerId: null } }),
+      prisma.notification.deleteMany({ where: { userId: id } }),
+      prisma.user.delete({ where: { id } })
+    ]);
     revalidatePath('/users');
     return { success: true };
   } catch (error) {

@@ -84,7 +84,7 @@ export default function ConfirmationsClient({
   const now = useMemo(() => new Date(), []);
 
   // Filter criteria helper
-  const isEligibleFor6M = (worker: WorkerItem): boolean => {
+  const isEligibleFor6M = React.useCallback((worker: WorkerItem): boolean => {
     if (!worker.joinDate) return false;
     const age = calculateServiceAge(worker.joinDate, now);
     if (!age.isValid || age.isInverted) return false;
@@ -93,9 +93,9 @@ export default function ConfirmationsClient({
     if (age.months > 5) return true;
     if (age.months === 5 && age.days >= 15) return true;
     return false;
-  };
+  }, [now]);
 
-  const isEligibleFor3Y = (worker: WorkerItem): boolean => {
+  const isEligibleFor3Y = React.useCallback((worker: WorkerItem): boolean => {
     if (!worker.joinDate) return false;
     const des = (worker.designation || '').toLowerCase().trim();
     const dept = (worker.department?.name || '').toLowerCase().trim();
@@ -113,12 +113,12 @@ export default function ConfirmationsClient({
     if (age.years >= 3) return true;
     if (age.years === 2 && age.months >= 11) return true;
     return false;
-  };
+  }, [now]);
 
   // Precomputed counts for badges
   const pending6mCount = useMemo(() => {
     return workers.filter((w) => !w.confirmed6mAt && isEligibleFor6M(w)).length;
-  }, [workers]);
+  }, [workers, isEligibleFor6M]);
 
   const confirmed6mCount = useMemo(() => {
     return workers.filter((w) => !!w.confirmed6mAt).length;
@@ -126,7 +126,7 @@ export default function ConfirmationsClient({
 
   const pending3yCount = useMemo(() => {
     return workers.filter((w) => !w.confirmed3yAt && isEligibleFor3Y(w)).length;
-  }, [workers]);
+  }, [workers, isEligibleFor3Y]);
 
   const confirmed3yCount = useMemo(() => {
     return workers.filter((w) => !!w.confirmed3yAt).length;
@@ -177,7 +177,7 @@ export default function ConfirmationsClient({
 
       return true;
     });
-  }, [workers, activeTab, viewStatus, selectedCompany, selectedDepartment, searchQuery]);
+  }, [workers, activeTab, viewStatus, selectedCompany, selectedDepartment, searchQuery, isEligibleFor6M, isEligibleFor3Y]);
 
   // Handle Mark Done
   const handleDoneSubmit = async () => {

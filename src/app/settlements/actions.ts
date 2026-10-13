@@ -7,7 +7,7 @@ import { redirect } from 'next/navigation';
 import { logAction } from '@/lib/audit';
 
 
-export async function createSettlement(formData: FormData) {
+export async function createSettlement(formData: FormData): Promise<{ error?: string } | void> {
   const workerId = formData.get('workerId') as string;
   if (!workerId) return { error: 'Worker is required' };
 
@@ -21,6 +21,8 @@ export async function createSettlement(formData: FormData) {
     return val ? new Date(val) : null;
   };
 
+  let shouldRedirect = false;
+  try {
     const joinDateVal = formData.get('joinDate') as string;
     if (joinDateVal && workerId) {
       const parsedJoin = new Date(joinDateVal);
@@ -42,40 +44,48 @@ export async function createSettlement(formData: FormData) {
         lastWorkingDay: getDate('lastWorkingDay'),
         serviceAge,
       
-      grossSalary: getFloat('grossSalary'),
-      basicSalary: getFloat('basicSalary'),
-      houseRent: getFloat('houseRent'),
-      conveyanceAllowance: getFloat('conveyanceAllowance'),
-      medicalAllowance: getFloat('medicalAllowance'),
-      
-      totalEarnLeaveDays: getFloat('totalEarnLeaveDays'),
-      totalLateEarlyMinutes: getFloat('totalLateEarlyMinutes'),
-      currentMonthWorkingDays: getFloat('currentMonthWorkingDays'),
-      absentDays: getFloat('absentDays'),
-      
-      serviceBenefitAmount: getFloat('serviceBenefitAmount'),
-      currentMonthWorkDayPay: getFloat('currentMonthWorkDayPay'),
-      extraDutyOTPay: getFloat('extraDutyOTPay'),
-      earnLeavePay: getFloat('earnLeavePay'),
-      
-      deductMoneyAct2006: getFloat('deductMoneyAct2006'),
-      absentDeduction: getFloat('absentDeduction'),
-      lateEarlyDeduction: getFloat('lateEarlyDeduction'),
-      
-      payableSubTotal: getFloat('payableSubTotal'),
-      deductionSubTotal: getFloat('deductionSubTotal'),
-      totalPayAmount: getFloat('totalPayAmount'),
-      amountInWords: formData.get('amountInWords') as string,
-      bankAccNo: (formData.get('bankAccNo') as string) || null,
-      
-      paymentReceiverDate: getDate('paymentReceiverDate'),
-      status: 'PENDING'
-    }
-  });
+        grossSalary: getFloat('grossSalary'),
+        basicSalary: getFloat('basicSalary'),
+        houseRent: getFloat('houseRent'),
+        conveyanceAllowance: getFloat('conveyanceAllowance'),
+        medicalAllowance: getFloat('medicalAllowance'),
+        
+        totalEarnLeaveDays: getFloat('totalEarnLeaveDays'),
+        totalLateEarlyMinutes: getFloat('totalLateEarlyMinutes'),
+        currentMonthWorkingDays: getFloat('currentMonthWorkingDays'),
+        absentDays: getFloat('absentDays'),
+        
+        serviceBenefitAmount: getFloat('serviceBenefitAmount'),
+        currentMonthWorkDayPay: getFloat('currentMonthWorkDayPay'),
+        extraDutyOTPay: getFloat('extraDutyOTPay'),
+        earnLeavePay: getFloat('earnLeavePay'),
+        
+        deductMoneyAct2006: getFloat('deductMoneyAct2006'),
+        absentDeduction: getFloat('absentDeduction'),
+        lateEarlyDeduction: getFloat('lateEarlyDeduction'),
+        
+        payableSubTotal: getFloat('payableSubTotal'),
+        deductionSubTotal: getFloat('deductionSubTotal'),
+        totalPayAmount: getFloat('totalPayAmount'),
+        amountInWords: formData.get('amountInWords') as string,
+        bankAccNo: (formData.get('bankAccNo') as string) || null,
+        
+        paymentReceiverDate: getDate('paymentReceiverDate'),
+        status: 'PENDING'
+      }
+    });
 
-  await logAction('SETTLEMENTS', 'CREATE', 'Created settlement for worker: ' + workerId);
-  revalidatePath('/settlements');
-  redirect('/settlements');
+    await logAction('SETTLEMENTS', 'CREATE', 'Created settlement for worker: ' + workerId);
+    shouldRedirect = true;
+  } catch (error: any) {
+    console.error("Failed to create settlement:", error);
+    return { error: error?.message || 'Failed to create settlement' };
+  }
+
+  if (shouldRedirect) {
+    revalidatePath('/settlements');
+    redirect('/settlements');
+  }
 }
 
 export async function deleteSettlement(id: string) {
@@ -90,7 +100,8 @@ export async function deleteSettlement(id: string) {
     return { error: 'Failed to delete settlement' };
   }
 }
-export async function updateSettlement(id: string, formData: FormData) {
+
+export async function updateSettlement(id: string, formData: FormData): Promise<{ error?: string } | void> {
   const getFloat = (name: string) => {
     const val = formData.get(name) as string;
     return val ? parseFloat(val) : 0;
@@ -101,6 +112,8 @@ export async function updateSettlement(id: string, formData: FormData) {
     return val ? new Date(val) : null;
   };
 
+  let shouldRedirect = false;
+  try {
     const workerId = formData.get('workerId') as string;
     const joinDateVal = formData.get('joinDate') as string;
     if (joinDateVal && workerId) {
@@ -123,45 +136,70 @@ export async function updateSettlement(id: string, formData: FormData) {
         lastWorkingDay: getDate('lastWorkingDay'),
         serviceAge,
       
-      grossSalary: getFloat('grossSalary'),
-      basicSalary: getFloat('basicSalary'),
-      houseRent: getFloat('houseRent'),
-      conveyanceAllowance: getFloat('conveyanceAllowance'),
-      medicalAllowance: getFloat('medicalAllowance'),
-      
-      totalEarnLeaveDays: getFloat('totalEarnLeaveDays'),
-      totalLateEarlyMinutes: getFloat('totalLateEarlyMinutes'),
-      currentMonthWorkingDays: getFloat('currentMonthWorkingDays'),
-      absentDays: getFloat('absentDays'),
-      
-      serviceBenefitAmount: getFloat('serviceBenefitAmount'),
-      currentMonthWorkDayPay: getFloat('currentMonthWorkDayPay'),
-      extraDutyOTPay: getFloat('extraDutyOTPay'),
-      earnLeavePay: getFloat('earnLeavePay'),
-      
-      deductMoneyAct2006: getFloat('deductMoneyAct2006'),
-      absentDeduction: getFloat('absentDeduction'),
-      lateEarlyDeduction: getFloat('lateEarlyDeduction'),
-      
-      payableSubTotal: getFloat('payableSubTotal'),
-      deductionSubTotal: getFloat('deductionSubTotal'),
-      totalPayAmount: getFloat('totalPayAmount'),
-      amountInWords: formData.get('amountInWords') as string,
-      bankAccNo: (formData.get('bankAccNo') as string) || null,
-      
-      paymentReceiverDate: getDate('paymentReceiverDate'),
-    }
-  });
+        grossSalary: getFloat('grossSalary'),
+        basicSalary: getFloat('basicSalary'),
+        houseRent: getFloat('houseRent'),
+        conveyanceAllowance: getFloat('conveyanceAllowance'),
+        medicalAllowance: getFloat('medicalAllowance'),
+        
+        totalEarnLeaveDays: getFloat('totalEarnLeaveDays'),
+        totalLateEarlyMinutes: getFloat('totalLateEarlyMinutes'),
+        currentMonthWorkingDays: getFloat('currentMonthWorkingDays'),
+        absentDays: getFloat('absentDays'),
+        
+        serviceBenefitAmount: getFloat('serviceBenefitAmount'),
+        currentMonthWorkDayPay: getFloat('currentMonthWorkDayPay'),
+        extraDutyOTPay: getFloat('extraDutyOTPay'),
+        earnLeavePay: getFloat('earnLeavePay'),
+        
+        deductMoneyAct2006: getFloat('deductMoneyAct2006'),
+        absentDeduction: getFloat('absentDeduction'),
+        lateEarlyDeduction: getFloat('lateEarlyDeduction'),
+        
+        payableSubTotal: getFloat('payableSubTotal'),
+        deductionSubTotal: getFloat('deductionSubTotal'),
+        totalPayAmount: getFloat('totalPayAmount'),
+        amountInWords: formData.get('amountInWords') as string,
+        bankAccNo: (formData.get('bankAccNo') as string) || null,
+        
+        paymentReceiverDate: getDate('paymentReceiverDate'),
+      }
+    });
 
-  await logAction('SETTLEMENTS', 'UPDATE', 'Updated settlement ID: ' + id);
-  revalidatePath('/settlements');
-  revalidatePath('/settlements/' + id);
-  redirect('/settlements');
+    await logAction('SETTLEMENTS', 'UPDATE', 'Updated settlement ID: ' + id);
+    shouldRedirect = true;
+  } catch (error: any) {
+    console.error("Failed to update settlement:", error);
+    return { error: error?.message || 'Failed to update settlement' };
+  }
+
+  if (shouldRedirect) {
+    revalidatePath('/settlements');
+    revalidatePath('/settlements/' + id);
+    redirect('/settlements');
+  }
 }
 export async function getSettlement(id: string) {
   const settlement = await prisma.settlement.findUnique({
     where: { id },
-    include: { worker: { include: { company: true, department: true, section: true, subSection: true } } }
+    include: {
+      worker: {
+        select: {
+          id: true,
+          workerId: true,
+          name: true,
+          designation: true,
+          grade: true,
+          grossSalary: true,
+          basicSalary: true,
+          joinDate: true,
+          company: { select: { id: true, name: true } },
+          department: { select: { id: true, name: true } },
+          section: { select: { id: true, name: true } },
+          subSection: { select: { id: true, name: true } }
+        }
+      }
+    }
   });
   return settlement;
 }

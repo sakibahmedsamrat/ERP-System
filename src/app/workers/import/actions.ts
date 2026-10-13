@@ -101,7 +101,7 @@ export async function bulkImportWorkers(workers: any[]) {
       }
 
       const record = {
-        workerId: getVal(['workerid', 'staff id', 'id']) || `TMP-${Math.floor(Math.random() * 100000)}`,
+        workerId: String(getVal(['workerid', 'staff id', 'id']) ?? '').trim() || `TMP-${Math.floor(Math.random() * 100000)}`,
         name: getVal(['name', 'staff name', 'worker name']) || 'Unknown',
         designation: getVal(['designation']) || null,
         gender: getVal(['gender']) || null,

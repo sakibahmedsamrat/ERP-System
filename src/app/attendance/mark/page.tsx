@@ -15,6 +15,11 @@ export default async function MarkAttendancePage({ searchParams }: { searchParam
         companyId: selectedCompanyId,
         isActive: true
       },
+      select: {
+        id: true,
+        workerId: true,
+        name: true
+      },
       orderBy: { name: 'asc' }
     });
   }

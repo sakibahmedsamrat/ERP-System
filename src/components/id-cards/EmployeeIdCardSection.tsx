@@ -51,7 +51,7 @@ export default function EmployeeIdCardSection({
     const timer = setTimeout(async () => {
       setIsSearching(true);
       try {
-        const res = await fetch(`/api/workers/search?q=${encodeURIComponent(query)}`);
+        const res = await fetch(`/api/workers/search?q=${encodeURIComponent(query)}&withPhoto=true`);
         const data = await res.json();
         setResults(data.workers || []);
       } catch (err) {
@@ -96,11 +96,21 @@ export default function EmployeeIdCardSection({
     setTimeout(post, 350);
   };
 
-  const handleSelectWorker = (worker: any) => {
-    setSelectedWorker(worker);
+  const handleSelectWorker = async (worker: any) => {
+    let target = worker;
+    if ((!target.photoUrl || !target.signatureUrl) && target.id) {
+      try {
+        const res = await fetch(`/api/workers/search?id=${target.id}`);
+        const data = await res.json();
+        if (data.worker) target = data.worker;
+      } catch (e) {
+        console.error('Error fetching full worker details:', e);
+      }
+    }
+    setSelectedWorker(target);
     setQuery('');
     setResults([]);
-    sendWorkerToIframe(worker);
+    sendWorkerToIframe(target);
   };
 
   const handleClearSelected = () => {

@@ -5,16 +5,16 @@ import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
+import bcrypt from 'bcryptjs';
 
-
-export async function createTask(formData: FormData) {
+export async function createTask(formData: FormData): Promise<void> {
   const title = formData.get('title') as string;
   const description = formData.get('description') as string;
   const deadlineStr = formData.get('deadline') as string;
   const assigneeId = formData.get('assigneeId') as string;
   
   if (!title) {
-    return { error: 'Task title is required' };
+    return;
   }
 
   const session = await getSession();
@@ -25,11 +25,12 @@ export async function createTask(formData: FormData) {
   if (!creatorId) {
     let user = await prisma.user.findFirst();
     if (!user) {
+      const hashedPassword = await bcrypt.hash('admin123', 10);
       user = await prisma.user.create({
         data: {
           name: 'Admin',
-          email: 'admin@erp.com',
-          password: 'password',
+          userId: 'admin',
+          password: hashedPassword,
           role: 'SUPER_ADMIN'
         }
       });
@@ -64,9 +65,9 @@ export async function createTask(formData: FormData) {
   redirect('/tasks');
 }
 
-export async function markTaskDone(taskId: string) {
+export async function markTaskDone(taskId: string): Promise<void> {
   const session = await getSession();
-  if (!session?.user) return { error: 'Unauthorized' };
+  if (!session?.user) return;
 
   const task = await prisma.task.update({
     where: { id: taskId },
@@ -92,14 +93,13 @@ export async function markTaskDone(taskId: string) {
   
   revalidatePath('/tasks');
   revalidatePath('/');
-  return { success: true };
 }
 
-export async function deleteTask(taskId: string) {
+export async function deleteTask(taskId: string): Promise<void> {
   const session = await getSession();
   const role = session?.user?.role;
   if (role !== 'SUPER_ADMIN' && role !== 'ADMIN') {
-    return { error: 'Unauthorized' };
+    return;
   }
 
   await prisma.task.delete({
@@ -108,5 +108,4 @@ export async function deleteTask(taskId: string) {
   
   revalidatePath('/tasks');
   revalidatePath('/');
-  return { success: true };
 }

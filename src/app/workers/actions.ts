@@ -34,7 +34,7 @@ async function uploadFile(file: any): Promise<string | null> {
   }
 }
 
-export async function createWorker(formData: FormData) {
+export async function createWorker(formData: FormData): Promise<void> {
   const workerId = formData.get('workerId') as string;
   const name = formData.get('name') as string;
   const phone = formData.get('phone') as string;
@@ -59,7 +59,7 @@ export async function createWorker(formData: FormData) {
   const signatureUrl = await uploadFile(signatureFile);
 
   if (!workerId || !name || !companyId) {
-    return { error: 'Worker ID, Name, and Company are required' };
+    return;
   }
 
   const joinDate = joinDateStr ? new Date(joinDateStr) : new Date();
@@ -84,7 +84,7 @@ export async function createWorker(formData: FormData) {
     });
   } catch (error: any) {
     console.error("Failed to create worker:", error);
-    return { error: 'Failed to create worker (Worker ID must be unique)' };
+    return;
   }
 
   await logAction('WORKERS', 'CREATE', 'Created worker: ' + workerId);
@@ -94,11 +94,32 @@ export async function createWorker(formData: FormData) {
 
 export async function deleteWorker(id: string) {
   try {
+    const w = await prisma.worker.findUnique({
+      where: { id },
+      select: { id: true, workerId: true }
+    });
+    if (!w) return { error: 'Worker not found' };
+
     // Delete related attendances and settlements first
     await prisma.attendance.deleteMany({ where: { workerId: id } });
     await prisma.settlement.deleteMany({ where: { workerId: id } });
-    const w = await prisma.worker.findUnique({where: {id}});
-    if(w) await logAction('WORKERS', 'DELETE', 'Deleted worker: ' + w.workerId);
+    await prisma.training.updateMany({
+      where: { trainerId: id },
+      data: { trainerId: null }
+    });
+
+    const trainingsWithWorker = await prisma.training.findMany({
+      where: { workers: { some: { id } } },
+      select: { id: true }
+    });
+    for (const t of trainingsWithWorker) {
+      await prisma.training.update({
+        where: { id: t.id },
+        data: { workers: { disconnect: { id } } }
+      });
+    }
+
+    await logAction('WORKERS', 'DELETE', 'Deleted worker: ' + w.workerId);
     await prisma.worker.delete({ where: { id } });
     revalidatePath('/workers');
     return { success: true };
@@ -108,7 +129,7 @@ export async function deleteWorker(id: string) {
   }
 }
 
-export async function updateWorker(id: string, formData: FormData) {
+export async function updateWorker(id: string, formData: FormData): Promise<void> {
   const workerId = formData.get('workerId') as string;
   const name = formData.get('name') as string;
   const phone = formData.get('phone') as string;
@@ -146,7 +167,7 @@ export async function updateWorker(id: string, formData: FormData) {
   }
 
   if (!workerId || !name || !companyId) {
-    return { error: 'Worker ID, Name, and Company are required' };
+    return;
   }
 
   const getFloat = (field: string) => {
@@ -167,10 +188,10 @@ export async function updateWorker(id: string, formData: FormData) {
     });
   } catch (error: any) {
     console.error("Failed to update worker:", error);
-    return { error: 'Failed to update worker' };
+    return;
   }
 
-  await logAction('WORKERS', 'CREATE', 'Created worker: ' + workerId);
+  await logAction('WORKERS', 'UPDATE', 'Updated worker: ' + workerId);
   revalidatePath('/workers');
   redirect('/workers');
 }

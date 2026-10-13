@@ -9,13 +9,23 @@ export default async function TrainingDetailsPage({ params }: { params: { id: st
   const [training, totalWorkers] = await Promise.all([
     prisma.training.findUnique({
       where: { id: params.id },
-      include: {
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        date: true,
+        location: true,
+        status: true,
+        trainer: { select: { id: true, name: true } },
         workers: {
-          include: {
-            department: true
+          select: {
+            id: true,
+            workerId: true,
+            name: true,
+            designation: true,
+            department: { select: { name: true } }
           }
-        },
-        trainer: true
+        }
       }
     }),
     prisma.worker.count()

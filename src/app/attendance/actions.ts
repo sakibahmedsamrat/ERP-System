@@ -6,19 +6,20 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 
-export async function markAttendance(formData: FormData) {
+export async function markAttendance(formData: FormData): Promise<void> {
   const dateStr = formData.get('date') as string;
   const companyId = formData.get('companyId') as string;
   
   if (!dateStr || !companyId) {
-    return { error: 'Date and Company are required' };
+    return;
   }
 
   const date = new Date(dateStr);
   
   // Get all keys from formData that start with "status_"
-  const records = [];
-  for (const [key, value] of formData.entries()) {
+  const records: { workerId: string; date: Date; status: string }[] = [];
+  const entries = Array.from(formData.entries());
+  for (const [key, value] of entries) {
     if (key.startsWith('status_')) {
       const workerId = key.replace('status_', '');
       records.push({
@@ -33,39 +34,33 @@ export async function markAttendance(formData: FormData) {
   try {
     const workerIds = records.map(r => r.workerId);
     
-    // We want to delete existing records for the same day (ignoring time)
-    // For simplicity, we just delete exactly matching dates or use a date range in a real app.
-    // Assuming date from input is Midnight UTC, we can delete matching dates.
     const startOfDay = new Date(date);
     startOfDay.setUTCHours(0, 0, 0, 0);
     
     const endOfDay = new Date(date);
     endOfDay.setUTCHours(23, 59, 59, 999);
 
-    await prisma.$transaction([
-      prisma.attendance.deleteMany({
-        where: {
-          workerId: { in: workerIds },
-          date: {
-            gte: startOfDay,
-            lte: endOfDay,
+    if (records.length > 0) {
+      await prisma.$transaction([
+        prisma.attendance.deleteMany({
+          where: {
+            workerId: { in: workerIds },
+            date: {
+              gte: startOfDay,
+              lte: endOfDay,
+            }
           }
-        }
-      }),
-      // SQLite doesn't support createMany, so we use Promise.all
-      ...records.map(record => prisma.attendance.create({
-        data: {
-          workerId: record.workerId,
-          date: record.date,
-          status: record.status,
-        }
-      }))
-    ]);
+        }),
+        prisma.attendance.createMany({
+          data: records
+        })
+      ]);
+    }
   } catch (error) {
     console.error("Failed to mark attendance", error);
-    return { error: 'Failed to save attendance' };
+    return;
   }
 
   revalidatePath('/attendance');
-  redirect('/attendance');
+  redirect(`/attendance?date=${encodeURIComponent(dateStr)}`);
 }

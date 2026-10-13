@@ -24,11 +24,11 @@ export async function login(user: { id: string; userId: string; name: string; ro
   const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
   const session = await encrypt({ user, expires });
 
-  cookies().set('session', session, { expires, httpOnly: true });
+  cookies().set('session', session, { expires, httpOnly: true, sameSite: 'lax', path: '/' });
 }
 
 export async function logout() {
-  cookies().set('session', '', { expires: new Date(0) });
+  cookies().set('session', '', { expires: new Date(0), path: '/' });
 }
 
 export async function getSession() {

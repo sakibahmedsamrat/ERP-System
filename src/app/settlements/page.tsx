@@ -9,7 +9,11 @@ import { deleteSettlement } from './actions';
 export default async function SettlementsPage() {
   const settlements = await prisma.settlement.findMany({
     orderBy: { createdAt: 'desc' },
-    include: { worker: true }
+    include: {
+      worker: {
+        select: { id: true, name: true, workerId: true }
+      }
+    }
   });
 
   return (
@@ -39,7 +43,7 @@ export default async function SettlementsPage() {
             {settlements.map((settlement) => (
               <tr key={settlement.id} className="hover:bg-gray-50 transition">
                 <td className="p-4 font-medium text-gray-900">{settlement.worker.name}</td>
-                <td className="p-4 font-bold text-gray-800">{settlement.totalPayAmount?.toFixed(2)} BDT</td>
+                <td className="p-4 font-bold text-gray-800">{(settlement.totalPayAmount ?? 0).toFixed(2)} BDT</td>
                 <td className="p-4">
                   <span className={`text-xs px-2 py-1 rounded-full font-bold ${
                     settlement.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
@@ -64,7 +68,7 @@ export default async function SettlementsPage() {
 
             {settlements.length === 0 && (
               <tr>
-                <td colSpan={6} className="p-8 text-center text-gray-500">
+                <td colSpan={5} className="p-8 text-center text-gray-500">
                   No settlements found.
                 </td>
               </tr>

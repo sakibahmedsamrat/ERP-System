@@ -27,13 +27,28 @@ export default async function Dashboard() {
     };
   }
   
+  const today = new Date();
+  const startOfToday = new Date(today);
+  startOfToday.setUTCHours(0, 0, 0, 0);
+  const endOfToday = new Date(today);
+  endOfToday.setUTCHours(23, 59, 59, 999);
+
   const [totalWorkers, totalCompanies, totalTasks, todayAttendanceCount, myTasks] = await Promise.all([
     prisma.worker.count(),
     prisma.company.count(),
     prisma.task.count({ where: taskWhere }),
-    prisma.attendance.count({ where: { status: 'PRESENT' } }),
+    prisma.attendance.count({
+      where: {
+        status: 'PRESENT',
+        date: {
+          gte: startOfToday,
+          lte: endOfToday
+        }
+      }
+    }),
     user ? prisma.task.findMany({
       where: { assigneeId: user.id, status: { not: 'DONE' } },
+      select: { id: true, title: true, description: true, deadline: true, status: true },
       orderBy: { deadline: 'asc' },
       take: 5
     }) : Promise.resolve([])

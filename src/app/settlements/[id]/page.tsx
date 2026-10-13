@@ -9,11 +9,17 @@ export default async function SettlementPrintPage({ params }: { params: { id: st
     where: { id: params.id },
     include: { 
       worker: {
-        include: {
-          company: true,
-          department: true,
-          section: true,
-          subSection: true
+        select: {
+          id: true,
+          name: true,
+          workerId: true,
+          grade: true,
+          designation: true,
+          joinDate: true,
+          company: { select: { name: true } },
+          department: { select: { name: true } },
+          section: { select: { name: true } },
+          subSection: { select: { name: true } }
         }
       } 
     }

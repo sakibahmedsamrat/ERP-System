@@ -124,7 +124,7 @@ export default async function CompaniesPage() {
 
         {companies.length === 0 && (
           <div className="bg-white p-8 text-center rounded-xl shadow-sm border border-gray-100 text-gray-500">
-            No companies found. Click "Add Company" or "Import Structure".
+            No companies found. Click &quot;Add Company&quot; or &quot;Import Structure&quot;.
           </div>
         )}
       </div>

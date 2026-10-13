@@ -42,7 +42,16 @@ export default async function WorkersPage({
 
   const queryOptions: any = {
     orderBy: { createdAt: 'desc' },
-    include: { company: true, department: true, section: true, subSection: true }
+    select: {
+      id: true,
+      workerId: true,
+      name: true,
+      designation: true,
+      company: { select: { id: true, name: true } },
+      department: { select: { id: true, name: true } },
+      section: { select: { id: true, name: true } },
+      subSection: { select: { id: true, name: true } }
+    }
   };
   
   if (whereClause.AND.length > 0) {

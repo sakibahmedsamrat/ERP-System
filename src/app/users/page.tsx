@@ -15,7 +15,15 @@ export default async function UsersPage() {
   }
 
   const users = await prisma.user.findMany({
-    orderBy: { createdAt: 'desc' }
+    orderBy: { createdAt: 'desc' },
+    select: {
+      id: true,
+      name: true,
+      userId: true,
+      role: true,
+      modules: true,
+      createdAt: true
+    }
   });
 
   return (

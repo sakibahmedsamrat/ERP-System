@@ -7,12 +7,12 @@ import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
 
 
-export async function createCompany(formData: FormData) {
+export async function createCompany(formData: FormData): Promise<void> {
   const name = formData.get('name') as string;
   const location = formData.get('location') as string;
 
   if (!name) {
-    return { error: 'Company name is required' };
+    return;
   }
 
   await prisma.company.create({
@@ -49,16 +49,16 @@ export async function deleteCompany(id: string) {
   }
 }
 
-export async function updateCompany(id: string, formData: FormData) {
+export async function updateCompany(id: string, formData: FormData): Promise<void> {
   const session = await getSession();
   if (session?.user?.role !== 'SUPER_ADMIN') {
-    return { error: 'Unauthorized. Only Super Admin can edit companies.' };
+    return;
   }
   const name = formData.get('name') as string;
   const location = formData.get('location') as string;
 
   if (!name) {
-    return { error: 'Company name is required' };
+    return;
   }
 
   await prisma.company.update({

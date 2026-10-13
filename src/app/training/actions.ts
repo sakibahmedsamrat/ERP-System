@@ -6,7 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 
-export async function createTraining(formData: FormData) {
+export async function createTraining(formData: FormData): Promise<void> {
   const title = formData.get('title') as string;
   const description = formData.get('description') as string;
   const location = formData.get('location') as string;
@@ -15,7 +15,7 @@ export async function createTraining(formData: FormData) {
   const trainerId = formData.get('trainerId') as string;
   
   if (!title || !dateStr) {
-    return { error: 'Title and date are required' };
+    return;
   }
 
   const date = new Date(dateStr);
@@ -38,7 +38,7 @@ export async function createTraining(formData: FormData) {
   redirect('/training');
 }
 
-export async function editTraining(id: string, formData: FormData) {
+export async function editTraining(id: string, formData: FormData): Promise<void> {
   const title = formData.get('title') as string;
   const description = formData.get('description') as string;
   const location = formData.get('location') as string;
@@ -47,7 +47,7 @@ export async function editTraining(id: string, formData: FormData) {
   const trainerId = formData.get('trainerId') as string;
   
   if (!title || !dateStr) {
-    return { error: 'Title and date are required' };
+    return;
   }
 
   const date = new Date(dateStr);
@@ -71,9 +71,15 @@ export async function editTraining(id: string, formData: FormData) {
 }
 
 export async function deleteTraining(id: string) {
-  await prisma.training.delete({
-    where: { id }
-  });
-  revalidatePath('/training');
+  try {
+    await prisma.training.delete({
+      where: { id }
+    });
+    revalidatePath('/training');
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to delete training:", error);
+    return { error: 'Failed to delete training' };
+  }
 }
 

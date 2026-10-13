@@ -23,7 +23,10 @@ export default async function RootLayout({
   const session = await getSession();
   let fullUser = session?.user;
   if (session?.user?.id) {
-    const dbUser = await prisma.user.findUnique({ where: { id: session.user.id } });
+    const dbUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { profileImage: true }
+    });
     if (dbUser) {
       fullUser = { ...session.user, profileImage: dbUser.profileImage };
     }

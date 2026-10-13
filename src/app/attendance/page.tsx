@@ -21,7 +21,12 @@ export default async function AttendancePage({ searchParams }: { searchParams: {
     },
     include: {
       worker: {
-        include: { company: true }
+        select: {
+          id: true,
+          workerId: true,
+          name: true,
+          company: { select: { id: true, name: true } }
+        }
       }
     },
     orderBy: { createdAt: 'desc' }

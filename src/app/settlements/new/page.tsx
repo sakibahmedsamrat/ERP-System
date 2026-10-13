@@ -161,7 +161,7 @@ export default function NewSettlementPage() {
       }
 
       // 2. Service benefit amount based on serviceAgeYears
-      if (prev.basicSalary > 0) {
+      if (prev.basicSalary > 0 && !isDateInverted) {
         let perDayBasic = prev.basicSalary / 30;
         
         let isOver10 = serviceAgeYears > 10 || (serviceAgeYears === 10 && (serviceAgeMonths > 0 || serviceAgeDays > 0));
@@ -176,6 +176,8 @@ export default function NewSettlementPage() {
         } else {
           newServiceBenefit = 0;
         }
+      } else if (isDateInverted) {
+        newServiceBenefit = 0;
       }
 
       // 3. Current month work day pay = (Gross / daysInMonth) * currentMonthWorkDays
@@ -201,8 +203,7 @@ export default function NewSettlementPage() {
         if (!isNaN(resignDate.getTime()) && !isNaN(lwdDate.getTime())) {
           const diffTime = lwdDate.getTime() - resignDate.getTime();
           const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-          const D = diffDays;
-          const shortfall = 60 - D;
+          const shortfall = Math.min(60, Math.max(0, 60 - diffDays));
           if (shortfall > 0) {
             newDeductMoneyAct2006 = Math.round(shortfall * (prev.basicSalary / 30));
           } else {
@@ -244,7 +245,8 @@ export default function NewSettlementPage() {
     serviceAgeDays, 
     lastWorkingDay,
     resignApplyDate,
-    selectedWorker?.grade
+    selectedWorker?.grade,
+    isDateInverted
   ]);
 
   const payableSubTotal = formVals.serviceBenefitAmount + formVals.currentMonthWorkDayPay + formVals.extraDutyOTPay + formVals.earnLeavePay;
@@ -274,8 +276,11 @@ export default function NewSettlementPage() {
     formData.append('deductionSubTotal', deductionSubTotal.toString());
     formData.append('totalPayAmount', totalPayAmount.toString());
     
-    await createSettlement(formData);
-    setLoading(false);
+    const res = await createSettlement(formData);
+    if (res?.error) {
+      alert(res.error);
+      setLoading(false);
+    }
   };
 
   const handleReset = () => {
@@ -300,6 +305,8 @@ export default function NewSettlementPage() {
         currentMonthWorkingDays: 0,
         absentDays: 0,
         totalLateEarlyMinutes: 0,
+        otHour: 0,
+        extraDutyDays: 0,
         serviceBenefitAmount: 0,
         currentMonthWorkDayPay: 0,
         extraDutyOTPay: 0,

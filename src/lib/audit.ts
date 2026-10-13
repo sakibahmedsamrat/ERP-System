@@ -1,6 +1,5 @@
 import prisma from '@/lib/prisma';
-﻿import { getSession } from './auth';
-
+import { getSession } from './auth';
 
 export async function logAction(module: string, action: string, details: string) {
   try {

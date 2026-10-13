@@ -21,12 +21,26 @@ export default async function ConfirmationsPage() {
     redirect('/');
   }
 
-  // Fetch all active workers
+  // Fetch all active workers with only required fields (excluding heavy base64 images)
   const workers = await prisma.worker.findMany({
     where: {
       isActive: true,
     },
-    include: {
+    select: {
+      id: true,
+      workerId: true,
+      name: true,
+      designation: true,
+      gender: true,
+      bloodGroup: true,
+      phone: true,
+      grade: true,
+      grossSalary: true,
+      joinDate: true,
+      confirmed6mAt: true,
+      confirmed3yAt: true,
+      confirmed6mRemarks: true,
+      confirmed3yRemarks: true,
       company: {
         select: { id: true, name: true },
       },
@@ -58,11 +72,10 @@ export default async function ConfirmationsPage() {
   // Serialize dates to ISO strings for client component safely
   const serializedWorkers = workers.map((w) => ({
     ...w,
+    photoUrl: null,
     joinDate: w.joinDate ? w.joinDate.toISOString() : null,
     confirmed6mAt: w.confirmed6mAt ? w.confirmed6mAt.toISOString() : null,
     confirmed3yAt: w.confirmed3yAt ? w.confirmed3yAt.toISOString() : null,
-    createdAt: w.createdAt.toISOString(),
-    updatedAt: w.updatedAt.toISOString(),
   }));
 
   return (
