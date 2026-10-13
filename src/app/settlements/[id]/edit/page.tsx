@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { formatDate, calculateServiceAge, parseFlexibleDate } from '@/lib/formatDate';
 import Link from 'next/link';
-import { Search, Save, Check, RotateCcw } from 'lucide-react';
+import { Search, Save, Check, RotateCcw, RefreshCw } from 'lucide-react';
+import { getSettlement, updateSettlement } from '../../actions';
 import { useRouter } from 'next/navigation';
 
 function numberToWords(num: number): string {
@@ -24,7 +25,6 @@ function numberToWords(num: number): string {
   return convert(num).trim();
 }
 
-import { updateSettlement, getSettlement } from '../../actions';
 export default function EditSettlementPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
@@ -38,7 +38,11 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
   const [serviceAge, setServiceAge] = useState('');
   const [isDateInverted, setIsDateInverted] = useState(false);
 
+  // Track which fields the user has manually edited/overridden
+  const [manualOverrides, setManualOverrides] = useState<Record<string, boolean>>({});
+
   useEffect(() => {
+    if (manualOverrides.serviceAge) return;
     const effectiveJoin = joinDateOverride || selectedWorker?.joinDate;
     if (effectiveJoin && lastWorkingDay) {
       const res = calculateServiceAge(effectiveJoin, lastWorkingDay);
@@ -62,12 +66,15 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
       setServiceAgeDays(0);
       setIsDateInverted(false);
     }
-  }, [selectedWorker, lastWorkingDay, joinDateOverride]);
+  }, [selectedWorker, lastWorkingDay, joinDateOverride, manualOverrides.serviceAge]);
 
   // Form states for live calculation
   const [formVals, setFormVals] = useState({
     grossSalary: 0,
     basicSalary: 0,
+    houseRent: 0,
+    medicalAllowance: 0,
+    conveyanceAllowance: 0,
     totalEarnLeaveDays: 0,
     currentMonthWorkingDays: 0,
     absentDays: 0,
@@ -81,6 +88,9 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
     deductMoneyAct2006: 0,
     absentDeduction: 0,
     lateEarlyDeduction: 0,
+    payableSubTotal: 0,
+    deductionSubTotal: 0,
+    totalPayAmount: 0,
   });
 
   const [serviceAgeYears, setServiceAgeYears] = useState(0);
@@ -114,6 +124,7 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
     setSelectedWorker(worker);
     setSearchResults([]);
     setSearchQuery('');
+    setManualOverrides({});
     if (worker.joinDate) {
       const parsed = parseFlexibleDate(worker.joinDate);
       if (parsed) {
@@ -127,18 +138,24 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
     setFormVals(prev => ({
       ...prev,
       grossSalary: worker.grossSalary || 0,
-      basicSalary: worker.basicSalary || 0
+      basicSalary: worker.basicSalary || 0,
+      houseRent: worker.houseRent || 0,
+      medicalAllowance: worker.medicalAllowance || 0,
+      conveyanceAllowance: worker.conveyanceAllowance || 0,
     }));
   };
 
   const handleValChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    const numVal = value === '' ? 0 : parseFloat(value);
+    setManualOverrides(prev => ({ ...prev, [name]: true }));
     setFormVals(prev => ({
       ...prev,
-      [name]: parseFloat(value) || 0
+      [name]: isNaN(numVal) ? 0 : numVal
     }));
   };
 
+  // Re-calculate fields automatically, respecting manual overrides
   useEffect(() => {
     setFormVals(prev => {
       let newEarnLeavePay = prev.earnLeavePay;
@@ -146,6 +163,8 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
       let newCurrentMonthPay = prev.currentMonthWorkDayPay;
       let newLateEarlyDeduction = prev.lateEarlyDeduction;
       let newAbsentDeduction = prev.absentDeduction;
+      let newDeductMoneyAct2006 = prev.deductMoneyAct2006;
+      let newExtraDutyOTPay = prev.extraDutyOTPay;
 
       let daysInMonth = 30; // fallback
       if (lastWorkingDay) {
@@ -156,68 +175,92 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
       }
 
       // 1. Earn leave pay = (Gross / 30) * Total Earn Leave
-      if (prev.grossSalary > 0 && prev.totalEarnLeaveDays >= 0) {
-        newEarnLeavePay = Math.round((prev.grossSalary / 30) * prev.totalEarnLeaveDays);
+      if (!manualOverrides.earnLeavePay) {
+        if (prev.grossSalary > 0 && prev.totalEarnLeaveDays >= 0) {
+          newEarnLeavePay = Math.round((prev.grossSalary / 30) * prev.totalEarnLeaveDays);
+        } else {
+          newEarnLeavePay = 0;
+        }
       }
 
       // 2. Service benefit amount based on serviceAgeYears
-      if (prev.basicSalary > 0 && !isDateInverted) {
-        let perDayBasic = prev.basicSalary / 30;
-        
-        let isOver10 = serviceAgeYears > 10 || (serviceAgeYears === 10 && (serviceAgeMonths > 0 || serviceAgeDays > 0));
-        let isOver3 = serviceAgeYears > 3 || (serviceAgeYears === 3 && (serviceAgeMonths > 0 || serviceAgeDays > 0));
+      if (!manualOverrides.serviceBenefitAmount) {
+        if (prev.basicSalary > 0 && !isDateInverted) {
+          let perDayBasic = prev.basicSalary / 30;
+          
+          let isOver10 = serviceAgeYears > 10 || (serviceAgeYears === 10 && (serviceAgeMonths > 0 || serviceAgeDays > 0));
+          let isOver3 = serviceAgeYears > 3 || (serviceAgeYears === 3 && (serviceAgeMonths > 0 || serviceAgeDays > 0));
 
-        if (isOver10) {
-          newServiceBenefit = Math.round(perDayBasic * (30 * serviceAgeYears));
-        } else if (isOver3) {
-          newServiceBenefit = Math.round(perDayBasic * (15 * serviceAgeYears));
-        } else if (serviceAgeYears === 3) {
-          newServiceBenefit = Math.round(perDayBasic * (7 * serviceAgeYears));
+          if (isOver10) {
+            newServiceBenefit = Math.round(perDayBasic * (30 * serviceAgeYears));
+          } else if (isOver3) {
+            newServiceBenefit = Math.round(perDayBasic * (15 * serviceAgeYears));
+          } else if (serviceAgeYears === 3) {
+            newServiceBenefit = Math.round(perDayBasic * (7 * serviceAgeYears));
+          } else {
+            newServiceBenefit = 0;
+          }
         } else {
           newServiceBenefit = 0;
         }
-      } else if (isDateInverted) {
-        newServiceBenefit = 0;
       }
 
       // 3. Current month work day pay = (Gross / daysInMonth) * currentMonthWorkDays
-      if (prev.grossSalary > 0 && prev.currentMonthWorkingDays >= 0 && daysInMonth > 0) {
-        newCurrentMonthPay = Math.round((prev.grossSalary / daysInMonth) * prev.currentMonthWorkingDays);
+      if (!manualOverrides.currentMonthWorkDayPay) {
+        if (prev.grossSalary > 0 && prev.currentMonthWorkingDays >= 0 && daysInMonth > 0) {
+          newCurrentMonthPay = Math.round((prev.grossSalary / daysInMonth) * prev.currentMonthWorkingDays);
+        } else {
+          newCurrentMonthPay = 0;
+        }
       }
       
       // 4. Late/Early Deduction = (Gross / daysInMonth / 8 / 60) * totalLateEarlyMinutes
-      if (prev.grossSalary > 0 && prev.totalLateEarlyMinutes >= 0 && daysInMonth > 0) {
-        newLateEarlyDeduction = Math.round((prev.grossSalary / daysInMonth / 8 / 60) * prev.totalLateEarlyMinutes);
+      if (!manualOverrides.lateEarlyDeduction) {
+        if (prev.grossSalary > 0 && prev.totalLateEarlyMinutes >= 0 && daysInMonth > 0) {
+          newLateEarlyDeduction = Math.round((prev.grossSalary / daysInMonth / 8 / 60) * prev.totalLateEarlyMinutes);
+        } else {
+          newLateEarlyDeduction = 0;
+        }
       }
 
       // 5. Absent Deduction = (Gross / daysInMonth) * absentDays
-      if (prev.grossSalary > 0 && prev.absentDays >= 0 && daysInMonth > 0) {
-        newAbsentDeduction = Math.round((prev.grossSalary / daysInMonth) * prev.absentDays);
+      if (!manualOverrides.absentDeduction) {
+        if (prev.grossSalary > 0 && prev.absentDays >= 0 && daysInMonth > 0) {
+          newAbsentDeduction = Math.round((prev.grossSalary / daysInMonth) * prev.absentDays);
+        } else {
+          newAbsentDeduction = 0;
+        }
       }
 
       // 6. Deduct Money (Act of 2006)
-      let newDeductMoneyAct2006 = prev.deductMoneyAct2006;
-      if (prev.basicSalary > 0 && resignApplyDate && lastWorkingDay) {
-        const resignDate = new Date(resignApplyDate);
-        const lwdDate = new Date(lastWorkingDay);
-        if (!isNaN(resignDate.getTime()) && !isNaN(lwdDate.getTime())) {
-          const diffTime = lwdDate.getTime() - resignDate.getTime();
-          const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-          const shortfall = Math.min(60, Math.max(0, 60 - diffDays));
-          if (shortfall > 0) {
-            newDeductMoneyAct2006 = Math.round(shortfall * (prev.basicSalary / 30));
-          } else {
-            newDeductMoneyAct2006 = 0;
+      if (!manualOverrides.deductMoneyAct2006) {
+        if (prev.basicSalary > 0 && resignApplyDate && lastWorkingDay) {
+          const resignDate = new Date(resignApplyDate);
+          const lwdDate = new Date(lastWorkingDay);
+          if (!isNaN(resignDate.getTime()) && !isNaN(lwdDate.getTime())) {
+            const diffTime = lwdDate.getTime() - resignDate.getTime();
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            const shortfall = Math.min(60, Math.max(0, 60 - diffDays));
+            if (shortfall > 0) {
+              newDeductMoneyAct2006 = Math.round(shortfall * (prev.basicSalary / 30));
+            } else {
+              newDeductMoneyAct2006 = 0;
+            }
           }
+        } else {
+          newDeductMoneyAct2006 = 0;
         }
       }
 
       // 7. Extra Duty / OT calculation
-      let newExtraDutyOTPay = prev.extraDutyOTPay;
-      if (selectedWorker?.grade === 'S' && prev.otHour >= 0 && prev.basicSalary > 0) {
-        newExtraDutyOTPay = Math.round((prev.basicSalary / 104) * prev.otHour);
-      } else if (selectedWorker?.grade === 'M' && prev.extraDutyDays >= 0) {
-        newExtraDutyOTPay = Math.round(250 * prev.extraDutyDays);
+      if (!manualOverrides.extraDutyOTPay) {
+        if (selectedWorker?.grade === 'S' && prev.otHour >= 0 && prev.basicSalary > 0) {
+          newExtraDutyOTPay = Math.round((prev.basicSalary / 104) * prev.otHour);
+        } else if (selectedWorker?.grade === 'M' && prev.extraDutyDays >= 0) {
+          newExtraDutyOTPay = Math.round(250 * prev.extraDutyDays);
+        } else {
+          newExtraDutyOTPay = 0;
+        }
       }
 
       return {
@@ -246,17 +289,42 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
     lastWorkingDay,
     resignApplyDate,
     selectedWorker?.grade,
-    isDateInverted
+    isDateInverted,
+    manualOverrides
   ]);
 
-  const payableSubTotal = formVals.serviceBenefitAmount + formVals.currentMonthWorkDayPay + formVals.extraDutyOTPay + formVals.earnLeavePay;
-  const deductionSubTotal = formVals.deductMoneyAct2006 + formVals.absentDeduction + formVals.lateEarlyDeduction;
-  const totalPayAmount = payableSubTotal - deductionSubTotal;
+  // Compute subtotals and total, allowing manual override if the user edited them directly
+  const calculatedPayableSubTotal = 
+    (Number(formVals.serviceBenefitAmount) || 0) + 
+    (Number(formVals.currentMonthWorkDayPay) || 0) + 
+    (Number(formVals.extraDutyOTPay) || 0) + 
+    (Number(formVals.earnLeavePay) || 0);
+
+  const payableSubTotal = manualOverrides.payableSubTotal 
+    ? (Number(formVals.payableSubTotal) || 0)
+    : calculatedPayableSubTotal;
+
+  const calculatedDeductionSubTotal = 
+    (Number(formVals.deductMoneyAct2006) || 0) + 
+    (Number(formVals.absentDeduction) || 0) + 
+    (Number(formVals.lateEarlyDeduction) || 0);
+
+  const deductionSubTotal = manualOverrides.deductionSubTotal 
+    ? (Number(formVals.deductionSubTotal) || 0)
+    : calculatedDeductionSubTotal;
+
+  const calculatedTotalPayAmount = payableSubTotal - deductionSubTotal;
+
+  const totalPayAmount = manualOverrides.totalPayAmount 
+    ? (Number(formVals.totalPayAmount) || 0)
+    : calculatedTotalPayAmount;
 
   const [amountInWords, setAmountInWords] = useState('');
   const [bankAccNo, setBankAccNo] = useState('');
 
+  // Auto-generate words unless user manually edited amountInWords
   useEffect(() => {
+    if (manualOverrides.amountInWords) return;
     if (totalPayAmount > 0) {
       setAmountInWords(`${numberToWords(Math.round(totalPayAmount))} Taka Only.`);
     } else if (totalPayAmount < 0) {
@@ -264,7 +332,7 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
     } else {
       setAmountInWords('');
     }
-  }, [totalPayAmount]);
+  }, [totalPayAmount, manualOverrides.amountInWords]);
 
   const [dataLoaded, setDataLoaded] = useState(false);
   useEffect(() => {
@@ -287,45 +355,81 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
         setAmountInWords(data.amountInWords || '');
         setBankAccNo(data.bankAccNo || '');
         
+        // Populate all existing values from DB
         setFormVals({
-          grossSalary: data.grossSalary,
-          basicSalary: data.basicSalary,
-          houseRent: data.houseRent,
-          medicalAllowance: data.medicalAllowance,
-          conveyanceAllowance: data.conveyanceAllowance,
-          totalEarnLeaveDays: data.totalEarnLeaveDays,
-          totalLateEarlyMinutes: data.totalLateEarlyMinutes,
-          currentMonthWorkingDays: data.currentMonthWorkingDays,
-          absentDays: data.absentDays,
-          serviceBenefitAmount: data.serviceBenefitAmount,
-          deductMoneyAct2006: data.deductMoneyAct2006,
-          currentMonthWorkDayPay: data.currentMonthWorkDayPay,
-          absentDeduction: data.absentDeduction,
-          extraDutyOTPay: data.extraDutyOTPay,
-          lateEarlyDeduction: data.lateEarlyDeduction,
-          earnLeavePay: data.earnLeavePay,
-          payableSubTotal: data.payableSubTotal,
-          deductionSubTotal: data.deductionSubTotal,
-          totalPayAmount: data.totalPayAmount,
+          grossSalary: data.grossSalary || 0,
+          basicSalary: data.basicSalary || 0,
+          houseRent: data.houseRent || 0,
+          medicalAllowance: data.medicalAllowance || 0,
+          conveyanceAllowance: data.conveyanceAllowance || 0,
+          totalEarnLeaveDays: data.totalEarnLeaveDays || 0,
+          totalLateEarlyMinutes: data.totalLateEarlyMinutes || 0,
+          currentMonthWorkingDays: data.currentMonthWorkingDays || 0,
+          absentDays: data.absentDays || 0,
+          serviceBenefitAmount: data.serviceBenefitAmount || 0,
+          deductMoneyAct2006: data.deductMoneyAct2006 || 0,
+          currentMonthWorkDayPay: data.currentMonthWorkDayPay || 0,
+          absentDeduction: data.absentDeduction || 0,
+          extraDutyOTPay: data.extraDutyOTPay || 0,
+          lateEarlyDeduction: data.lateEarlyDeduction || 0,
+          earnLeavePay: data.earnLeavePay || 0,
+          payableSubTotal: data.payableSubTotal || 0,
+          deductionSubTotal: data.deductionSubTotal || 0,
+          totalPayAmount: data.totalPayAmount || 0,
           otHour: 0,
           extraDutyDays: 0,
-          paymentReceiverDate: data.paymentReceiverDate ? new Date(data.paymentReceiverDate).toISOString().split('T')[0] : ''
-        } as any);
+        });
+
+        // Set overrides for loaded database values so initial render doesn't wipe them out
+        setManualOverrides({
+          serviceBenefitAmount: true,
+          deductMoneyAct2006: true,
+          currentMonthWorkDayPay: true,
+          absentDeduction: true,
+          extraDutyOTPay: true,
+          lateEarlyDeduction: true,
+          earnLeavePay: true,
+          payableSubTotal: true,
+          deductionSubTotal: true,
+          totalPayAmount: true,
+          amountInWords: true,
+          serviceAge: true
+        });
       }
       setDataLoaded(true);
     }
     if (!dataLoaded) loadData();
   }, [params.id, dataLoaded]);
 
+  // Reset manual overrides to re-calculate from formula if desired
+  const resetToAutoCalculation = () => {
+    setManualOverrides({});
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!selectedWorker) return alert('Please select an employee first.');
     setLoading(true);
     const formData = new FormData(e.currentTarget);
-    formData.append('workerId', selectedWorker.id);
-    formData.append('payableSubTotal', payableSubTotal.toString());
-    formData.append('deductionSubTotal', deductionSubTotal.toString());
-    formData.append('totalPayAmount', totalPayAmount.toString());
+    formData.set('workerId', selectedWorker.id);
+    formData.set('grossSalary', (formVals.grossSalary || 0).toString());
+    formData.set('basicSalary', (formVals.basicSalary || 0).toString());
+    formData.set('houseRent', (formVals.houseRent || 0).toString());
+    formData.set('medicalAllowance', (formVals.medicalAllowance || 0).toString());
+    formData.set('conveyanceAllowance', (formVals.conveyanceAllowance || 0).toString());
+    formData.set('serviceBenefitAmount', (formVals.serviceBenefitAmount || 0).toString());
+    formData.set('deductMoneyAct2006', (formVals.deductMoneyAct2006 || 0).toString());
+    formData.set('currentMonthWorkDayPay', (formVals.currentMonthWorkDayPay || 0).toString());
+    formData.set('absentDeduction', (formVals.absentDeduction || 0).toString());
+    formData.set('extraDutyOTPay', (formVals.extraDutyOTPay || 0).toString());
+    formData.set('lateEarlyDeduction', (formVals.lateEarlyDeduction || 0).toString());
+    formData.set('earnLeavePay', (formVals.earnLeavePay || 0).toString());
+    formData.set('payableSubTotal', payableSubTotal.toString());
+    formData.set('deductionSubTotal', deductionSubTotal.toString());
+    formData.set('totalPayAmount', totalPayAmount.toString());
+    formData.set('amountInWords', amountInWords);
+    formData.set('bankAccNo', bankAccNo);
+    formData.set('serviceAge', serviceAge);
     
     const res = await updateSettlement(params.id, formData);
     if (res?.error) {
@@ -347,9 +451,13 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
       setServiceAgeDays(0);
       setAmountInWords('');
       setBankAccNo('');
+      setManualOverrides({});
       setFormVals({
         grossSalary: 0,
         basicSalary: 0,
+        houseRent: 0,
+        medicalAllowance: 0,
+        conveyanceAllowance: 0,
         totalEarnLeaveDays: 0,
         currentMonthWorkingDays: 0,
         absentDays: 0,
@@ -363,60 +471,29 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
         deductMoneyAct2006: 0,
         absentDeduction: 0,
         lateEarlyDeduction: 0,
+        payableSubTotal: 0,
+        deductionSubTotal: 0,
+        totalPayAmount: 0,
       });
     }
   };
 
+  if (!dataLoaded) {
+    return <div className="p-8 text-center text-gray-500">Loading settlement data...</div>;
+  }
+
   return (
     <div className="p-8 max-w-5xl mx-auto">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Resign Benefits / Settlement</h1>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800">Edit Settlement</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            যেকোনো ফিল্ডে ম্যানুয়াল পরিবর্তন দিলে তা ডাটাবেজে সংরক্ষিত হবে।
+          </p>
+        </div>
         <Link href="/settlements" className="text-blue-600 hover:underline">
           &larr; Back to Settlements
         </Link>
-      </div>
-
-      {/* Search Section */}
-      <div className="bg-white rounded-xl shadow-sm p-6 mb-6 border border-gray-100">
-        <h2 className="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Search Employee</h2>
-        <div className="flex gap-2 relative">
-          <input 
-            type="text" 
-            placeholder="Search by ID, Name or Phone..." 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && performSearch(searchQuery.trim())}
-            className="flex-1 border border-gray-300 rounded p-2 outline-none focus:border-blue-500"
-          />
-          <button 
-            type="button"
-            onClick={() => performSearch(searchQuery.trim())}
-            className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-700 transition flex items-center gap-2"
-          >
-            <Search size={18} /> Search
-          </button>
-        </div>
-        
-        {isSearching && <div className="mt-4 text-gray-500">Searching...</div>}
-        
-        {searchResults.length > 0 && (
-          <div className="mt-4 border rounded shadow-sm max-h-60 overflow-y-auto">
-            {searchResults.map(w => (
-              <div key={w.id} className="p-3 border-b hover:bg-gray-50 flex justify-between items-center">
-                <div>
-                  <div className="font-bold">{w.name} (ID: {w.workerId})</div>
-                  <div className="text-sm text-gray-500">{w.company?.name} - {w.department?.name} - {w.designation}</div>
-                </div>
-                <button 
-                  onClick={() => handleSelect(w)}
-                  className="bg-blue-100 text-blue-700 px-3 py-1 rounded text-sm font-bold flex items-center gap-1"
-                >
-                  <Check size={16} /> Select
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Form Section */}
@@ -461,7 +538,7 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
             
             {/* Row 6 */}
             <div className="flex items-center"><strong className="w-40">Last Working Day :</strong> <input type="date" name="lastWorkingDay" value={lastWorkingDay} onChange={(e) => setLastWorkingDay(e.target.value)} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
-            <div className="flex items-center"><strong className="w-40">House Rent :</strong> <input type="number" name="houseRent" defaultValue={selectedWorker.houseRent || 0} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
+            <div className="flex items-center"><strong className="w-40">House Rent :</strong> <input type="number" name="houseRent" value={formVals.houseRent || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
             
             {/* Row 7 */}
             <div className="flex items-center">
@@ -473,6 +550,7 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
                   value={serviceAge}
                   onChange={(e) => {
                     setServiceAge(e.target.value);
+                    setManualOverrides(prev => ({ ...prev, serviceAge: true }));
                     const m = e.target.value.match(/(\d+)\s*(?:years|year|yr)/i);
                     if (m) setServiceAgeYears(parseInt(m[1], 10));
                   }}
@@ -486,11 +564,11 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
                 )}
               </div>
             </div>
-            <div className="flex items-center"><strong className="w-40">Medical Allowance :</strong> <input type="number" name="medicalAllowance" defaultValue={selectedWorker.medicalAllowance || 0} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
+            <div className="flex items-center"><strong className="w-40">Medical Allowance :</strong> <input type="number" name="medicalAllowance" value={formVals.medicalAllowance || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
             
             {/* Row 8 */}
             <div className="flex items-center"><strong className="w-40">Gross Salary :</strong> <input type="number" name="grossSalary" value={formVals.grossSalary || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
-            <div className="flex items-center"><strong className="w-40">Conveyance Allow :</strong> <input type="number" name="conveyanceAllowance" defaultValue={selectedWorker.conveyanceAllowance || 0} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
+            <div className="flex items-center"><strong className="w-40">Conveyance Allow :</strong> <input type="number" name="conveyanceAllowance" value={formVals.conveyanceAllowance || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
           </div>
 
           <h4 className="font-bold text-gray-800 bg-gray-100 p-2 mb-4">Leave & work day info</h4>
@@ -527,35 +605,168 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
             })()}
           </div>
 
-          <h4 className="font-bold text-gray-800 bg-gray-100 p-2 mb-4">Pay calculation info</h4>
+          <div className="flex items-center justify-between bg-gray-100 p-2 mb-4">
+            <h4 className="font-bold text-gray-800">Pay calculation info</h4>
+            {Object.keys(manualOverrides).length > 0 && (
+              <button
+                type="button"
+                onClick={resetToAutoCalculation}
+                className="text-xs text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1 bg-white px-2.5 py-1 rounded border shadow-sm transition"
+                title="ম্যানুয়াল এন্ট্রি রিসেট করে পুনরায় ফর্মুলা অনুযায়ী গণনা করুন"
+              >
+                <RefreshCw size={12} />
+                🔄 Re-calculate All Automatically (অটো গণনা করুন)
+              </button>
+            )}
+          </div>
+
           <div className="grid grid-cols-2 gap-x-12 gap-y-4 mb-4">
-            <div className="flex items-center"><strong className="w-56 text-sm">Service benefit amount :</strong> <input type="number" name="serviceBenefitAmount" value={formVals.serviceBenefitAmount || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /> <span className="text-gray-500 ml-2 text-xs">Taka</span></div>
-            <div className="flex items-center"><strong className="w-56 text-sm text-red-600">Deduct Money (Act of 2006) :</strong> <input type="number" name="deductMoneyAct2006" value={formVals.deductMoneyAct2006 || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 text-red-600 bg-red-50" /> <span className="text-gray-500 ml-2 text-xs">Taka</span></div>
+            <div className="flex items-center">
+              <strong className="w-56 text-sm flex items-center gap-1">
+                Service benefit amount :
+                {manualOverrides.serviceBenefitAmount && <span className="text-[10px] text-amber-600 font-normal">(Manual)</span>}
+              </strong> 
+              <input type="number" name="serviceBenefitAmount" value={formVals.serviceBenefitAmount || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50 font-medium" /> 
+              <span className="text-gray-500 ml-2 text-xs">Taka</span>
+            </div>
             
-            <div className="flex items-center"><strong className="w-56 text-sm">Current month work day pay :</strong> <input type="number" name="currentMonthWorkDayPay" value={formVals.currentMonthWorkDayPay || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /> <span className="text-gray-500 ml-2 text-xs">Taka</span></div>
-            <div className="flex items-center"><strong className="w-56 text-sm text-red-600">Absent Deduction :</strong> <input type="number" name="absentDeduction" value={formVals.absentDeduction || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 text-red-600 bg-red-50" /> <span className="text-gray-500 ml-2 text-xs">Taka</span></div>
+            <div className="flex items-center">
+              <strong className="w-56 text-sm text-red-600 flex items-center gap-1">
+                Deduct Money (Act of 2006) :
+                {manualOverrides.deductMoneyAct2006 && <span className="text-[10px] text-amber-600 font-normal">(Manual)</span>}
+              </strong> 
+              <input type="number" name="deductMoneyAct2006" value={formVals.deductMoneyAct2006 || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 text-red-600 bg-red-50 font-medium" /> 
+              <span className="text-gray-500 ml-2 text-xs">Taka</span>
+            </div>
             
-            <div className="flex items-center"><strong className="w-56 text-sm">Extra Duty/OT :</strong> <input type="number" name="extraDutyOTPay" value={formVals.extraDutyOTPay || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /> <span className="text-gray-500 ml-2 text-xs">Taka</span></div>
-            <div className="flex items-center"><strong className="w-56 text-sm text-red-600">Deduct from Late/Early Min :</strong> <input type="number" name="lateEarlyDeduction" value={formVals.lateEarlyDeduction || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 text-red-600 bg-red-50" /> <span className="text-gray-500 ml-2 text-xs">Taka</span></div>
+            <div className="flex items-center">
+              <strong className="w-56 text-sm flex items-center gap-1">
+                Current month work day pay :
+                {manualOverrides.currentMonthWorkDayPay && <span className="text-[10px] text-amber-600 font-normal">(Manual)</span>}
+              </strong> 
+              <input type="number" name="currentMonthWorkDayPay" value={formVals.currentMonthWorkDayPay || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50 font-medium" /> 
+              <span className="text-gray-500 ml-2 text-xs">Taka</span>
+            </div>
             
-            <div className="flex items-center"><strong className="w-56 text-sm">Earn leave pay :</strong> <input type="number" name="earnLeavePay" value={formVals.earnLeavePay || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /> <span className="text-gray-500 ml-2 text-xs">Taka</span></div>
+            <div className="flex items-center">
+              <strong className="w-56 text-sm text-red-600 flex items-center gap-1">
+                Absent Deduction :
+                {manualOverrides.absentDeduction && <span className="text-[10px] text-amber-600 font-normal">(Manual)</span>}
+              </strong> 
+              <input type="number" name="absentDeduction" value={formVals.absentDeduction || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 text-red-600 bg-red-50 font-medium" /> 
+              <span className="text-gray-500 ml-2 text-xs">Taka</span>
+            </div>
+            
+            <div className="flex items-center">
+              <strong className="w-56 text-sm flex items-center gap-1">
+                Extra Duty/OT :
+                {manualOverrides.extraDutyOTPay && <span className="text-[10px] text-amber-600 font-normal">(Manual)</span>}
+              </strong> 
+              <input type="number" name="extraDutyOTPay" value={formVals.extraDutyOTPay || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50 font-medium" /> 
+              <span className="text-gray-500 ml-2 text-xs">Taka</span>
+            </div>
+            
+            <div className="flex items-center">
+              <strong className="w-56 text-sm text-red-600 flex items-center gap-1">
+                Deduct from Late/Early Min :
+                {manualOverrides.lateEarlyDeduction && <span className="text-[10px] text-amber-600 font-normal">(Manual)</span>}
+              </strong> 
+              <input type="number" name="lateEarlyDeduction" value={formVals.lateEarlyDeduction || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 text-red-600 bg-red-50 font-medium" /> 
+              <span className="text-gray-500 ml-2 text-xs">Taka</span>
+            </div>
+            
+            <div className="flex items-center">
+              <strong className="w-56 text-sm flex items-center gap-1">
+                Earn leave pay :
+                {manualOverrides.earnLeavePay && <span className="text-[10px] text-amber-600 font-normal">(Manual)</span>}
+              </strong> 
+              <input type="number" name="earnLeavePay" value={formVals.earnLeavePay || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50 font-medium" /> 
+              <span className="text-gray-500 ml-2 text-xs">Taka</span>
+            </div>
             <div className="flex items-center"></div>
 
-            <div className="flex items-center font-bold border-t pt-2 border-gray-300 mt-2"><strong className="w-56">Sub total (Payable) :</strong> <span className="border-b border-dashed border-gray-400 flex-1 px-1">{payableSubTotal}</span> <span className="text-gray-500 ml-2 text-xs">Taka</span></div>
-            <div className="flex items-center font-bold border-t pt-2 border-gray-300 mt-2 text-red-700"><strong className="w-56">Sub total (Deductions) :</strong> <span className="border-b border-dashed border-red-300 flex-1 px-1">{deductionSubTotal}</span> <span className="text-gray-500 ml-2 text-xs">Taka</span></div>
+            {/* Sub total (Payable) */}
+            <div className="flex items-center font-bold border-t pt-2 border-gray-300 mt-2">
+              <strong className="w-56 flex items-center gap-1">
+                Sub total (Payable) :
+                {manualOverrides.payableSubTotal && <span className="text-[10px] text-amber-600 font-normal">(Manual)</span>}
+              </strong> 
+              <input 
+                type="number" 
+                name="payableSubTotal" 
+                value={payableSubTotal || ''} 
+                onChange={handleValChange} 
+                className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50 font-bold text-gray-900" 
+              />
+              <span className="text-gray-500 ml-2 text-xs">Taka</span>
+            </div>
+
+            {/* Sub total (Deductions) */}
+            <div className="flex items-center font-bold border-t pt-2 border-gray-300 mt-2 text-red-700">
+              <strong className="w-56 flex items-center gap-1">
+                Sub total (Deductions) :
+                {manualOverrides.deductionSubTotal && <span className="text-[10px] text-amber-600 font-normal">(Manual)</span>}
+              </strong> 
+              <input 
+                type="number" 
+                name="deductionSubTotal" 
+                value={deductionSubTotal || ''} 
+                onChange={handleValChange} 
+                className="border-b border-dashed border-red-300 flex-1 outline-none px-1 text-red-600 bg-red-50 font-bold" 
+              />
+              <span className="text-gray-500 ml-2 text-xs">Taka</span>
+            </div>
           </div>
 
+          {/* Total Pay Amount */}
           <div className="bg-blue-50 p-4 rounded-lg my-6 flex items-center justify-between border border-blue-100">
-            <strong className="text-lg">Total Pay Amount :</strong>
-            <div className="text-2xl font-bold text-blue-700">{totalPayAmount} <span className="text-sm font-normal text-gray-500">Taka</span></div>
+            <div>
+              <strong className="text-lg">Total Pay Amount :</strong>
+              {manualOverrides.totalPayAmount && (
+                <span className="ml-2 text-xs text-amber-700 font-semibold bg-amber-100 px-2 py-0.5 rounded">
+                  Manual Entry
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                name="totalPayAmount"
+                value={totalPayAmount || ''}
+                onChange={handleValChange}
+                className="text-2xl font-bold text-blue-700 bg-white border border-blue-300 rounded px-2 py-1 outline-none text-right w-44 shadow-inner"
+              />
+              <span className="text-sm font-semibold text-gray-600">Taka</span>
+            </div>
+          </div>
+
+          <div className="flex items-center mb-6">
+            <strong className="w-40 flex items-center gap-1">
+              Amount in Word :
+              {manualOverrides.amountInWords && <span className="text-[10px] text-amber-600 font-normal">(Manual)</span>}
+            </strong> 
+            <input 
+              type="text" 
+              name="amountInWords" 
+              value={amountInWords} 
+              onChange={(e) => {
+                setAmountInWords(e.target.value);
+                setManualOverrides(prev => ({ ...prev, amountInWords: true }));
+              }} 
+              className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" 
+            />
           </div>
 
           <div className="flex items-center mb-10">
-            <strong className="w-40">Amount in Word :</strong> <input type="text" name="amountInWords" value={amountInWords} onChange={(e) => setAmountInWords(e.target.value)} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" />
-          </div>
-
-          <div className="flex items-center mb-10">
-            <strong className="w-40">Banck Acc. No. :</strong> <input type="text" name="bankAccNo" value={bankAccNo} onChange={(e) => setBankAccNo(e.target.value)} placeholder="Enter Bank Account Number" className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50 font-medium text-gray-800" />
+            <strong className="w-40">Banck Acc. No. :</strong> 
+            <input 
+              type="text" 
+              name="bankAccNo" 
+              value={bankAccNo} 
+              onChange={(e) => setBankAccNo(e.target.value)} 
+              placeholder="Enter Bank Account Number" 
+              className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50 font-medium text-gray-800" 
+            />
           </div>
 
           <div className="pt-6 border-t border-gray-200 flex justify-between items-center gap-4">
@@ -573,7 +784,7 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
               className={`bg-green-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-green-700 transition flex items-center gap-2 ${loading ? 'opacity-50' : ''}`}
             >
               <Save size={20} />
-              {loading ? 'Saving...' : 'Save Settlement'}
+              {loading ? 'Updating...' : 'Update Settlement'}
             </button>
           </div>
 
@@ -583,9 +794,3 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
     </div>
   );
 }
-
-
-
-
-
-
