@@ -21,7 +21,8 @@ import {
   ChevronRight,
   User,
   ShieldCheck,
-  FileCheck
+  FileCheck,
+  ArrowLeft
 } from 'lucide-react';
 import { formatDate, formatDateTime, calculateServiceAge } from '@/lib/formatDate';
 import { markConfirmationDone, undoConfirmation } from './actions';
@@ -53,6 +54,7 @@ interface ConfirmationsClientProps {
   companies: { id: string; name: string }[];
   departments: { id: string; name: string }[];
   userRole?: string;
+  canAccessWorkers?: boolean;
 }
 
 export default function ConfirmationsClient({
@@ -60,6 +62,7 @@ export default function ConfirmationsClient({
   companies,
   departments,
   userRole,
+  canAccessWorkers = true,
 }: ConfirmationsClientProps) {
   const [workers, setWorkers] = useState<WorkerItem[]>(initialWorkers);
   const [activeTab, setActiveTab] = useState<'6m' | '3y'>('6m');
@@ -258,6 +261,12 @@ export default function ConfirmationsClient({
       {/* Header section (Hidden during print) */}
       <div className="print:hidden flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-200 pb-5">
         <div>
+          <Link
+            href={canAccessWorkers ? "/workers" : "/"}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-800 transition mb-2 group"
+          >
+            <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" /> {canAccessWorkers ? "Back to Employees" : "Back to Dashboard"}
+          </Link>
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-blue-600 text-white rounded-xl shadow-md shadow-blue-500/20">
               <UserCheck size={26} />

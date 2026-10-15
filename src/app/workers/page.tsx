@@ -1,10 +1,14 @@
 import prisma from '@/lib/prisma';
 import Link from 'next/link';
-import { Plus, User, Building2, Trash2, Search, Download, Upload, Hash, Briefcase, Layers, Network, FolderTree, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { redirect } from 'next/navigation';
+import { Plus, User, Building2, Trash2, Search, Download, Upload, Hash, Briefcase, Layers, Network, FolderTree, X, ChevronLeft, ChevronRight, UserCheck, Contact } from 'lucide-react';
 import { deleteWorker } from './actions';
 import { getSession } from '@/lib/auth';
 import DeleteWorkerButton from '@/components/DeleteWorkerButton';
 
+export const metadata = {
+  title: 'Employees | HR ERP',
+};
 
 export default async function WorkersPage({ 
   searchParams 
@@ -21,8 +25,32 @@ export default async function WorkersPage({
   } 
 }) {
   const session = await getSession();
-  const role = session?.user?.role;
+  if (!session) {
+    redirect('/login');
+  }
+
+  const user = session?.user;
+  const role = user?.role;
   const isAdmin = role === 'SUPER_ADMIN' || role === 'ADMIN';
+
+  const hasModule = (modName: string) => {
+    if (!user) return false;
+    if (user.role === 'SUPER_ADMIN') return true;
+    if (user.modules === '*') return true;
+    const mods = (user.modules || '').split(',').map((m: string) => m.trim());
+    return mods.includes(modName);
+  };
+
+  // If user does not have permission for the full workers directory, redirect to allowed submodule or home
+  if (!hasModule('WORKERS')) {
+    if (hasModule('CONFIRMATIONS')) {
+      redirect('/confirmations');
+    } else if (hasModule('IDCARD')) {
+      redirect('/id-cards');
+    } else {
+      redirect('/');
+    }
+  }
 
   const { workerId, name, designation, department, section, subSection, company } = searchParams;
 
@@ -88,8 +116,8 @@ export default async function WorkersPage({
   };
 
   return (
-    <div className="p-8">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4">
         <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
           Employees 
           <span className="text-sm font-semibold bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
@@ -97,20 +125,40 @@ export default async function WorkersPage({
           </span>
         </h1>
         
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {hasModule('CONFIRMATIONS') && (
+            <Link 
+              href="/confirmations" 
+              className="bg-indigo-600 text-white px-3 py-2 rounded flex items-center gap-2 hover:bg-indigo-700 transition text-sm font-medium shadow-sm"
+              title="Employee Confirmation"
+            >
+              <UserCheck size={16} /> Employee Confirmation
+            </Link>
+          )}
+          {hasModule('IDCARD') && (
+            <Link 
+              href="/id-cards" 
+              className="bg-teal-600 text-white px-3 py-2 rounded flex items-center gap-2 hover:bg-teal-700 transition text-sm font-medium shadow-sm"
+              title="ID Card"
+            >
+              <Contact size={16} /> ID Card
+            </Link>
+          )}
           {isAdmin && (
             <>
-              <Link href="/api/workers/export" className="bg-green-600 text-white px-3 py-2 rounded flex items-center gap-2 hover:bg-green-700 transition text-sm">
+              <Link href="/api/workers/export" className="bg-green-600 text-white px-3 py-2 rounded flex items-center gap-2 hover:bg-green-700 transition text-sm font-medium shadow-sm">
                 <Download size={16} /> Export CSV
               </Link>
-              <Link href="/workers/import" className="bg-purple-600 text-white px-3 py-2 rounded flex items-center gap-2 hover:bg-purple-700 transition text-sm">
+              <Link href="/workers/import" className="bg-purple-600 text-white px-3 py-2 rounded flex items-center gap-2 hover:bg-purple-700 transition text-sm font-medium shadow-sm">
                 <Upload size={16} /> Import CSV
               </Link>
             </>
           )}
-          <Link href="/workers/new" className="bg-blue-600 text-white px-4 py-2 rounded flex items-center gap-2 hover:bg-blue-700 transition text-sm">
-            <Plus size={16} /> Add Employee
-          </Link>
+          {hasModule('WORKERS') && (
+            <Link href="/workers/new" className="bg-blue-600 text-white px-4 py-2 rounded flex items-center gap-2 hover:bg-blue-700 transition text-sm font-medium shadow-sm">
+              <Plus size={16} /> Add Employee
+            </Link>
+          )}
         </div>
       </div>
 

@@ -78,12 +78,15 @@ export default async function ConfirmationsPage() {
     confirmed3yAt: w.confirmed3yAt ? w.confirmed3yAt.toISOString() : null,
   }));
 
+  const canAccessWorkers = role === 'SUPER_ADMIN' || session?.user?.modules === '*' || userModules.includes('WORKERS');
+
   return (
     <ConfirmationsClient
       initialWorkers={serializedWorkers}
       companies={companies}
       departments={departments}
       userRole={role}
+      canAccessWorkers={canAccessWorkers}
     />
   );
 }

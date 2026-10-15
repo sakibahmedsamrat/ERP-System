@@ -15,6 +15,13 @@ export async function markConfirmationDone(
       return { success: false, error: 'Unauthorized' };
     }
 
+    const role = session.user?.role;
+    const userModules = (session.user?.modules || '').split(',').map((m: string) => m.trim());
+    const hasAccess = role === 'SUPER_ADMIN' || session.user?.modules === '*' || userModules.includes('CONFIRMATIONS');
+    if (!hasAccess) {
+      return { success: false, error: 'Unauthorized: Missing CONFIRMATIONS permission' };
+    }
+
     const updateData: any = {};
     if (type === '6m') {
       updateData.confirmed6mAt = new Date();
@@ -47,6 +54,13 @@ export async function undoConfirmation(
     const session = await getSession();
     if (!session) {
       return { success: false, error: 'Unauthorized' };
+    }
+
+    const role = session.user?.role;
+    const userModules = (session.user?.modules || '').split(',').map((m: string) => m.trim());
+    const hasAccess = role === 'SUPER_ADMIN' || session.user?.modules === '*' || userModules.includes('CONFIRMATIONS');
+    if (!hasAccess) {
+      return { success: false, error: 'Unauthorized: Missing CONFIRMATIONS permission' };
     }
 
     const updateData: any = {};

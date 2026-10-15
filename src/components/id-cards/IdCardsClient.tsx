@@ -1,24 +1,33 @@
 'use client'
 
 import { useState } from 'react';
-import { Contact, UserCheck, ShieldCheck } from 'lucide-react';
+import Link from 'next/link';
+import { Contact, UserCheck, ShieldCheck, ArrowLeft } from 'lucide-react';
 import EmployeeIdCardSection from '@/components/id-cards/EmployeeIdCardSection';
 import VisitorIdCardSection from '@/components/id-cards/VisitorIdCardSection';
 
 export default function IdCardsClient({
   initialTab = 'employee',
-  searchParams
+  searchParams,
+  canAccessWorkers = true
 }: {
   initialTab?: 'employee' | 'visitor';
   searchParams?: Record<string, string | undefined>;
+  canAccessWorkers?: boolean;
 }) {
   const [activeTab, setActiveTab] = useState<'employee' | 'visitor'>(initialTab);
 
   return (
     <div className="p-2 sm:p-4 md:p-6 w-full max-w-full mx-auto space-y-4">
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2">
+      <div className="print:hidden flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2">
         <div>
+          <Link
+            href={canAccessWorkers ? "/workers" : "/"}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-800 transition mb-2 group"
+          >
+            <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" /> {canAccessWorkers ? "Back to Employees" : "Back to Dashboard"}
+          </Link>
           <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/20">
               <Contact size={22} />

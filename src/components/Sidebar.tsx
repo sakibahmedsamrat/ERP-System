@@ -15,8 +15,6 @@ import {
   Settings,
   Activity,
   Layers,
-  Contact,
-  UserCheck,
   Sliders
 } from 'lucide-react';
 import { logoutAction } from '@/app/logout/actions';
@@ -33,12 +31,18 @@ export default function Sidebar({ user }: { user?: any }) {
     return mods.includes(modName);
   };
 
+  const employeesHref = hasModule('WORKERS') 
+    ? '/workers' 
+    : (hasModule('CONFIRMATIONS') ? '/confirmations' : (hasModule('IDCARD') ? '/id-cards' : '/workers'));
+
   const NavItem = ({ href, icon: Icon, label, color = "text-white", exact = false }: any) => {
     let isActive = false;
     if (exact) {
       isActive = pathname === href;
     } else if (href === '/recruitment') {
       isActive = pathname === '/recruitment' || (pathname.startsWith('/recruitment') && !pathname.startsWith('/recruitment/manpower'));
+    } else if (label === 'Employees' || href === '/workers' || href === employeesHref) {
+      isActive = pathname.startsWith('/workers') || pathname.startsWith('/confirmations') || pathname.startsWith('/id-cards');
     } else {
       isActive = pathname === href || (href !== '/' && pathname.startsWith(href));
     }
@@ -76,9 +80,9 @@ export default function Sidebar({ user }: { user?: any }) {
       <nav className="flex-1 p-5 space-y-2 overflow-y-auto relative z-10 custom-scrollbar">
         <NavItem href="/" icon={LayoutDashboard} label="Dashboard" />
         
-        {hasModule('WORKERS') && <NavItem href="/workers" icon={Users} label="Employees" />}
-        {hasModule('CONFIRMATIONS') && <NavItem href="/confirmations" icon={UserCheck} label="Employee Confirmation" />}
-        {hasModule('IDCARD') && <NavItem href="/id-cards" icon={Contact} label="ID Card" />}
+        {(hasModule('WORKERS') || hasModule('CONFIRMATIONS') || hasModule('IDCARD')) && (
+          <NavItem href={employeesHref} icon={Users} label="Employees" />
+        )}
         {hasModule('COMPANIES') && <NavItem href="/companies" icon={Building2} label="Companies" />}
         {hasModule('ATTENDANCE') && <NavItem href="/attendance" icon={CalendarCheck} label="Attendance" />}
         {hasModule('SETTLEMENTS') && <NavItem href="/settlements" icon={CreditCard} label="Settlements" />}
