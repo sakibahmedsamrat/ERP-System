@@ -13,7 +13,8 @@ export default async function MarkAttendancePage({ searchParams }: { searchParam
     workers = await prisma.worker.findMany({
       where: { 
         companyId: selectedCompanyId,
-        isActive: true
+        isActive: true,
+        isDeleted: false
       },
       select: {
         id: true,

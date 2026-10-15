@@ -14,8 +14,8 @@ export async function GET(request: Request) {
   const withPhoto = searchParams.get('withPhoto') === 'true';
 
   if (id) {
-    const worker = await prisma.worker.findUnique({
-      where: { id },
+    const worker = await prisma.worker.findFirst({
+      where: { id, isDeleted: false },
       include: {
         company: true,
         department: true,
@@ -63,6 +63,7 @@ export async function GET(request: Request) {
 
   const workers = await prisma.worker.findMany({
     where: {
+      isDeleted: false,
       OR: [
         { workerId: { contains: q, mode: 'insensitive' } },
         { name: { contains: q, mode: 'insensitive' } },

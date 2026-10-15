@@ -5,6 +5,7 @@ import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { logAction } from '@/lib/audit';
+import { getSession } from '@/lib/auth';
 import { writeFile } from 'fs/promises';
 import { join } from 'path';
 
@@ -94,13 +95,91 @@ export async function createWorker(formData: FormData): Promise<void> {
 
 export async function deleteWorker(id: string) {
   try {
+    const session = await getSession();
+    if (!session?.user) return { error: 'Unauthorized' };
+    const role = session.user.role;
+    if (role !== 'SUPER_ADMIN' && role !== 'ADMIN') {
+      return { error: 'Forbidden' };
+    }
+
     const w = await prisma.worker.findUnique({
       where: { id },
-      select: { id: true, workerId: true }
+      select: { id: true, workerId: true, name: true }
     });
     if (!w) return { error: 'Worker not found' };
 
-    // Delete related attendances and settlements first
+    // Soft delete: move to recycle bin
+    await prisma.worker.update({
+      where: { id },
+      data: {
+        isDeleted: true,
+        deletedAt: new Date(),
+        isActive: false
+      }
+    });
+
+    await logAction('WORKERS', 'DELETE', `Moved worker to recycle bin: ${w.workerId} (${w.name})`);
+    revalidatePath('/workers');
+    revalidatePath('/workers/recycle-bin');
+    revalidatePath('/');
+    revalidatePath('/payroll');
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to delete worker:", error);
+    return { error: 'Failed to delete worker' };
+  }
+}
+
+export async function restoreWorker(id: string) {
+  try {
+    const session = await getSession();
+    if (!session?.user) return { error: 'Unauthorized' };
+    if (session.user.role !== 'SUPER_ADMIN') {
+      return { error: 'Forbidden: Only Super Admins can restore employees' };
+    }
+
+    const w = await prisma.worker.findUnique({
+      where: { id },
+      select: { id: true, workerId: true, name: true }
+    });
+    if (!w) return { error: 'Worker not found' };
+
+    await prisma.worker.update({
+      where: { id },
+      data: {
+        isDeleted: false,
+        deletedAt: null,
+        isActive: true
+      }
+    });
+
+    await logAction('WORKERS', 'RESTORE', `Restored worker: ${w.workerId} (${w.name})`);
+    revalidatePath('/workers');
+    revalidatePath('/workers/recycle-bin');
+    revalidatePath('/');
+    revalidatePath('/payroll');
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to restore worker:", error);
+    return { error: 'Failed to restore worker' };
+  }
+}
+
+export async function permanentDeleteWorker(id: string) {
+  try {
+    const session = await getSession();
+    if (!session?.user) return { error: 'Unauthorized' };
+    if (session.user.role !== 'SUPER_ADMIN') {
+      return { error: 'Forbidden: Only Super Admins can permanently delete employees' };
+    }
+
+    const w = await prisma.worker.findUnique({
+      where: { id },
+      select: { id: true, workerId: true, name: true }
+    });
+    if (!w) return { error: 'Worker not found' };
+
+    // Hard delete related records first
     await prisma.attendance.deleteMany({ where: { workerId: id } });
     await prisma.settlement.deleteMany({ where: { workerId: id } });
     await prisma.training.updateMany({
@@ -119,17 +198,28 @@ export async function deleteWorker(id: string) {
       });
     }
 
-    await logAction('WORKERS', 'DELETE', 'Deleted worker: ' + w.workerId);
+    await logAction('WORKERS', 'PERMANENT_DELETE', `Permanently deleted worker: ${w.workerId} (${w.name})`);
     await prisma.worker.delete({ where: { id } });
     revalidatePath('/workers');
+    revalidatePath('/workers/recycle-bin');
+    revalidatePath('/');
+    revalidatePath('/payroll');
     return { success: true };
   } catch (error) {
-    console.error("Failed to delete worker:", error);
-    return { error: 'Failed to delete worker' };
+    console.error("Failed to permanently delete worker:", error);
+    return { error: 'Failed to permanently delete worker' };
   }
 }
 
 export async function updateWorker(id: string, formData: FormData): Promise<void> {
+  const existing = await prisma.worker.findUnique({
+    where: { id },
+    select: { id: true, isDeleted: true }
+  });
+  if (!existing || existing.isDeleted) {
+    return;
+  }
+
   const workerId = formData.get('workerId') as string;
   const name = formData.get('name') as string;
   const phone = formData.get('phone') as string;

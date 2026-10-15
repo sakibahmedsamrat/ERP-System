@@ -17,6 +17,9 @@ export default async function AttendancePage({ searchParams }: { searchParams: {
       date: {
         gte: startOfDay,
         lte: endOfDay,
+      },
+      worker: {
+        isDeleted: false,
       }
     },
     include: {

@@ -34,7 +34,7 @@ export default async function Dashboard() {
   endOfToday.setUTCHours(23, 59, 59, 999);
 
   const [totalWorkers, totalCompanies, totalTasks, todayAttendanceCount, myTasks] = await Promise.all([
-    prisma.worker.count(),
+    prisma.worker.count({ where: { isDeleted: false } }),
     prisma.company.count(),
     prisma.task.count({ where: taskWhere }),
     prisma.attendance.count({
@@ -43,6 +43,9 @@ export default async function Dashboard() {
         date: {
           gte: startOfToday,
           lte: endOfToday
+        },
+        worker: {
+          isDeleted: false
         }
       }
     }),

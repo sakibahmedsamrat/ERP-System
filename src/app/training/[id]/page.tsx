@@ -28,7 +28,7 @@ export default async function TrainingDetailsPage({ params }: { params: { id: st
         }
       }
     }),
-    prisma.worker.count()
+    prisma.worker.count({ where: { isDeleted: false } })
   ]);
 
   if (!training) notFound();

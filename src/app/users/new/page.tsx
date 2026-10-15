@@ -69,6 +69,7 @@ export default function NewUserPage() {
                 { id: 'IDCARD', label: 'ID Card' },
                 { id: 'COMPANIES', label: 'Companies' },
                 { id: 'ATTENDANCE', label: 'Attendance' },
+                { id: 'PAYROLL', label: 'Payroll' },
                 { id: 'SETTLEMENTS', label: 'Settlements' },
                 { id: 'TRAINING', label: 'Training' },
                 { id: 'RECRUITMENT', label: 'Recruitment' },

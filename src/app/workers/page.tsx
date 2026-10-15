@@ -58,7 +58,7 @@ export default async function WorkersPage({
   const pageSize = 50;
   const skip = (page - 1) * pageSize;
 
-  const whereClause: any = { AND: [] };
+  const whereClause: any = { AND: [{ isDeleted: false }] };
 
   if (workerId) whereClause.AND.push({ workerId: { contains: workerId, mode: 'insensitive' } });
   if (name) whereClause.AND.push({ name: { contains: name, mode: 'insensitive' } });
@@ -82,11 +82,9 @@ export default async function WorkersPage({
     }
   };
   
-  if (whereClause.AND.length > 0) {
-    queryOptions.where = whereClause;
-  }
+  queryOptions.where = whereClause;
 
-  const [totalWorkers, workers, companies, departments, sections, subSections, designations] = await Promise.all([
+  const [totalWorkers, workers, companies, departments, sections, subSections, designations, deletedWorkersCount] = await Promise.all([
     prisma.worker.count({ where: queryOptions.where }),
     prisma.worker.findMany({
       ...queryOptions,
@@ -97,7 +95,8 @@ export default async function WorkersPage({
     prisma.department.findMany({ select: { name: true }, distinct: ['name'] }),
     prisma.section.findMany({ select: { name: true }, distinct: ['name'] }),
     prisma.subSection.findMany({ select: { name: true }, distinct: ['name'] }),
-    prisma.worker.findMany({ where: { designation: { not: null } }, distinct: ['designation'], select: { designation: true } })
+    prisma.worker.findMany({ where: { isDeleted: false, designation: { not: null } }, distinct: ['designation'], select: { designation: true } }),
+    role === 'SUPER_ADMIN' ? prisma.worker.count({ where: { isDeleted: true } }) : Promise.resolve(0)
   ]);
 
   const totalPages = Math.ceil(totalWorkers / pageSize);
@@ -153,6 +152,20 @@ export default async function WorkersPage({
                 <Upload size={16} /> Import CSV
               </Link>
             </>
+          )}
+          {role === 'SUPER_ADMIN' && (
+            <Link 
+              href="/workers/recycle-bin" 
+              className="bg-rose-600 text-white px-3 py-2 rounded flex items-center gap-2 hover:bg-rose-700 transition text-sm font-medium shadow-sm"
+              title="Employee Recycle Bin"
+            >
+              <Trash2 size={16} /> Recycle Bin
+              {deletedWorkersCount > 0 && (
+                <span className="bg-white/25 text-white text-xs px-2 py-0.5 rounded-full font-bold">
+                  {deletedWorkersCount}
+                </span>
+              )}
+            </Link>
           )}
           {hasModule('WORKERS') && (
             <Link href="/workers/new" className="bg-blue-600 text-white px-4 py-2 rounded flex items-center gap-2 hover:bg-blue-700 transition text-sm font-medium shadow-sm">

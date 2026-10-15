@@ -11,7 +11,7 @@ export default async function EditWorkerPage({ params }: { params: { id: string 
     where: { id: params.id }
   });
 
-  if (!worker) {
+  if (!worker || worker.isDeleted) {
     return notFound();
   }
 

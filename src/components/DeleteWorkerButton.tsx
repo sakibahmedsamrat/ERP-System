@@ -6,7 +6,7 @@ export default function DeleteWorkerButton({ id, onDelete }: { id: string, onDel
   return (
     <button 
       onClick={() => {
-        if(confirm('Are you sure you want to delete this employee? This will also delete their attendance and settlement records.')) {
+        if(confirm('Are you sure you want to move this employee to the Recycle Bin? Super Admins can restore them if needed.')) {
           onDelete(id);
         }
       }}

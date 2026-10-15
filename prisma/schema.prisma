@@ -61,6 +61,8 @@ model Worker {
   company     Company   @relation(fields: [companyId], references: [id])
   
   isActive   Boolean  @default(true)
+  isDeleted  Boolean  @default(false)
+  deletedAt  DateTime?
   confirmed6mAt       DateTime?
   confirmed3yAt       DateTime?
   confirmed6mRemarks  String?
@@ -76,6 +78,7 @@ model Worker {
   @@index([sectionId])
   @@index([subSectionId])
   @@index([isActive])
+  @@index([isDeleted])
   @@index([joinDate])
   @@index([designation])
   @@index([name])

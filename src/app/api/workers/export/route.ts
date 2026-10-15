@@ -15,6 +15,7 @@ export async function GET() {
   }
 
   const workers = await prisma.worker.findMany({
+    where: { isDeleted: false },
     select: { 
       workerId: true,
       name: true,

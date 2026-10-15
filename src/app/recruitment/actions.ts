@@ -170,7 +170,8 @@ export async function getSubSectionWorkers(subSectionId: string) {
     const workers = await prisma.worker.findMany({
       where: {
         subSectionId,
-        isActive: true
+        isActive: true,
+        isDeleted: false
       },
       select: {
         id: true,

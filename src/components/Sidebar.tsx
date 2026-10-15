@@ -15,7 +15,9 @@ import {
   Settings,
   Activity,
   Layers,
-  Sliders
+  Sliders,
+  Banknote,
+  FileSpreadsheet
 } from 'lucide-react';
 import { logoutAction } from '@/app/logout/actions';
 
@@ -41,6 +43,12 @@ export default function Sidebar({ user }: { user?: any }) {
       isActive = pathname === href;
     } else if (href === '/recruitment') {
       isActive = pathname === '/recruitment' || (pathname.startsWith('/recruitment') && !pathname.startsWith('/recruitment/manpower'));
+    } else if (href === '/payroll') {
+      isActive = pathname === '/payroll';
+    } else if (label === 'Settlements' || href === '/payroll/settlements' || href === '/settlements') {
+      isActive = pathname.startsWith('/settlements') || pathname.startsWith('/payroll/settlements');
+    } else if (label === 'Salary Statement' || href === '/payroll/salary-statement' || href === '/salary-statement') {
+      isActive = pathname.startsWith('/payroll/salary-statement') || pathname.startsWith('/salary-statement');
     } else if (label === 'Employees' || href === '/workers' || href === employeesHref) {
       isActive = pathname.startsWith('/workers') || pathname.startsWith('/confirmations') || pathname.startsWith('/id-cards');
     } else {
@@ -85,7 +93,15 @@ export default function Sidebar({ user }: { user?: any }) {
         )}
         {hasModule('COMPANIES') && <NavItem href="/companies" icon={Building2} label="Companies" />}
         {hasModule('ATTENDANCE') && <NavItem href="/attendance" icon={CalendarCheck} label="Attendance" />}
-        {hasModule('SETTLEMENTS') && <NavItem href="/settlements" icon={CreditCard} label="Settlements" />}
+        {(hasModule('PAYROLL') || hasModule('SETTLEMENTS')) && (
+          <div className="space-y-1">
+            <NavItem href="/payroll" icon={Banknote} label="Payroll" exact={true} />
+            <div className="pl-4 space-y-1 border-l border-white/10 ml-5 my-1">
+              <NavItem href="/payroll/settlements" icon={CreditCard} label="Settlements" color="text-slate-300" />
+              <NavItem href="/payroll/salary-statement" icon={FileSpreadsheet} label="Salary Statement" color="text-slate-300" />
+            </div>
+          </div>
+        )}
         {hasModule('TRAINING') && <NavItem href="/training" icon={GraduationCap} label="Training" />}
         {hasModule('RECRUITMENT') && (
           <div className="space-y-1">

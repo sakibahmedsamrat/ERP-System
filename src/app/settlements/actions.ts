@@ -232,7 +232,7 @@ export async function recordEmployeeResignation(data: {
       }
     });
 
-    if (!worker) return { success: false, error: 'Employee not found.' };
+    if (!worker || worker.isDeleted) return { success: false, error: 'Employee not found.' };
 
     const resignDate = parseFlexibleDate(resignApplyDate);
     const lwdDate = parseFlexibleDate(lastWorkingDay);

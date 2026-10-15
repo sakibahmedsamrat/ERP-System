@@ -25,6 +25,7 @@ export default async function ConfirmationsPage() {
   const workers = await prisma.worker.findMany({
     where: {
       isActive: true,
+      isDeleted: false,
     },
     select: {
       id: true,

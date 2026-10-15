@@ -15,7 +15,7 @@ export default async function TrainingPage() {
         }
       }
     }),
-    prisma.worker.count()
+    prisma.worker.count({ where: { isDeleted: false } })
   ]);
 
   return (

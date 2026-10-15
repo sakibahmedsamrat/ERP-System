@@ -9,7 +9,7 @@ export default async function IDCardPage({ params }: { params: { id: string } })
     include: { department: true, section: true }
   });
 
-  if (!worker) {
+  if (!worker || worker.isDeleted) {
     notFound();
   }
 
