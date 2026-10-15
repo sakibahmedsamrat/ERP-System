@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
@@ -17,7 +18,8 @@ import {
   Layers,
   Sliders,
   Banknote,
-  FileSpreadsheet
+  FileSpreadsheet,
+  ChevronDown
 } from 'lucide-react';
 import { logoutAction } from '@/app/logout/actions';
 
@@ -33,32 +35,61 @@ export default function Sidebar({ user }: { user?: any }) {
     return mods.includes(modName);
   };
 
+  const currentPath = pathname || '';
+  const normalizedPath = currentPath.replace(/\/$/, '') || '/';
+
+  const isPayrollChildRoute = 
+    normalizedPath === '/settlements' || 
+    normalizedPath.startsWith('/settlements/') || 
+    normalizedPath === '/payroll/settlements' || 
+    normalizedPath.startsWith('/payroll/settlements/') || 
+    normalizedPath === '/salary-statement' || 
+    normalizedPath.startsWith('/salary-statement/') || 
+    normalizedPath === '/payroll/salary-statement' || 
+    normalizedPath.startsWith('/payroll/salary-statement/');
+
+  const isPayrollExactActive = normalizedPath === '/payroll';
+  const isPayrollSection = isPayrollChildRoute || isPayrollExactActive;
+
+  const [isPayrollOpen, setIsPayrollOpen] = useState(isPayrollSection);
+  const prevPathnameRef = useRef(normalizedPath);
+
+  useEffect(() => {
+    if (prevPathnameRef.current !== normalizedPath) {
+      if (isPayrollChildRoute || isPayrollExactActive) {
+        setIsPayrollOpen(true);
+      } else {
+        setIsPayrollOpen(false);
+      }
+      prevPathnameRef.current = normalizedPath;
+    }
+  }, [normalizedPath, isPayrollChildRoute, isPayrollExactActive]);
+
   const employeesHref = hasModule('WORKERS') 
     ? '/workers' 
     : (hasModule('CONFIRMATIONS') ? '/confirmations' : (hasModule('IDCARD') ? '/id-cards' : '/workers'));
 
-  const NavItem = ({ href, icon: Icon, label, color = "text-white", exact = false }: any) => {
+  const NavItem = ({ href, icon: Icon, label, color = "text-white", exact = false, tabIndex }: any) => {
     let isActive = false;
     if (exact) {
-      isActive = pathname === href;
+      isActive = normalizedPath === href;
     } else if (href === '/recruitment') {
-      isActive = pathname === '/recruitment' || (pathname.startsWith('/recruitment') && !pathname.startsWith('/recruitment/manpower'));
-    } else if (href === '/payroll') {
-      isActive = pathname === '/payroll';
+      isActive = normalizedPath === '/recruitment' || (normalizedPath.startsWith('/recruitment') && !normalizedPath.startsWith('/recruitment/manpower'));
     } else if (label === 'Settlements' || href === '/payroll/settlements' || href === '/settlements') {
-      isActive = pathname.startsWith('/settlements') || pathname.startsWith('/payroll/settlements');
+      isActive = normalizedPath === '/settlements' || normalizedPath.startsWith('/settlements/') || normalizedPath === '/payroll/settlements' || normalizedPath.startsWith('/payroll/settlements/');
     } else if (label === 'Salary Statement' || href === '/payroll/salary-statement' || href === '/salary-statement') {
-      isActive = pathname.startsWith('/payroll/salary-statement') || pathname.startsWith('/salary-statement');
+      isActive = normalizedPath === '/salary-statement' || normalizedPath.startsWith('/salary-statement/') || normalizedPath === '/payroll/salary-statement' || normalizedPath.startsWith('/payroll/salary-statement/');
     } else if (label === 'Employees' || href === '/workers' || href === employeesHref) {
-      isActive = pathname.startsWith('/workers') || pathname.startsWith('/confirmations') || pathname.startsWith('/id-cards');
+      isActive = normalizedPath.startsWith('/workers') || normalizedPath.startsWith('/confirmations') || normalizedPath.startsWith('/id-cards');
     } else {
-      isActive = pathname === href || (href !== '/' && pathname.startsWith(href));
+      isActive = normalizedPath === href || (href !== '/' && normalizedPath.startsWith(href));
     }
 
     return (
       <Link 
         href={href} 
         prefetch={true}
+        tabIndex={tabIndex}
         className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-300 font-medium ${
           isActive 
             ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-900/50 translate-x-1' 
@@ -95,10 +126,83 @@ export default function Sidebar({ user }: { user?: any }) {
         {hasModule('ATTENDANCE') && <NavItem href="/attendance" icon={CalendarCheck} label="Attendance" />}
         {(hasModule('PAYROLL') || hasModule('SETTLEMENTS')) && (
           <div className="space-y-1">
-            <NavItem href="/payroll" icon={Banknote} label="Payroll" exact={true} />
-            <div className="pl-4 space-y-1 border-l border-white/10 ml-5 my-1">
-              <NavItem href="/payroll/settlements" icon={CreditCard} label="Settlements" color="text-slate-300" />
-              <NavItem href="/payroll/salary-statement" icon={FileSpreadsheet} label="Salary Statement" color="text-slate-300" />
+            <div
+              className={`group flex items-center justify-between rounded-xl transition-all duration-300 font-medium ${
+                isPayrollExactActive
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-900/50 translate-x-1'
+                  : 'hover:bg-white/10 text-white hover:translate-x-1'
+              }`}
+            >
+              <Link
+                href="/payroll"
+                prefetch={true}
+                onClick={(e) => {
+                  if (normalizedPath === '/payroll') {
+                    e.preventDefault();
+                    setIsPayrollOpen((prev) => !prev);
+                  } else {
+                    setIsPayrollOpen(true);
+                  }
+                }}
+                className="flex items-center gap-3 px-4 py-2.5 flex-1 min-w-0"
+              >
+                <Banknote size={18} className={isPayrollExactActive ? 'text-white' : 'opacity-80'} />
+                <span className="text-sm">Payroll</span>
+              </Link>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsPayrollOpen((prev) => !prev);
+                }}
+                aria-label={isPayrollOpen ? 'Collapse Payroll sub-menu' : 'Expand Payroll sub-menu'}
+                aria-expanded={isPayrollOpen}
+                aria-controls="payroll-submenu"
+                title={isPayrollOpen ? 'Collapse sub-menu' : 'Expand sub-menu'}
+                className={`self-stretch px-3.5 flex items-center justify-center rounded-r-xl transition-colors cursor-pointer ${
+                  isPayrollExactActive
+                    ? 'hover:bg-white/20 text-white'
+                    : 'text-slate-400 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                <ChevronDown
+                  size={16}
+                  className={`transition-transform duration-300 ease-in-out ${
+                    isPayrollOpen ? 'rotate-180 text-white' : 'text-slate-400 group-hover:text-white'
+                  }`}
+                />
+              </button>
+            </div>
+
+            <div
+              id="payroll-submenu"
+              aria-hidden={!isPayrollOpen}
+              className={`grid transition-all duration-300 ease-in-out ${
+                isPayrollOpen
+                  ? 'grid-rows-[1fr] opacity-100'
+                  : 'grid-rows-[0fr] opacity-0 pointer-events-none'
+              }`}
+            >
+              <div className="min-h-0 overflow-hidden">
+                <div className="pl-4 space-y-1 border-l border-white/10 ml-5 py-1">
+                  <NavItem
+                    href="/payroll/settlements"
+                    icon={CreditCard}
+                    label="Settlements"
+                    color="text-slate-300"
+                    tabIndex={isPayrollOpen ? 0 : -1}
+                  />
+                  <NavItem
+                    href="/payroll/salary-statement"
+                    icon={FileSpreadsheet}
+                    label="Salary Statement"
+                    color="text-slate-300"
+                    tabIndex={isPayrollOpen ? 0 : -1}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         )}
