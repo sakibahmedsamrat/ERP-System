@@ -98,6 +98,7 @@ export default async function EditWorkerPage({ params }: { params: { id: string 
                 <label className="block text-sm font-medium text-gray-700 mb-1">Employee Photo</label>
                 {worker.photoUrl && (
                   <div className="mb-2 flex items-center gap-3 p-2 bg-gray-50 rounded-lg border border-gray-200">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={worker.photoUrl} alt="Employee Photo" className="w-12 h-12 rounded-full object-cover border border-gray-300" />
                     <span className="text-xs text-green-700 font-semibold">✓ Saved Profile Photo</span>
                   </div>
@@ -108,6 +109,7 @@ export default async function EditWorkerPage({ params }: { params: { id: string 
                 <label className="block text-sm font-medium text-gray-700 mb-1">Signature</label>
                 {worker.signatureUrl && (
                   <div className="mb-2 flex items-center gap-3 p-2 bg-gray-50 rounded-lg border border-gray-200">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={worker.signatureUrl} alt="Employee Signature" className="h-10 max-w-[120px] object-contain border bg-white p-1 rounded" />
                     <span className="text-xs text-green-700 font-semibold">✓ Saved Signature</span>
                   </div>

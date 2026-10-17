@@ -64,7 +64,7 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
 
   // Local settlement items to allow instant UI updates
   const [settlements, setSettlements] = useState<SettlementItem[]>(initialSettlements);
-  const [, setRenderNonce] = useState(0);
+  const [, setRenderNonce] = useState<number>(0);
 
   useEffect(() => {
     setSettlements(initialSettlements);

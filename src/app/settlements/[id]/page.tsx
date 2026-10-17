@@ -57,6 +57,7 @@ export default async function SettlementPrintPage({ params }: { params: { id: st
         {/* Header */}
         <div className="flex items-center justify-between mb-8 print:mb-4">
           <div className="w-1/4">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.png" alt="MEP Logo" className="h-16 print:h-12 object-contain" />
           </div>
           <div className="w-1/2 text-center">

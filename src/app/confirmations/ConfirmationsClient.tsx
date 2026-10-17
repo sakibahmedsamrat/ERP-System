@@ -301,7 +301,7 @@ export default function ConfirmationsClient({
           {activeTab === '6m' ? '6 Months Confirmation (Eligibility: ≥ 5 Months 15 Days)' : '3 Years Confirmation (Production Helper & Quality Checker, Eligibility: ≥ 2 Years 11 Months)'}
         </p>
         <p className="text-xs text-gray-500 mt-1">
-          Status: {viewStatus === 'pending' ? 'Pending for Approval' : 'Confirmed Records'} | Printed on: {formatDateTime(new Date())}
+          Status: {viewStatus === 'pending' ? 'Pending for Approval' : 'Confirmed Records'} | Printed on: <span suppressHydrationWarning>{formatDateTime(new Date())}</span>
         </p>
       </div>
 
@@ -514,6 +514,7 @@ export default function ConfirmationsClient({
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100 border border-gray-200 shrink-0 flex items-center justify-center relative">
                             {worker.photoUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
                               <img
                                 src={worker.photoUrl}
                                 alt={worker.name}

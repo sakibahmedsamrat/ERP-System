@@ -1,11 +1,17 @@
 'use client'
 
 import { usePathname } from 'next/navigation';
-import { Bell, Search, UserCircle, LogOut } from 'lucide-react';
+import { Bell, Search, UserCircle, LogOut, Menu } from 'lucide-react';
 import { logoutAction } from '@/app/logout/actions';
 import NotificationBell from './NotificationBell';
 
-export default function Header({ user }: { user?: any }) {
+export default function Header({ 
+  user,
+  onToggleMobileSidebar
+}: { 
+  user?: any;
+  onToggleMobileSidebar?: () => void;
+}) {
   const pathname = usePathname();
   
   // Format the current path nicely
@@ -15,15 +21,32 @@ export default function Header({ user }: { user?: any }) {
     if (path === 'workers') return 'Employees';
     if (path === 'confirmations') return 'Employee Confirmation';
     if (path === 'id-cards') return 'ID Card';
+    if (path === 'settlements') return 'Settlements';
+    if (path === 'payroll') return 'Payroll';
+    if (path === 'recruitment') return 'Recruitment';
+    if (path === 'salary-statement') return 'Salary Statement';
+    if (path === 'activity-logs') return 'Activity Logs';
     return path.charAt(0).toUpperCase() + path.slice(1);
   };
 
   return (
     <header className="bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-100 sticky top-0 z-10 print:hidden">
-      <div className="flex justify-between items-center px-8 py-4">
-        <h1 className="text-xl font-bold text-gray-800 tracking-tight">{getPageTitle()}</h1>
+      <div className="flex justify-between items-center px-4 sm:px-8 py-3 sm:py-4">
+        <div className="flex items-center gap-2.5">
+          {onToggleMobileSidebar && (
+            <button
+              type="button"
+              onClick={onToggleMobileSidebar}
+              className="lg:hidden p-2 rounded-xl text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition focus:outline-none focus:ring-2 focus:ring-blue-500"
+              aria-label="Toggle navigation menu"
+            >
+              <Menu size={20} />
+            </button>
+          )}
+          <h1 className="text-lg sm:text-xl font-bold text-gray-800 tracking-tight">{getPageTitle()}</h1>
+        </div>
         
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-3 sm:gap-6">
           <div className="relative hidden md:block">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
             <input 
@@ -35,22 +58,23 @@ export default function Header({ user }: { user?: any }) {
           
           <NotificationBell />
           
-          <div className="h-6 w-px bg-gray-200"></div>
+          <div className="h-6 w-px bg-gray-200 hidden sm:block"></div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <div className="flex flex-col items-end">
-              <span className="text-sm font-semibold text-gray-700">{user?.name || 'User'}</span>
-              <span className="text-xs text-blue-600 font-medium">{user?.role || 'Guest'}</span>
+              <span className="text-xs sm:text-sm font-semibold text-gray-700">{user?.name || 'User'}</span>
+              <span className="text-[10px] sm:text-xs text-blue-600 font-medium">{user?.role || 'Guest'}</span>
             </div>
             {user?.profileImage ? (
-              <img src={user.profileImage} alt="Profile" className="w-10 h-10 rounded-full object-cover shadow-md border-2 border-white" />
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={user.profileImage} alt="Profile" className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover shadow-md border-2 border-white" />
             ) : (
-              <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md">
-                <UserCircle size={24} />
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md">
+                <UserCircle size={22} />
               </div>
             )}
-            <form action={logoutAction} className="ml-2">
-              <button title="Logout" type="submit" className="text-gray-400 hover:text-red-600 transition p-2 rounded-full hover:bg-red-50">
+            <form action={logoutAction} className="ml-1 sm:ml-2">
+              <button title="Logout" type="submit" className="text-gray-400 hover:text-red-600 transition p-1.5 sm:p-2 rounded-full hover:bg-red-50">
                 <LogOut size={18} />
               </button>
             </form>

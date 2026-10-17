@@ -79,6 +79,8 @@ model Worker {
   @@index([subSectionId])
   @@index([isActive])
   @@index([isDeleted])
+  @@index([isDeleted, isActive])
+  @@index([companyId, isDeleted])
   @@index([joinDate])
   @@index([designation])
   @@index([name])
@@ -193,6 +195,7 @@ model Settlement {
   @@index([workerId])
   @@index([status])
   @@index([createdAt])
+  @@index([workerId, status])
 }
 
 model Training {

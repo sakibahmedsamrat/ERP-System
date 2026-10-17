@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Download, Printer, RefreshCw, Hash, Check } from 'lucide-react';
 
 export default function VisitorIdCardSection() {
@@ -10,26 +10,10 @@ export default function VisitorIdCardSection() {
   const backCanvasRef = useRef<HTMLCanvasElement>(null);
   const frontImgRef = useRef<HTMLImageElement | null>(null);
   const backImgRef = useRef<HTMLImageElement | null>(null);
+  const cardNoRef = useRef(cardNo);
+  cardNoRef.current = cardNo;
 
-  useEffect(() => {
-    const fImg = new Image();
-    fImg.crossOrigin = 'anonymous';
-    fImg.src = '/visitor-card/visitor_front.jpg';
-    fImg.onload = () => {
-      frontImgRef.current = fImg;
-      drawFront();
-    };
-
-    const bImg = new Image();
-    bImg.crossOrigin = 'anonymous';
-    bImg.src = '/visitor-card/visitor_back.jpg?v=3';
-    bImg.onload = () => {
-      backImgRef.current = bImg;
-      drawBack();
-    };
-  }, []);
-
-  const drawFront = () => {
+  const drawFront = useCallback((num?: string) => {
     const canvas = frontCanvasRef.current;
     const img = frontImgRef.current;
     if (!canvas || !img) return;
@@ -53,14 +37,15 @@ export default function VisitorIdCardSection() {
     ctx.textBaseline = 'middle';
 
     // Format text: CARD NO. : {cardNo}
-    const label = `CARD NO. : ${cardNo.trim() || '----'}`;
+    const currentNum = num !== undefined ? num : cardNoRef.current;
+    const label = `CARD NO. : ${(currentNum || '').trim() || '----'}`;
     ctx.font = 'bold 36px "Plus Jakarta Sans", "Segoe UI", Arial, sans-serif';
     ctx.fillText(label, canvas.width / 2, 808);
 
     setIsReady(true);
-  };
+  }, []);
 
-  const drawBack = () => {
+  const drawBack = useCallback(() => {
     const canvas = backCanvasRef.current;
     const img = backImgRef.current;
     if (!canvas || !img) return;
@@ -72,11 +57,29 @@ export default function VisitorIdCardSection() {
     canvas.height = img.naturalHeight || 1024;
 
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-  };
+  }, []);
 
   useEffect(() => {
-    drawFront();
-  }, [cardNo]);
+    const fImg = new Image();
+    fImg.crossOrigin = 'anonymous';
+    fImg.src = '/visitor-card/visitor_front.jpg';
+    fImg.onload = () => {
+      frontImgRef.current = fImg;
+      drawFront();
+    };
+
+    const bImg = new Image();
+    bImg.crossOrigin = 'anonymous';
+    bImg.src = '/visitor-card/visitor_back.jpg?v=3';
+    bImg.onload = () => {
+      backImgRef.current = bImg;
+      drawBack();
+    };
+  }, [drawFront, drawBack]);
+
+  useEffect(() => {
+    drawFront(cardNo);
+  }, [cardNo, drawFront]);
 
   const downloadFront = () => {
     const canvas = frontCanvasRef.current;

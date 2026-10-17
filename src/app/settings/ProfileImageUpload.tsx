@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState } from 'react';
 import { Camera, Loader2 } from 'lucide-react';
@@ -38,6 +38,7 @@ export default function ProfileImageUpload({ currentImage }: { currentImage?: st
     <div className="flex items-center gap-6 mb-6">
       <div className="relative w-24 h-24 rounded-full border-4 border-white shadow-lg bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0 group">
         {image ? (
+          // eslint-disable-next-line @next/next/no-img-element
           <img src={image} alt="Profile" className="w-full h-full object-cover" />
         ) : (
           <Camera size={32} className="text-gray-400" />

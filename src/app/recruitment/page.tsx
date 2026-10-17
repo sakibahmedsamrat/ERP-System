@@ -22,7 +22,7 @@ export default async function RecruitmentPage() {
               _count: {
                 select: {
                   workers: {
-                    where: { isActive: true }
+                    where: { isActive: true, isDeleted: false }
                   }
                 }
               },
@@ -32,7 +32,7 @@ export default async function RecruitmentPage() {
                   _count: {
                     select: {
                       workers: {
-                        where: { isActive: true }
+                        where: { isActive: true, isDeleted: false }
                       }
                     }
                   }

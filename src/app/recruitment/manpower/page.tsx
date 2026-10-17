@@ -26,7 +26,7 @@ export default async function ManpowerEntryPage({
               _count: {
                 select: {
                   workers: {
-                    where: { isActive: true }
+                    where: { isActive: true, isDeleted: false }
                   }
                 }
               },
@@ -36,7 +36,7 @@ export default async function ManpowerEntryPage({
                   _count: {
                     select: {
                       workers: {
-                        where: { isActive: true }
+                        where: { isActive: true, isDeleted: false }
                       }
                     }
                   }

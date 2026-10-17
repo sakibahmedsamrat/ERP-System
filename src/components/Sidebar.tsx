@@ -19,11 +19,20 @@ import {
   Sliders,
   Banknote,
   FileSpreadsheet,
-  ChevronDown
+  ChevronDown,
+  X
 } from 'lucide-react';
 import { logoutAction } from '@/app/logout/actions';
 
-export default function Sidebar({ user }: { user?: any }) {
+export default function Sidebar({ 
+  user,
+  isMobileOpen,
+  onClose
+}: { 
+  user?: any;
+  isMobileOpen?: boolean;
+  onClose?: () => void;
+}) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const currentTab = searchParams ? searchParams.get('tab') : null;
@@ -134,6 +143,9 @@ export default function Sidebar({ user }: { user?: any }) {
         href={href} 
         prefetch={true}
         tabIndex={tabIndex}
+        onClick={() => {
+          onClose?.();
+        }}
         className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-300 font-medium ${
           isActive 
             ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-900/50 translate-x-1' 
@@ -147,20 +159,43 @@ export default function Sidebar({ user }: { user?: any }) {
   };
 
   return (
-    <div className="w-72 bg-[#0F172A] text-white h-screen shrink-0 flex flex-col print:hidden shadow-2xl relative overflow-hidden">
-      {/* Decorative background gradients */}
-      <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-blue-600/20 to-transparent pointer-events-none"></div>
-      
-      <div className="p-6 font-extrabold text-2xl border-b border-white/10 flex items-center gap-3 relative z-10">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-500 to-indigo-500 flex items-center justify-center shadow-lg">
-          <Layers size={18} className="text-white" />
+    <>
+      {/* Mobile backdrop overlay */}
+      {isMobileOpen && (
+        <div 
+          onClick={onClose}
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300"
+          aria-hidden="true"
+        />
+      )}
+
+      <aside className={`w-72 bg-[#0F172A] text-white h-screen shrink-0 flex flex-col print:hidden shadow-2xl relative overflow-hidden z-50 transition-transform duration-300 ease-in-out fixed inset-y-0 left-0 lg:static lg:translate-x-0 ${
+        isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+      }`}>
+        {/* Decorative background gradients */}
+        <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-blue-600/20 to-transparent pointer-events-none"></div>
+        
+        <div className="p-6 font-extrabold text-2xl border-b border-white/10 flex items-center justify-between relative z-10">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-500 to-indigo-500 flex items-center justify-center shadow-lg">
+              <Layers size={18} className="text-white" />
+            </div>
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-300">
+              {appName}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition"
+            aria-label="Close navigation menu"
+          >
+            <X size={20} />
+          </button>
         </div>
-        <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-300">
-          {appName}
-        </span>
-      </div>
-      
-      <nav className="flex-1 p-5 space-y-2 overflow-y-auto relative z-10 custom-scrollbar">
+        
+        <nav className="flex-1 p-5 space-y-2 overflow-y-auto relative z-10 custom-scrollbar">
         <NavItem href="/" icon={LayoutDashboard} label="Dashboard" />
         
         {(hasModule('WORKERS') || hasModule('CONFIRMATIONS') || hasModule('IDCARD')) && (
@@ -352,7 +387,8 @@ export default function Sidebar({ user }: { user?: any }) {
       </nav>
       
       {/* We removed the bottom logout form since it's in the Header now. */}
-    </div>
+      </aside>
+    </>
   );
 }
 

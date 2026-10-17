@@ -1190,6 +1190,7 @@ export default function SalaryStatementClient() {
                   <div>
                     <div className="flex items-center justify-between border-b-2 border-gray-900 pb-4 mb-5">
                       <div className="flex items-center gap-4">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src="/logo.png"
                           alt="MEP Logo"
@@ -1413,6 +1414,7 @@ export default function SalaryStatementClient() {
                     <div>
                       <div className="flex items-center justify-between border-b-2 border-gray-900 pb-4 mb-5">
                         <div className="flex items-center gap-4">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src="/logo.png"
                             alt="MEP Logo"

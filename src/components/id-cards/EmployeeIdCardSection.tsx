@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, User, X, CheckCircle2, RefreshCw } from 'lucide-react';
 import { formatDate } from '@/lib/formatDate';
 
@@ -25,46 +25,8 @@ export default function EmployeeIdCardSection({
   const initialParams = queryParams.toString();
   const iframeSrc = `/id-card/index.html?embedded=true${initialParams ? '&' + initialParams : ''}`;
 
-  // Auto-load worker if workerDbId or worker ID is in URL
-  useEffect(() => {
-    const targetId = searchParams?.workerDbId || searchParams?.id;
-    if (targetId) {
-      fetch(`/api/workers/search?${searchParams?.workerDbId ? `id=${searchParams.workerDbId}` : `q=${searchParams?.id}`}`)
-        .then(res => res.json())
-        .then(data => {
-          const w = data.worker || (data.workers && data.workers[0]);
-          if (w) {
-            handleSelectWorker(w);
-          }
-        })
-        .catch(console.error);
-    }
-  }, [searchParams?.workerDbId, searchParams?.id]);
-
-  // Live Employee Search
-  useEffect(() => {
-    if (query.trim().length < 2) {
-      setResults([]);
-      return;
-    }
-
-    const timer = setTimeout(async () => {
-      setIsSearching(true);
-      try {
-        const res = await fetch(`/api/workers/search?q=${encodeURIComponent(query)}&withPhoto=true`);
-        const data = await res.json();
-        setResults(data.workers || []);
-      } catch (err) {
-        console.error('Error searching employees:', err);
-      }
-      setIsSearching(false);
-    }, 250);
-
-    return () => clearTimeout(timer);
-  }, [query]);
-
   // Send employee data to the embedded iframe
-  const sendWorkerToIframe = (worker: any) => {
+  const sendWorkerToIframe = useCallback((worker: any) => {
     if (!iframeRef.current?.contentWindow) return;
 
     const payload = {
@@ -94,9 +56,9 @@ export default function EmployeeIdCardSection({
     post();
     // Re-send after slight delay to ensure iframe canvas fully rendered
     setTimeout(post, 350);
-  };
+  }, []);
 
-  const handleSelectWorker = async (worker: any) => {
+  const handleSelectWorker = useCallback(async (worker: any) => {
     let target = worker;
     if ((!target.photoUrl || !target.signatureUrl) && target.id) {
       try {
@@ -111,7 +73,45 @@ export default function EmployeeIdCardSection({
     setQuery('');
     setResults([]);
     sendWorkerToIframe(target);
-  };
+  }, [sendWorkerToIframe]);
+
+  // Auto-load worker if workerDbId or worker ID is in URL
+  useEffect(() => {
+    const targetId = searchParams?.workerDbId || searchParams?.id;
+    if (targetId) {
+      fetch(`/api/workers/search?${searchParams?.workerDbId ? `id=${searchParams.workerDbId}` : `q=${searchParams?.id}`}`)
+        .then(res => res.json())
+        .then(data => {
+          const w = data.worker || (data.workers && data.workers[0]);
+          if (w) {
+            handleSelectWorker(w);
+          }
+        })
+        .catch(console.error);
+    }
+  }, [searchParams?.workerDbId, searchParams?.id, handleSelectWorker]);
+
+  // Live Employee Search
+  useEffect(() => {
+    if (query.trim().length < 2) {
+      setResults([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const res = await fetch(`/api/workers/search?q=${encodeURIComponent(query)}&withPhoto=true`);
+        const data = await res.json();
+        setResults(data.workers || []);
+      } catch (err) {
+        console.error('Error searching employees:', err);
+      }
+      setIsSearching(false);
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [query]);
 
   const handleClearSelected = () => {
     setSelectedWorker(null);
@@ -167,6 +167,7 @@ export default function EmployeeIdCardSection({
                   >
                     <div className="flex items-center gap-3">
                       {w.photoUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img src={w.photoUrl} alt={w.name} className="w-10 h-10 rounded-full object-cover border border-gray-200 shrink-0" />
                       ) : (
                         <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm shrink-0">
