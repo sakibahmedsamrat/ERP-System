@@ -56,33 +56,48 @@ export default function Sidebar({ user }: { user?: any }) {
   const [isPayrollOpen, setIsPayrollOpen] = useState(isPayrollSection);
 
   const isRecruitmentChildRoute = 
+    (normalizedPath.startsWith('/recruitment/') && normalizedPath !== '/recruitment') ||
     normalizedPath === '/recruitment/manpower' || 
-    normalizedPath.startsWith('/recruitment/manpower/') || 
-    normalizedPath === '/recruitment/new' || 
-    normalizedPath.startsWith('/recruitment/new/');
+    normalizedPath === '/recruitment/new';
 
   const isRecruitmentExactActive = normalizedPath === '/recruitment';
   const isRecruitmentSection = isRecruitmentChildRoute || isRecruitmentExactActive;
-  const isRecruitmentParentActive = normalizedPath === '/recruitment' && (!currentTab || currentTab === 'overview');
+  const isRecruitmentParentActive = normalizedPath === '/recruitment' && currentTab !== 'jobs' && currentTab !== 'entry';
 
   const [isRecruitmentOpen, setIsRecruitmentOpen] = useState(isRecruitmentSection);
-  const prevPathnameRef = useRef(normalizedPath);
+  const prevRef = useRef({ path: normalizedPath, tab: currentTab });
 
   useEffect(() => {
-    if (prevPathnameRef.current !== normalizedPath) {
-      if (isPayrollChildRoute || isPayrollExactActive) {
-        setIsPayrollOpen(true);
-      } else {
-        setIsPayrollOpen(false);
+    const pathChanged = prevRef.current.path !== normalizedPath;
+    const tabChanged = prevRef.current.tab !== currentTab;
+
+    if (pathChanged || tabChanged) {
+      if (pathChanged) {
+        if (isPayrollChildRoute || isPayrollExactActive) {
+          setIsPayrollOpen(true);
+        } else {
+          setIsPayrollOpen(false);
+        }
       }
+
       if (isRecruitmentChildRoute || isRecruitmentExactActive) {
-        setIsRecruitmentOpen(true);
+        if (pathChanged || (tabChanged && (currentTab === 'jobs' || currentTab === 'entry'))) {
+          setIsRecruitmentOpen(true);
+        }
       } else {
         setIsRecruitmentOpen(false);
       }
-      prevPathnameRef.current = normalizedPath;
+
+      prevRef.current = { path: normalizedPath, tab: currentTab };
     }
-  }, [normalizedPath, isPayrollChildRoute, isPayrollExactActive, isRecruitmentChildRoute, isRecruitmentExactActive]);
+  }, [
+    normalizedPath, 
+    currentTab, 
+    isPayrollChildRoute, 
+    isPayrollExactActive, 
+    isRecruitmentChildRoute, 
+    isRecruitmentExactActive
+  ]);
 
   const employeesHref = hasModule('WORKERS') 
     ? '/workers' 
@@ -250,7 +265,7 @@ export default function Sidebar({ user }: { user?: any }) {
                 prefetch={true}
                 onClick={(e) => {
                   if (normalizedPath === '/recruitment') {
-                    if (!currentTab || currentTab === 'overview') {
+                    if (isRecruitmentParentActive) {
                       e.preventDefault();
                       setIsRecruitmentOpen((prev) => !prev);
                     } else {

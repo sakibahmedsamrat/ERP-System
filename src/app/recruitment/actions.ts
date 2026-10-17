@@ -28,7 +28,7 @@ export async function createRecruitment(formData: FormData): Promise<void> {
   });
 
   revalidatePath('/recruitment');
-  redirect('/recruitment');
+  redirect('/recruitment?tab=jobs');
 }
 
 export async function updateSubSectionManpower(

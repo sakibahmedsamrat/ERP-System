@@ -6,8 +6,8 @@ export default function NewRecruitmentPage() {
     <div className="p-8 max-w-2xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Open New Job</h1>
-        <Link href="/recruitment" className="text-blue-600 hover:underline">
-          &larr; Back to Recruitment
+        <Link href="/recruitment?tab=jobs" className="text-blue-600 hover:underline">
+          &larr; Back to Job Circulars
         </Link>
       </div>
 
