@@ -30,21 +30,15 @@ export default async function PayrollPage() {
   }
 
   const [totalSettlements, pendingSettlements, approvedSettlements, totalActiveWorkers] = await Promise.all([
+    prisma.settlement.count(),
     prisma.settlement.count({
       where: {
-        worker: { isDeleted: false }
+        status: 'PENDING'
       }
     }),
     prisma.settlement.count({
       where: {
-        status: 'PENDING',
-        worker: { isDeleted: false }
-      }
-    }),
-    prisma.settlement.count({
-      where: {
-        status: { in: ['APPROVED', 'PAID'] },
-        worker: { isDeleted: false }
+        status: { in: ['APPROVED', 'PAID'] }
       }
     }),
     prisma.worker.count({

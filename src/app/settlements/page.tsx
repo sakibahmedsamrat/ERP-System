@@ -24,11 +24,6 @@ export default async function SettlementsPage() {
     redirect('/');
   }
   const settlements = await prisma.settlement.findMany({
-    where: {
-      worker: {
-        isDeleted: false
-      }
-    },
     orderBy: { createdAt: 'desc' },
     include: {
       worker: {
@@ -39,6 +34,8 @@ export default async function SettlementsPage() {
           designation: true,
           department: { select: { name: true } },
           company: { select: { name: true } },
+          isDeleted: true,
+          deletedAt: true,
         }
       }
     }

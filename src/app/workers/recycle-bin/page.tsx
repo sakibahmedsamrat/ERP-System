@@ -36,6 +36,17 @@ export default async function RecycleBinPage() {
       section: {
         select: { id: true, name: true },
       },
+      settlements: {
+        select: {
+          id: true,
+          status: true,
+          lastWorkingDay: true,
+          resignApplyDate: true,
+          totalPayAmount: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      },
     },
     orderBy: {
       deletedAt: 'desc',

@@ -7,6 +7,80 @@ import { redirect } from 'next/navigation';
 import { logAction } from '@/lib/audit';
 import { parseFlexibleDate, calculateServiceAge, getPayrollCycleDays, numberToWords } from '@/lib/formatDate';
 
+function safeRevalidatePath(path: string) {
+  try {
+    revalidatePath(path);
+  } catch {
+    // Gracefully handle calls outside active Next.js request context (e.g. tests or background jobs)
+  }
+}
+
+async function syncWorkerStatusForSettlement(
+  workerId: string,
+  newStatus: string,
+  previousStatus: string | null,
+  lastWorkingDay?: Date | null,
+  settlementId?: string
+) {
+  const effectiveLwd = (lastWorkingDay && !isNaN(new Date(lastWorkingDay).getTime()))
+    ? new Date(lastWorkingDay)
+    : new Date();
+
+  if (newStatus === 'PAID') {
+    if (previousStatus !== 'PAID') {
+      // Transitioned to PAID: auto-exit worker to recycle bin
+      await prisma.worker.update({
+        where: { id: workerId },
+        data: {
+          isActive: false,
+          isDeleted: true,
+          deletedAt: effectiveLwd
+        }
+      });
+      await logAction(
+        'WORKERS',
+        'AUTO_EXIT',
+        `Worker ID ${workerId} automatically exited and moved to recycle bin upon settlement payment.`
+      );
+    } else {
+      // Status was already PAID: only update deletedAt if worker is still in recycle bin
+      const currentWorker = await prisma.worker.findUnique({
+        where: { id: workerId },
+        select: { isDeleted: true }
+      });
+      if (currentWorker?.isDeleted) {
+        await prisma.worker.update({
+          where: { id: workerId },
+          data: { deletedAt: effectiveLwd }
+        });
+      }
+    }
+  } else if (previousStatus === 'PAID' && (newStatus === 'PENDING' || newStatus === 'APPROVED')) {
+    // Reverted from PAID: restore worker if no other PAID settlement exists
+    const otherPaid = await prisma.settlement.findFirst({
+      where: {
+        workerId,
+        status: 'PAID',
+        ...(settlementId ? { NOT: { id: settlementId } } : {})
+      }
+    });
+    if (!otherPaid) {
+      await prisma.worker.update({
+        where: { id: workerId },
+        data: {
+          isActive: true,
+          isDeleted: false,
+          deletedAt: null
+        }
+      });
+      await logAction(
+        'WORKERS',
+        'RESTORE_ON_STATUS_CHANGE',
+        `Worker ID ${workerId} automatically restored to active directory after settlement reverted from PAID to ${newStatus}.`
+      );
+    }
+  }
+}
 
 export async function createSettlement(formData: FormData): Promise<{ error?: string } | void> {
   const workerId = formData.get('workerId') as string;
@@ -24,6 +98,15 @@ export async function createSettlement(formData: FormData): Promise<{ error?: st
 
   let shouldRedirect = false;
   try {
+    const targetWorker = await prisma.worker.findUnique({
+      where: { id: workerId },
+      select: { id: true, isDeleted: true }
+    });
+    if (!targetWorker) return { error: 'Worker not found' };
+    if (targetWorker.isDeleted) {
+      return { error: 'Cannot create settlement for an inactive or deleted employee. Please restore the employee first.' };
+    }
+
     const joinDateVal = formData.get('joinDate') as string;
     if (joinDateVal && workerId) {
       const parsedJoin = parseFlexibleDate(joinDateVal);
@@ -39,12 +122,13 @@ export async function createSettlement(formData: FormData): Promise<{ error?: st
     if (serviceAge === 'Invalid Date') serviceAge = '';
 
     const statusVal = (formData.get('status') as string) || 'PENDING';
+    const lwd = getDate('lastWorkingDay');
 
-    await prisma.settlement.create({
+    const createdSettlement = await prisma.settlement.create({
       data: {
         workerId,
         resignApplyDate: getDate('resignApplyDate'),
-        lastWorkingDay: getDate('lastWorkingDay'),
+        lastWorkingDay: lwd,
         serviceAge,
       
         grossSalary: getFloat('grossSalary'),
@@ -73,10 +157,14 @@ export async function createSettlement(formData: FormData): Promise<{ error?: st
         amountInWords: formData.get('amountInWords') as string,
         bankAccNo: (formData.get('bankAccNo') as string) || null,
         
-        paymentReceiverDate: getDate('paymentReceiverDate'),
+        paymentReceiverDate: getDate('paymentReceiverDate') || (statusVal === 'PAID' ? new Date() : null),
         status: statusVal
       }
     });
+
+    if (statusVal === 'PAID') {
+      await syncWorkerStatusForSettlement(workerId, statusVal, null, lwd, createdSettlement.id);
+    }
 
     await logAction('SETTLEMENTS', 'CREATE', 'Created settlement for worker: ' + workerId);
     shouldRedirect = true;
@@ -86,17 +174,54 @@ export async function createSettlement(formData: FormData): Promise<{ error?: st
   }
 
   if (shouldRedirect) {
-    revalidatePath('/settlements');
+    safeRevalidatePath('/settlements');
+    safeRevalidatePath('/workers');
+    safeRevalidatePath('/workers/recycle-bin');
+    safeRevalidatePath('/payroll');
     redirect('/settlements');
   }
 }
 
 export async function deleteSettlement(id: string) {
   try {
-    const s = await prisma.settlement.findUnique({where: {id}});
-    if(s) await logAction('SETTLEMENTS', 'DELETE', 'Deleted settlement for worker: ' + s.workerId);
+    const s = await prisma.settlement.findUnique({
+      where: { id },
+      include: {
+        worker: { select: { id: true, workerId: true, name: true, isDeleted: true } }
+      }
+    });
+    if (!s) return { error: 'Settlement not found' };
+
+    await logAction('SETTLEMENTS', 'DELETE', 'Deleted settlement for worker: ' + s.workerId);
     await prisma.settlement.delete({ where: { id } });
-    revalidatePath('/settlements');
+
+    // If the deleted settlement was PAID and worker was soft-deleted, check if other PAID settlement exists
+    if (s.status === 'PAID' && s.worker?.isDeleted) {
+      const otherPaid = await prisma.settlement.findFirst({
+        where: { workerId: s.workerId, status: 'PAID' }
+      });
+      if (!otherPaid) {
+        await prisma.worker.update({
+          where: { id: s.workerId },
+          data: {
+            isActive: true,
+            isDeleted: false,
+            deletedAt: null
+          }
+        }).catch(() => {});
+        await logAction(
+          'WORKERS',
+          'RESTORE_ON_SETTLEMENT_DELETE',
+          `Worker ${s.worker.workerId} (${s.worker.name}) reactivated after deleted PAID settlement.`
+        );
+      }
+    }
+
+    safeRevalidatePath('/settlements');
+    safeRevalidatePath('/workers');
+    safeRevalidatePath('/workers/recycle-bin');
+    safeRevalidatePath('/payroll');
+    safeRevalidatePath('/');
     return { success: true };
   } catch (error) {
     console.error("Failed to delete settlement:", error);
@@ -117,7 +242,15 @@ export async function updateSettlement(id: string, formData: FormData): Promise<
 
   let shouldRedirect = false;
   try {
-    const workerId = formData.get('workerId') as string;
+    const currentSettlement = await prisma.settlement.findUnique({
+      where: { id },
+      include: {
+        worker: { select: { id: true, workerId: true, name: true } }
+      }
+    });
+
+    const previousStatus = currentSettlement?.status || null;
+    const workerId = (formData.get('workerId') as string) || currentSettlement?.workerId;
     const joinDateVal = formData.get('joinDate') as string;
     if (joinDateVal && workerId) {
       const parsedJoin = parseFlexibleDate(joinDateVal);
@@ -132,14 +265,19 @@ export async function updateSettlement(id: string, formData: FormData): Promise<
     let serviceAge = (formData.get('serviceAge') as string) || '';
     if (serviceAge === 'Invalid Date') serviceAge = '';
 
-    const status = formData.get('status') as string;
+    const status = (formData.get('status') as string) || currentSettlement?.status || 'PENDING';
+    const lwd = getDate('lastWorkingDay') || currentSettlement?.lastWorkingDay;
+    const paymentReceiverDateInput = getDate('paymentReceiverDate');
+    const effectivePaymentReceiverDate = status === 'PAID'
+      ? (paymentReceiverDateInput || currentSettlement?.paymentReceiverDate || new Date())
+      : null;
 
     await prisma.settlement.update({
       where: { id },
       data: {
-        ...(status ? { status } : {}),
+        status,
         resignApplyDate: getDate('resignApplyDate'),
-        lastWorkingDay: getDate('lastWorkingDay'),
+        lastWorkingDay: lwd,
         serviceAge,
       
         grossSalary: getFloat('grossSalary'),
@@ -168,9 +306,19 @@ export async function updateSettlement(id: string, formData: FormData): Promise<
         amountInWords: formData.get('amountInWords') as string,
         bankAccNo: (formData.get('bankAccNo') as string) || null,
         
-        paymentReceiverDate: getDate('paymentReceiverDate'),
+        paymentReceiverDate: effectivePaymentReceiverDate,
       }
     });
+
+    if (workerId && status) {
+      await syncWorkerStatusForSettlement(
+        workerId,
+        status,
+        previousStatus,
+        lwd,
+        id
+      );
+    }
 
     await logAction('SETTLEMENTS', 'UPDATE', 'Updated settlement ID: ' + id);
     shouldRedirect = true;
@@ -180,8 +328,12 @@ export async function updateSettlement(id: string, formData: FormData): Promise<
   }
 
   if (shouldRedirect) {
-    revalidatePath('/settlements');
-    revalidatePath('/settlements/' + id);
+    safeRevalidatePath('/settlements');
+    safeRevalidatePath('/settlements/' + id);
+    safeRevalidatePath('/workers');
+    safeRevalidatePath('/workers/recycle-bin');
+    safeRevalidatePath('/payroll');
+    safeRevalidatePath('/');
     redirect('/settlements');
   }
 }
@@ -414,7 +566,7 @@ export async function recordEmployeeResignation(data: {
       }
     });
 
-    revalidatePath('/settlements');
+    safeRevalidatePath('/settlements');
     return { success: true, settlementId: settlement.id, settlement: fullSettlement };
   } catch (error: any) {
     console.error('Failed to record resignation:', error);
@@ -432,15 +584,48 @@ export async function updateSettlementStatus(
       return { success: false, error: 'Invalid status provided.' };
     }
 
-    const settlement = await prisma.settlement.update({
+    const existingSettlement = await prisma.settlement.findUnique({
       where: { id },
-      data: { status }
+      include: {
+        worker: {
+          select: { id: true, workerId: true, name: true, isDeleted: true, isActive: true }
+        }
+      }
     });
 
-    await logAction('SETTLEMENTS', 'UPDATE_STATUS', `Updated settlement ${id} status to ${status}`);
-    revalidatePath('/settlements');
-    revalidatePath(`/settlements/${id}`);
-    revalidatePath(`/settlements/${id}/edit`);
+    if (!existingSettlement) {
+      return { success: false, error: 'Settlement not found.' };
+    }
+
+    const previousStatus = existingSettlement.status;
+
+    const settlement = await prisma.settlement.update({
+      where: { id },
+      data: {
+        status,
+        ...(status === 'PAID'
+          ? (!existingSettlement.paymentReceiverDate ? { paymentReceiverDate: new Date() } : {})
+          : { paymentReceiverDate: null })
+      }
+    });
+
+    // Handle worker auto-exit or restore
+    await syncWorkerStatusForSettlement(
+      existingSettlement.workerId,
+      status,
+      previousStatus,
+      existingSettlement.lastWorkingDay,
+      id
+    );
+
+    await logAction('SETTLEMENTS', 'UPDATE_STATUS', `Updated settlement ${id} status from ${previousStatus} to ${status}`);
+    safeRevalidatePath('/settlements');
+    safeRevalidatePath(`/settlements/${id}`);
+    safeRevalidatePath(`/settlements/${id}/edit`);
+    safeRevalidatePath('/workers');
+    safeRevalidatePath('/workers/recycle-bin');
+    safeRevalidatePath('/payroll');
+    safeRevalidatePath('/');
     return { success: true, status: settlement.status };
   } catch (error: any) {
     console.error('Failed to update settlement status:', error);

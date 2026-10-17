@@ -27,6 +27,8 @@ interface SettlementItem {
     designation?: string | null;
     department?: { name: string } | null;
     company?: { name: string } | null;
+    isDeleted?: boolean;
+    deletedAt?: Date | string | null;
   };
 }
 
@@ -62,6 +64,7 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
 
   // Local settlement items to allow instant UI updates
   const [settlements, setSettlements] = useState<SettlementItem[]>(initialSettlements);
+  const [, setRenderNonce] = useState(0);
 
   useEffect(() => {
     setSettlements(initialSettlements);
@@ -234,11 +237,42 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
 
   // Quick status update for table rows
   const handleStatusChange = async (settlementId: string, newStatus: 'PENDING' | 'APPROVED' | 'PAID') => {
+    const target = settlements.find(s => s.id === settlementId);
+    if (!target || target.status === newStatus) return;
+
+    if (newStatus === 'PAID') {
+      const confirmMsg = target?.worker?.name
+        ? `Marking this settlement as PAID will automatically exit employee ${target.worker.name} (${target.worker.workerId}) and move them to the Employee Recycle Bin.\n\nDo you want to proceed?`
+        : 'Marking this settlement as PAID will automatically exit this employee and move them to the Employee Recycle Bin.\n\nDo you want to proceed?';
+      if (!window.confirm(confirmMsg)) {
+        setRenderNonce(n => n + 1);
+        return;
+      }
+    } else if (target?.status === 'PAID') {
+      const confirmMsg = target?.worker?.name
+        ? `Reverting this settlement from PAID to ${newStatus} will restore employee ${target.worker.name} back to the active employee directory.\n\nDo you want to proceed?`
+        : `Reverting this settlement from PAID to ${newStatus} will restore this employee back to the active employee directory.\n\nDo you want to proceed?`;
+      if (!window.confirm(confirmMsg)) {
+        setRenderNonce(n => n + 1);
+        return;
+      }
+    }
+
     try {
       const res = await updateSettlementStatus(settlementId, newStatus);
       if (res.success) {
         setSettlements(prev =>
-          prev.map(s => (s.id === settlementId ? { ...s, status: newStatus } : s))
+          prev.map(s => {
+            if (s.id !== settlementId) return s;
+            return {
+              ...s,
+              status: newStatus,
+              worker: {
+                ...s.worker,
+                isDeleted: newStatus === 'PAID',
+              }
+            };
+          })
         );
         router.refresh();
       } else {
@@ -247,6 +281,15 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
     } catch (err) {
       alert('Failed to update status.');
     }
+  };
+
+  const handleDeleteSettlement = async (settlementId: string) => {
+    const res = await deleteSettlement(settlementId);
+    if (res?.success) {
+      setSettlements(prev => prev.filter(s => s.id !== settlementId));
+      router.refresh();
+    }
+    return res;
   };
 
   // Filtered settlements list
@@ -263,11 +306,13 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
         const workerId = s.worker?.workerId?.toLowerCase() || '';
         const dept = s.worker?.department?.name?.toLowerCase() || '';
         const designation = s.worker?.designation?.toLowerCase() || '';
+        const exitStatus = s.worker?.isDeleted ? 'auto exited' : (s.status === 'PAID' ? 'restored' : '');
         return (
           workerName.includes(q) ||
           workerId.includes(q) ||
           dept.includes(q) ||
-          designation.includes(q)
+          designation.includes(q) ||
+          exitStatus.includes(q)
         );
       }
       return true;
@@ -751,13 +796,22 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
                   >
                     {/* Employee Info */}
                     <td className="p-4">
-                      <div className="font-bold text-gray-900 group-hover:text-blue-600 transition flex items-center gap-1.5">
+                      <div className="font-bold text-gray-900 group-hover:text-blue-600 transition flex items-center gap-1.5 flex-wrap">
                         {settlement.worker.name}
                         {isPending && (
                           <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded font-bold">
                             Action Needed
                           </span>
                         )}
+                        {settlement.worker?.isDeleted ? (
+                          <span className="text-[10px] bg-rose-50 text-rose-700 border border-rose-200 px-1.5 py-0.5 rounded font-bold" title="Employee exited and moved to Recycle Bin">
+                            Auto Exited
+                          </span>
+                        ) : settlement.status === 'PAID' ? (
+                          <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.5 rounded font-bold" title="Employee restored to active directory">
+                            Restored (Active)
+                          </span>
+                        ) : null}
                       </div>
                       <div className="text-xs text-gray-500 font-mono mt-0.5">
                         ID: {settlement.worker.workerId}
@@ -859,7 +913,7 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
                           <Printer size={13} /> Print
                         </Link>
 
-                        <DeleteSettlementButton id={settlement.id} onDelete={deleteSettlement} />
+                        <DeleteSettlementButton id={settlement.id} onDelete={handleDeleteSettlement} />
                       </div>
                     </td>
                   </tr>

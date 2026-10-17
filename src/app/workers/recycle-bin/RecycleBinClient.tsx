@@ -16,6 +16,13 @@ interface DeletedWorker {
   company: { id: string; name: string } | null;
   department: { id: string; name: string } | null;
   section: { id: string; name: string } | null;
+  settlements?: {
+    id: string;
+    status: string;
+    lastWorkingDay: Date | string | null;
+    resignApplyDate: Date | string | null;
+    totalPayAmount: number | null;
+  }[];
 }
 
 export default function RecycleBinClient({ initialWorkers }: { initialWorkers: DeletedWorker[] }) {
@@ -24,19 +31,38 @@ export default function RecycleBinClient({ initialWorkers }: { initialWorkers: D
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
+  const getPrimarySettlement = (w: DeletedWorker) => {
+    return w.settlements?.find((s) => s.status === 'PAID') || (w.settlements && w.settlements.length > 0 ? w.settlements[0] : null);
+  };
+
   const filteredWorkers = workers.filter((w) => {
     const term = searchTerm.toLowerCase();
+    const latestSettlement = getPrimarySettlement(w);
+    const reasonText = latestSettlement?.status === 'PAID'
+      ? 'settlement paid'
+      : latestSettlement?.status === 'APPROVED'
+      ? 'settlement approved'
+      : latestSettlement
+      ? 'resigned pending'
+      : 'direct deletion';
+
     return (
       w.workerId.toLowerCase().includes(term) ||
       w.name.toLowerCase().includes(term) ||
       (w.designation && w.designation.toLowerCase().includes(term)) ||
       (w.company?.name && w.company.name.toLowerCase().includes(term)) ||
-      (w.department?.name && w.department.name.toLowerCase().includes(term))
+      (w.department?.name && w.department.name.toLowerCase().includes(term)) ||
+      reasonText.includes(term)
     );
   });
 
   const handleRestore = async (worker: DeletedWorker) => {
-    if (!confirm(`Are you sure you want to restore employee ${worker.name} (${worker.workerId}) to the active employee directory?`)) {
+    const isSettled = worker.settlements?.some((s) => s.status === 'PAID');
+    const confirmPrompt = isSettled
+      ? `Are you sure you want to restore employee ${worker.name} (${worker.workerId}) back to the active employee directory?\n\nNote: This employee's settlement was recorded as PAID. Restoring will reactivate the employee record.`
+      : `Are you sure you want to restore employee ${worker.name} (${worker.workerId}) to the active employee directory?`;
+
+    if (!confirm(confirmPrompt)) {
       return;
     }
 
@@ -191,6 +217,7 @@ export default function RecycleBinClient({ initialWorkers }: { initialWorkers: D
                   <th className="py-3.5 px-4">Name</th>
                   <th className="py-3.5 px-4">Designation</th>
                   <th className="py-3.5 px-4">Department & Company</th>
+                  <th className="py-3.5 px-4">Exit Reason</th>
                   <th className="py-3.5 px-4">Deleted On</th>
                   <th className="py-3.5 px-4 text-right">Actions</th>
                 </tr>
@@ -220,6 +247,72 @@ export default function RecycleBinClient({ initialWorkers }: { initialWorkers: D
                         {worker.department?.name && (
                           <div className="text-xs text-gray-500">{worker.department.name}</div>
                         )}
+                      </td>
+                      <td className="py-3 px-4">
+                        {(() => {
+                          const s = getPrimarySettlement(worker);
+                          if (s?.status === 'PAID') {
+                            return (
+                              <div className="space-y-1">
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                  Settlement Paid
+                                </span>
+                                <div className="text-[11px] text-gray-500">
+                                  <Link
+                                    href={`/settlements/${s.id}`}
+                                    className="text-blue-600 hover:underline font-medium"
+                                    title="View settlement record"
+                                  >
+                                    View Settlement ({s.totalPayAmount != null ? `${s.totalPayAmount.toFixed(2)} BDT` : 'Recorded'})
+                                  </Link>
+                                </div>
+                              </div>
+                            );
+                          }
+                          if (s?.status === 'APPROVED') {
+                            return (
+                              <div className="space-y-1">
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                                  Settlement Approved
+                                </span>
+                                <div className="text-[11px] text-gray-500">
+                                  <Link
+                                    href={`/settlements/${s.id}`}
+                                    className="text-blue-600 hover:underline font-medium"
+                                  >
+                                    View Settlement
+                                  </Link>
+                                </div>
+                              </div>
+                            );
+                          }
+                          if (s) {
+                            return (
+                              <div className="space-y-1">
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                  Resigned (Pending)
+                                </span>
+                                <div className="text-[11px] text-gray-500">
+                                  <Link
+                                    href={`/settlements/${s.id}`}
+                                    className="text-blue-600 hover:underline font-medium"
+                                  >
+                                    View Settlement
+                                  </Link>
+                                </div>
+                              </div>
+                            );
+                          }
+                          return (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                              Direct Deletion
+                            </span>
+                          );
+                        })()}
                       </td>
                       <td className="py-3 px-4 text-xs text-gray-500">
                         {worker.deletedAt ? (

@@ -9,6 +9,13 @@ import { getSession } from '@/lib/auth';
 import { writeFile } from 'fs/promises';
 import { join } from 'path';
 
+function safeRevalidatePath(path: string) {
+  try {
+    revalidatePath(path);
+  } catch {
+    // Gracefully handle calls outside active Next.js request context (e.g. tests)
+  }
+}
 
 async function uploadFile(file: any): Promise<string | null> {
   if (!file || !file.name || file.size === 0) return null;
@@ -119,10 +126,10 @@ export async function deleteWorker(id: string) {
     });
 
     await logAction('WORKERS', 'DELETE', `Moved worker to recycle bin: ${w.workerId} (${w.name})`);
-    revalidatePath('/workers');
-    revalidatePath('/workers/recycle-bin');
-    revalidatePath('/');
-    revalidatePath('/payroll');
+    safeRevalidatePath('/workers');
+    safeRevalidatePath('/workers/recycle-bin');
+    safeRevalidatePath('/');
+    safeRevalidatePath('/payroll');
     return { success: true };
   } catch (error) {
     console.error("Failed to delete worker:", error);
@@ -154,10 +161,11 @@ export async function restoreWorker(id: string) {
     });
 
     await logAction('WORKERS', 'RESTORE', `Restored worker: ${w.workerId} (${w.name})`);
-    revalidatePath('/workers');
-    revalidatePath('/workers/recycle-bin');
-    revalidatePath('/');
-    revalidatePath('/payroll');
+    safeRevalidatePath('/workers');
+    safeRevalidatePath('/workers/recycle-bin');
+    safeRevalidatePath('/settlements');
+    safeRevalidatePath('/');
+    safeRevalidatePath('/payroll');
     return { success: true };
   } catch (error) {
     console.error("Failed to restore worker:", error);
@@ -200,10 +208,11 @@ export async function permanentDeleteWorker(id: string) {
 
     await logAction('WORKERS', 'PERMANENT_DELETE', `Permanently deleted worker: ${w.workerId} (${w.name})`);
     await prisma.worker.delete({ where: { id } });
-    revalidatePath('/workers');
-    revalidatePath('/workers/recycle-bin');
-    revalidatePath('/');
-    revalidatePath('/payroll');
+    safeRevalidatePath('/workers');
+    safeRevalidatePath('/workers/recycle-bin');
+    safeRevalidatePath('/settlements');
+    safeRevalidatePath('/');
+    safeRevalidatePath('/payroll');
     return { success: true };
   } catch (error) {
     console.error("Failed to permanently delete worker:", error);
