@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import prisma from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
 import RecruitmentClient, { SubSectionManpowerItem, HierarchyCompany, JobItem } from './RecruitmentClient';
@@ -115,11 +116,17 @@ export default async function RecruitmentPage() {
   }));
 
   return (
-    <RecruitmentClient
-      initialItems={items}
-      recruitments={recruitments}
-      companies={serializableCompanies}
-      userRole={userRole}
-    />
+    <Suspense fallback={
+      <div className="p-8 text-center text-gray-500 font-medium flex items-center justify-center min-h-[400px]">
+        Loading recruitment data...
+      </div>
+    }>
+      <RecruitmentClient
+        initialItems={items}
+        recruitments={recruitments}
+        companies={serializableCompanies}
+        userRole={userRole}
+      />
+    </Suspense>
   );
 }

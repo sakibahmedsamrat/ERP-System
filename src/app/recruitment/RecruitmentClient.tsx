@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { 
   Users, 
   UserCheck, 
@@ -143,6 +143,8 @@ export default function RecruitmentClient({
   userRole
 }: Props) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams ? searchParams.get('tab') : null;
 
   // Primary state
   const [items, setItems] = useState<SubSectionManpowerItem[]>(initialItems);
@@ -155,7 +157,28 @@ export default function RecruitmentClient({
   }, [initialItems, companies]);
 
   // Main Tabs: overview | entry | jobs
-  const [activeTab, setActiveTab] = useState<'overview' | 'entry' | 'jobs'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'entry' | 'jobs'>(() => {
+    if (tabParam === 'jobs') return 'jobs';
+    if (tabParam === 'entry') return 'entry';
+    return 'overview';
+  });
+
+  // Sync active tab with URL query parameter changes
+  useEffect(() => {
+    if (tabParam === 'jobs') {
+      setActiveTab('jobs');
+    } else if (tabParam === 'entry') {
+      setActiveTab('entry');
+    } else if (tabParam === 'overview' || !tabParam) {
+      setActiveTab('overview');
+    }
+  }, [tabParam]);
+
+  const switchTab = (tab: 'overview' | 'entry' | 'jobs') => {
+    setActiveTab(tab);
+    const targetUrl = tab === 'overview' ? '/recruitment' : `/recruitment?tab=${tab}`;
+    router.replace(targetUrl, { scroll: false });
+  };
 
   // Sub View Mode in overview: 'hierarchy' (grouped tree) vs 'table' (flat table)
   const [viewMode, setViewMode] = useState<'hierarchy' | 'table'>('hierarchy');
@@ -457,7 +480,7 @@ export default function RecruitmentClient({
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center gap-2.5 print:hidden">
           <button
-            onClick={() => setActiveTab('entry')}
+            onClick={() => switchTab('entry')}
             className={`inline-flex items-center gap-2 font-semibold px-4 py-2.5 rounded-xl transition-all duration-200 shadow-sm ${
               activeTab === 'entry'
                 ? 'bg-gradient-to-r from-blue-700 to-indigo-700 text-white shadow-blue-500/20'
@@ -500,7 +523,7 @@ export default function RecruitmentClient({
       {/* Tabs */}
       <div className="flex items-center gap-2 border-b border-gray-200 print:hidden">
         <button
-          onClick={() => setActiveTab('overview')}
+          onClick={() => switchTab('overview')}
           className={`flex items-center gap-2 px-5 py-3 font-semibold text-sm border-b-2 transition-all ${
             activeTab === 'overview'
               ? 'border-blue-600 text-blue-600'
@@ -515,7 +538,7 @@ export default function RecruitmentClient({
         </button>
 
         <button
-          onClick={() => setActiveTab('entry')}
+          onClick={() => switchTab('entry')}
           className={`flex items-center gap-2 px-5 py-3 font-semibold text-sm border-b-2 transition-all ${
             activeTab === 'entry'
               ? 'border-blue-600 text-blue-600'
@@ -530,7 +553,7 @@ export default function RecruitmentClient({
         </button>
 
         <button
-          onClick={() => setActiveTab('jobs')}
+          onClick={() => switchTab('jobs')}
           className={`flex items-center gap-2 px-5 py-3 font-semibold text-sm border-b-2 transition-all ${
             activeTab === 'jobs'
               ? 'border-blue-600 text-blue-600'
@@ -1327,7 +1350,7 @@ export default function RecruitmentClient({
               </div>
             </div>
             <button
-              onClick={() => setActiveTab('overview')}
+              onClick={() => switchTab('overview')}
               className="text-xs font-semibold px-4 py-2 bg-white text-gray-700 rounded-xl border border-gray-200 hover:bg-gray-50 transition"
             >
               Back to Overview

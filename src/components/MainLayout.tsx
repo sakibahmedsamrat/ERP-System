@@ -1,5 +1,6 @@
 'use client'
 
+import React, { Suspense } from 'react';
 import { usePathname } from 'next/navigation';
 import Sidebar from './Sidebar';
 import Header from './Header';
@@ -14,7 +15,9 @@ export default function MainLayout({ children, user }: { children: React.ReactNo
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#F4F7FE] print:bg-white print:h-auto print:overflow-visible font-sans text-gray-800 selection:bg-blue-100">
-      <Sidebar user={user} />
+      <Suspense fallback={<aside className="w-72 bg-[#0F172A] text-white h-screen shrink-0" />}>
+        <Sidebar user={user} />
+      </Suspense>
       <div className="flex-1 flex flex-col h-screen min-w-0 overflow-hidden print:h-auto print:overflow-visible">
         <Header user={user} />
         <main className="flex-1 overflow-x-hidden overflow-y-auto print:overflow-visible flex flex-col justify-between">

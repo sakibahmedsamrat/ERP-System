@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { 
   LayoutDashboard, 
   Users, 
@@ -25,6 +25,8 @@ import { logoutAction } from '@/app/logout/actions';
 
 export default function Sidebar({ user }: { user?: any }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentTab = searchParams ? searchParams.get('tab') : null;
   const appName = process.env.NEXT_PUBLIC_APP_NAME || 'HR Module';
   
   const hasModule = (modName: string) => {
@@ -52,6 +54,18 @@ export default function Sidebar({ user }: { user?: any }) {
   const isPayrollSection = isPayrollChildRoute || isPayrollExactActive;
 
   const [isPayrollOpen, setIsPayrollOpen] = useState(isPayrollSection);
+
+  const isRecruitmentChildRoute = 
+    normalizedPath === '/recruitment/manpower' || 
+    normalizedPath.startsWith('/recruitment/manpower/') || 
+    normalizedPath === '/recruitment/new' || 
+    normalizedPath.startsWith('/recruitment/new/');
+
+  const isRecruitmentExactActive = normalizedPath === '/recruitment';
+  const isRecruitmentSection = isRecruitmentChildRoute || isRecruitmentExactActive;
+  const isRecruitmentParentActive = normalizedPath === '/recruitment' && (!currentTab || currentTab === 'overview');
+
+  const [isRecruitmentOpen, setIsRecruitmentOpen] = useState(isRecruitmentSection);
   const prevPathnameRef = useRef(normalizedPath);
 
   useEffect(() => {
@@ -61,9 +75,14 @@ export default function Sidebar({ user }: { user?: any }) {
       } else {
         setIsPayrollOpen(false);
       }
+      if (isRecruitmentChildRoute || isRecruitmentExactActive) {
+        setIsRecruitmentOpen(true);
+      } else {
+        setIsRecruitmentOpen(false);
+      }
       prevPathnameRef.current = normalizedPath;
     }
-  }, [normalizedPath, isPayrollChildRoute, isPayrollExactActive]);
+  }, [normalizedPath, isPayrollChildRoute, isPayrollExactActive, isRecruitmentChildRoute, isRecruitmentExactActive]);
 
   const employeesHref = hasModule('WORKERS') 
     ? '/workers' 
@@ -73,8 +92,18 @@ export default function Sidebar({ user }: { user?: any }) {
     let isActive = false;
     if (exact) {
       isActive = normalizedPath === href;
+    } else if (label === 'Manpower Entry' || href === '/recruitment/manpower') {
+      isActive = 
+        normalizedPath === '/recruitment/manpower' || 
+        normalizedPath.startsWith('/recruitment/manpower/') || 
+        (normalizedPath === '/recruitment' && currentTab === 'entry');
+    } else if (label === 'Job Circulars' || href === '/recruitment?tab=jobs') {
+      isActive = 
+        (normalizedPath === '/recruitment' && currentTab === 'jobs') || 
+        normalizedPath === '/recruitment/new' || 
+        normalizedPath.startsWith('/recruitment/new/');
     } else if (href === '/recruitment') {
-      isActive = normalizedPath === '/recruitment' || (normalizedPath.startsWith('/recruitment') && !normalizedPath.startsWith('/recruitment/manpower'));
+      isActive = isRecruitmentParentActive;
     } else if (label === 'Settlements' || href === '/payroll/settlements' || href === '/settlements') {
       isActive = normalizedPath === '/settlements' || normalizedPath.startsWith('/settlements/') || normalizedPath === '/payroll/settlements' || normalizedPath.startsWith('/payroll/settlements/');
     } else if (label === 'Salary Statement' || href === '/payroll/salary-statement' || href === '/salary-statement') {
@@ -209,8 +238,88 @@ export default function Sidebar({ user }: { user?: any }) {
         {hasModule('TRAINING') && <NavItem href="/training" icon={GraduationCap} label="Training" />}
         {hasModule('RECRUITMENT') && (
           <div className="space-y-1">
-            <NavItem href="/recruitment" icon={Briefcase} label="Recruitment" />
-            <NavItem href="/recruitment/manpower" icon={Sliders} label="Manpower Entry" color="text-blue-200" />
+            <div
+              className={`group flex items-center justify-between rounded-xl transition-all duration-300 font-medium ${
+                isRecruitmentParentActive
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-900/50 translate-x-1'
+                  : 'hover:bg-white/10 text-white hover:translate-x-1'
+              }`}
+            >
+              <Link
+                href="/recruitment"
+                prefetch={true}
+                onClick={(e) => {
+                  if (normalizedPath === '/recruitment') {
+                    if (!currentTab || currentTab === 'overview') {
+                      e.preventDefault();
+                      setIsRecruitmentOpen((prev) => !prev);
+                    } else {
+                      setIsRecruitmentOpen(true);
+                    }
+                  } else {
+                    setIsRecruitmentOpen(true);
+                  }
+                }}
+                className="flex items-center gap-3 px-4 py-2.5 flex-1 min-w-0"
+              >
+                <Briefcase size={18} className={isRecruitmentParentActive ? 'text-white' : 'opacity-80'} />
+                <span className="text-sm">Recruitment</span>
+              </Link>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsRecruitmentOpen((prev) => !prev);
+                }}
+                aria-label={isRecruitmentOpen ? 'Collapse Recruitment sub-menu' : 'Expand Recruitment sub-menu'}
+                aria-expanded={isRecruitmentOpen}
+                aria-controls="recruitment-submenu"
+                title={isRecruitmentOpen ? 'Collapse sub-menu' : 'Expand sub-menu'}
+                className={`self-stretch px-3.5 flex items-center justify-center rounded-r-xl transition-colors cursor-pointer ${
+                  isRecruitmentParentActive
+                    ? 'hover:bg-white/20 text-white'
+                    : 'text-slate-400 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                <ChevronDown
+                  size={16}
+                  className={`transition-transform duration-300 ease-in-out ${
+                    isRecruitmentOpen ? 'rotate-180 text-white' : 'text-slate-400 group-hover:text-white'
+                  }`}
+                />
+              </button>
+            </div>
+
+            <div
+              id="recruitment-submenu"
+              aria-hidden={!isRecruitmentOpen}
+              className={`grid transition-all duration-300 ease-in-out ${
+                isRecruitmentOpen
+                  ? 'grid-rows-[1fr] opacity-100'
+                  : 'grid-rows-[0fr] opacity-0 pointer-events-none'
+              }`}
+            >
+              <div className="min-h-0 overflow-hidden">
+                <div className="pl-4 space-y-1 border-l border-white/10 ml-5 py-1">
+                  <NavItem
+                    href="/recruitment/manpower"
+                    icon={Sliders}
+                    label="Manpower Entry"
+                    color="text-slate-300"
+                    tabIndex={isRecruitmentOpen ? 0 : -1}
+                  />
+                  <NavItem
+                    href="/recruitment?tab=jobs"
+                    icon={Briefcase}
+                    label="Job Circulars"
+                    color="text-slate-300"
+                    tabIndex={isRecruitmentOpen ? 0 : -1}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         )}
         {hasModule('TASKS') && <NavItem href="/tasks" icon={CheckSquare} label="Tasks" />}
