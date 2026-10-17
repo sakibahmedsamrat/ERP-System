@@ -81,6 +81,9 @@ model Worker {
   @@index([isDeleted])
   @@index([isDeleted, isActive])
   @@index([companyId, isDeleted])
+  @@index([companyId, isDeleted, isActive])
+  @@index([subSectionId, isDeleted, isActive])
+  @@index([sectionId, isDeleted, isActive])
   @@index([joinDate])
   @@index([designation])
   @@index([name])
@@ -143,6 +146,7 @@ model Attendance {
   @@index([date])
   @@index([status])
   @@index([date, status])
+  @@index([workerId, date])
 }
 
 model Settlement {

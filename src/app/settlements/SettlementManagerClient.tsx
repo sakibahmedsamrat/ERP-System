@@ -64,7 +64,7 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
 
   // Local settlement items to allow instant UI updates
   const [settlements, setSettlements] = useState<SettlementItem[]>(initialSettlements);
-  const [, setRenderNonce] = useState<number>(0);
+  const [renderNonce, setRenderNonce] = useState<number>(0);
 
   useEffect(() => {
     setSettlements(initialSettlements);
@@ -864,6 +864,7 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
                     <td className="p-4" onClick={e => e.stopPropagation()}>
                       <div className="flex items-center gap-1.5">
                         <select
+                          key={`${settlement.id}-${settlement.status}-${renderNonce}`}
                           value={settlement.status}
                           onChange={e => handleStatusChange(settlement.id, e.target.value as any)}
                           className={`text-xs font-bold px-2.5 py-1 rounded-full border outline-none cursor-pointer ${

@@ -16,17 +16,25 @@ export default function Header({
   
   // Format the current path nicely
   const getPageTitle = () => {
-    if (pathname === '/') return 'Dashboard';
+    if (!pathname || pathname === '/') return 'Dashboard';
+    if (pathname.startsWith('/workers/recycle-bin')) return 'Employee Recycle Bin';
+    if (pathname.startsWith('/workers')) return 'Employees';
+    if (pathname.startsWith('/confirmations')) return 'Employee Confirmation';
+    if (pathname.startsWith('/id-cards')) return 'ID Card';
+    if (pathname.startsWith('/payroll/salary-statement') || pathname.startsWith('/salary-statement')) return 'Salary Statement';
+    if (pathname.startsWith('/payroll/settlements') || pathname.startsWith('/settlements')) return 'Settlements';
+    if (pathname.startsWith('/payroll')) return 'Payroll';
+    if (pathname.startsWith('/recruitment/manpower')) return 'Manpower Entry';
+    if (pathname.startsWith('/recruitment')) return 'Recruitment';
+    if (pathname.startsWith('/attendance')) return 'Attendance';
+    if (pathname.startsWith('/companies')) return 'Companies';
+    if (pathname.startsWith('/tasks')) return 'Tasks';
+    if (pathname.startsWith('/training')) return 'Training';
+    if (pathname.startsWith('/users')) return 'User Management';
+    if (pathname.startsWith('/activity-logs')) return 'Activity Logs';
+    if (pathname.startsWith('/settings')) return 'Settings';
     const path = pathname.split('/')[1];
-    if (path === 'workers') return 'Employees';
-    if (path === 'confirmations') return 'Employee Confirmation';
-    if (path === 'id-cards') return 'ID Card';
-    if (path === 'settlements') return 'Settlements';
-    if (path === 'payroll') return 'Payroll';
-    if (path === 'recruitment') return 'Recruitment';
-    if (path === 'salary-statement') return 'Salary Statement';
-    if (path === 'activity-logs') return 'Activity Logs';
-    return path.charAt(0).toUpperCase() + path.slice(1);
+    return path ? path.charAt(0).toUpperCase() + path.slice(1) : 'Dashboard';
   };
 
   return (

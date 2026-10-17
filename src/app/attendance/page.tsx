@@ -4,12 +4,15 @@ import { ClipboardCheck } from 'lucide-react';
 
 
 export default async function AttendancePage({ searchParams }: { searchParams: { date?: string } }) {
-  const dateStr = searchParams.date || new Date().toISOString().split('T')[0];
+  const rawDate = searchParams?.date;
+  const parsedDate = rawDate ? new Date(rawDate) : new Date();
+  const safeDate = isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
+  const dateStr = safeDate.toISOString().split('T')[0];
   
-  const startOfDay = new Date(dateStr);
+  const startOfDay = new Date(safeDate);
   startOfDay.setUTCHours(0, 0, 0, 0);
   
-  const endOfDay = new Date(dateStr);
+  const endOfDay = new Date(safeDate);
   endOfDay.setUTCHours(23, 59, 59, 999);
 
   const attendances = await prisma.attendance.findMany({
@@ -84,9 +87,9 @@ export default async function AttendancePage({ searchParams }: { searchParams: {
 
               return (
                 <tr key={record.id} className="hover:bg-gray-50 transition">
-                  <td className="p-4 font-medium text-gray-900">{record.worker.workerId}</td>
-                  <td className="p-4">{record.worker.name}</td>
-                  <td className="p-4 text-gray-600">{record.worker.company.name}</td>
+                  <td className="p-4 font-medium text-gray-900">{record.worker?.workerId || '-'}</td>
+                  <td className="p-4">{record.worker?.name || '-'}</td>
+                  <td className="p-4 text-gray-600">{record.worker?.company?.name || '-'}</td>
                   <td className="p-4">
                     <span className={`text-xs px-2 py-1 rounded-full font-bold ${statusColor}`}>
                       {record.status}

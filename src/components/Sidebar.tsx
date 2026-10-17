@@ -24,6 +24,37 @@ import {
 } from 'lucide-react';
 import { logoutAction } from '@/app/logout/actions';
 
+interface NavItemProps {
+  href: string;
+  icon: any;
+  label: string;
+  color?: string;
+  isActive: boolean;
+  tabIndex?: number;
+  onClose?: () => void;
+}
+
+function NavItem({ href, icon: Icon, label, color = "text-white", isActive, tabIndex, onClose }: NavItemProps) {
+  return (
+    <Link 
+      href={href} 
+      prefetch={true}
+      tabIndex={tabIndex}
+      onClick={() => {
+        onClose?.();
+      }}
+      className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-300 font-medium ${
+        isActive 
+          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-900/50 translate-x-1' 
+          : `hover:bg-white/10 ${color} hover:translate-x-1`
+      }`}
+    >
+      <Icon size={18} className={isActive ? 'text-white' : 'opacity-80'} /> 
+      <span className="text-sm">{label}</span>
+    </Link>
+  );
+}
+
 export default function Sidebar({ 
   user,
   isMobileOpen,
@@ -112,51 +143,72 @@ export default function Sidebar({
     ? '/workers' 
     : (hasModule('CONFIRMATIONS') ? '/confirmations' : (hasModule('IDCARD') ? '/id-cards' : '/workers'));
 
-  const NavItem = ({ href, icon: Icon, label, color = "text-white", exact = false, tabIndex }: any) => {
-    let isActive = false;
+  const isNavItemActive = (href: string, label: string, exact = false) => {
     if (exact) {
-      isActive = normalizedPath === href;
-    } else if (label === 'Manpower Entry' || href === '/recruitment/manpower') {
-      isActive = 
+      return normalizedPath === href;
+    }
+    if (label === 'Manpower Entry' || href === '/recruitment/manpower') {
+      return (
         normalizedPath === '/recruitment/manpower' || 
         normalizedPath.startsWith('/recruitment/manpower/') || 
-        (normalizedPath === '/recruitment' && currentTab === 'entry');
-    } else if (label === 'Job Circulars' || href === '/recruitment?tab=jobs') {
-      isActive = 
+        (normalizedPath === '/recruitment' && currentTab === 'entry')
+      );
+    }
+    if (label === 'Job Circulars' || href === '/recruitment?tab=jobs') {
+      return (
         (normalizedPath === '/recruitment' && currentTab === 'jobs') || 
         normalizedPath === '/recruitment/new' || 
-        normalizedPath.startsWith('/recruitment/new/');
-    } else if (href === '/recruitment') {
-      isActive = isRecruitmentParentActive;
-    } else if (label === 'Settlements' || href === '/payroll/settlements' || href === '/settlements') {
-      isActive = normalizedPath === '/settlements' || normalizedPath.startsWith('/settlements/') || normalizedPath === '/payroll/settlements' || normalizedPath.startsWith('/payroll/settlements/');
-    } else if (label === 'Salary Statement' || href === '/payroll/salary-statement' || href === '/salary-statement') {
-      isActive = normalizedPath === '/salary-statement' || normalizedPath.startsWith('/salary-statement/') || normalizedPath === '/payroll/salary-statement' || normalizedPath.startsWith('/payroll/salary-statement/');
-    } else if (label === 'Employees' || href === '/workers' || href === employeesHref) {
-      isActive = normalizedPath.startsWith('/workers') || normalizedPath.startsWith('/confirmations') || normalizedPath.startsWith('/id-cards');
-    } else {
-      isActive = normalizedPath === href || (href !== '/' && normalizedPath.startsWith(href));
+        normalizedPath.startsWith('/recruitment/new/')
+      );
     }
-
-    return (
-      <Link 
-        href={href} 
-        prefetch={true}
-        tabIndex={tabIndex}
-        onClick={() => {
-          onClose?.();
-        }}
-        className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-300 font-medium ${
-          isActive 
-            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-900/50 translate-x-1' 
-            : `hover:bg-white/10 ${color} hover:translate-x-1`
-        }`}
-      >
-        <Icon size={18} className={isActive ? 'text-white' : 'opacity-80'} /> 
-        <span className="text-sm">{label}</span>
-      </Link>
-    );
+    if (href === '/recruitment') {
+      return isRecruitmentParentActive;
+    }
+    if (label === 'Settlements' || href === '/payroll/settlements' || href === '/settlements') {
+      return (
+        normalizedPath === '/settlements' || 
+        normalizedPath.startsWith('/settlements/') || 
+        normalizedPath === '/payroll/settlements' || 
+        normalizedPath.startsWith('/payroll/settlements/')
+      );
+    }
+    if (label === 'Salary Statement' || href === '/payroll/salary-statement' || href === '/salary-statement') {
+      return (
+        normalizedPath === '/salary-statement' || 
+        normalizedPath.startsWith('/salary-statement/') || 
+        normalizedPath === '/payroll/salary-statement' || 
+        normalizedPath.startsWith('/payroll/salary-statement/')
+      );
+    }
+    if (label === 'Employees' || href === '/workers' || href === employeesHref) {
+      return (
+        normalizedPath.startsWith('/workers') || 
+        normalizedPath.startsWith('/confirmations') || 
+        normalizedPath.startsWith('/id-cards')
+      );
+    }
+    return normalizedPath === href || (href !== '/' && normalizedPath.startsWith(href));
   };
+
+  const renderNavItem = (
+    href: string,
+    icon: any,
+    label: string,
+    color = "text-white",
+    exact = false,
+    tabIndex?: number
+  ) => (
+    <NavItem
+      key={href}
+      href={href}
+      icon={icon}
+      label={label}
+      color={color}
+      isActive={isNavItemActive(href, label, exact)}
+      tabIndex={tabIndex}
+      onClose={onClose}
+    />
+  );
 
   return (
     <>
@@ -196,13 +248,13 @@ export default function Sidebar({
         </div>
         
         <nav className="flex-1 p-5 space-y-2 overflow-y-auto relative z-10 custom-scrollbar">
-        <NavItem href="/" icon={LayoutDashboard} label="Dashboard" />
+        {renderNavItem('/', LayoutDashboard, 'Dashboard', 'text-white', true)}
         
         {(hasModule('WORKERS') || hasModule('CONFIRMATIONS') || hasModule('IDCARD')) && (
-          <NavItem href={employeesHref} icon={Users} label="Employees" />
+          renderNavItem(employeesHref, Users, 'Employees')
         )}
-        {hasModule('COMPANIES') && <NavItem href="/companies" icon={Building2} label="Companies" />}
-        {hasModule('ATTENDANCE') && <NavItem href="/attendance" icon={CalendarCheck} label="Attendance" />}
+        {hasModule('COMPANIES') && renderNavItem('/companies', Building2, 'Companies')}
+        {hasModule('ATTENDANCE') && renderNavItem('/attendance', CalendarCheck, 'Attendance')}
         {(hasModule('PAYROLL') || hasModule('SETTLEMENTS')) && (
           <div className="space-y-1">
             <div
@@ -221,6 +273,7 @@ export default function Sidebar({
                     setIsPayrollOpen((prev) => !prev);
                   } else {
                     setIsPayrollOpen(true);
+                    onClose?.();
                   }
                 }}
                 className="flex items-center gap-3 px-4 py-2.5 flex-1 min-w-0"
@@ -266,26 +319,14 @@ export default function Sidebar({
             >
               <div className="min-h-0 overflow-hidden">
                 <div className="pl-4 space-y-1 border-l border-white/10 ml-5 py-1">
-                  <NavItem
-                    href="/payroll/settlements"
-                    icon={CreditCard}
-                    label="Settlements"
-                    color="text-slate-300"
-                    tabIndex={isPayrollOpen ? 0 : -1}
-                  />
-                  <NavItem
-                    href="/payroll/salary-statement"
-                    icon={FileSpreadsheet}
-                    label="Salary Statement"
-                    color="text-slate-300"
-                    tabIndex={isPayrollOpen ? 0 : -1}
-                  />
+                  {renderNavItem('/payroll/settlements', CreditCard, 'Settlements', 'text-slate-300', false, isPayrollOpen ? 0 : -1)}
+                  {renderNavItem('/payroll/salary-statement', FileSpreadsheet, 'Salary Statement', 'text-slate-300', false, isPayrollOpen ? 0 : -1)}
                 </div>
               </div>
             </div>
           </div>
         )}
-        {hasModule('TRAINING') && <NavItem href="/training" icon={GraduationCap} label="Training" />}
+        {hasModule('TRAINING') && renderNavItem('/training', GraduationCap, 'Training')}
         {hasModule('RECRUITMENT') && (
           <div className="space-y-1">
             <div
@@ -308,6 +349,7 @@ export default function Sidebar({
                     }
                   } else {
                     setIsRecruitmentOpen(true);
+                    onClose?.();
                   }
                 }}
                 className="flex items-center gap-3 px-4 py-2.5 flex-1 min-w-0"
@@ -353,36 +395,24 @@ export default function Sidebar({
             >
               <div className="min-h-0 overflow-hidden">
                 <div className="pl-4 space-y-1 border-l border-white/10 ml-5 py-1">
-                  <NavItem
-                    href="/recruitment/manpower"
-                    icon={Sliders}
-                    label="Manpower Entry"
-                    color="text-slate-300"
-                    tabIndex={isRecruitmentOpen ? 0 : -1}
-                  />
-                  <NavItem
-                    href="/recruitment?tab=jobs"
-                    icon={Briefcase}
-                    label="Job Circulars"
-                    color="text-slate-300"
-                    tabIndex={isRecruitmentOpen ? 0 : -1}
-                  />
+                  {renderNavItem('/recruitment/manpower', Sliders, 'Manpower Entry', 'text-slate-300', false, isRecruitmentOpen ? 0 : -1)}
+                  {renderNavItem('/recruitment?tab=jobs', Briefcase, 'Job Circulars', 'text-slate-300', false, isRecruitmentOpen ? 0 : -1)}
                 </div>
               </div>
             </div>
           </div>
         )}
-        {hasModule('TASKS') && <NavItem href="/tasks" icon={CheckSquare} label="Tasks" />}
+        {hasModule('TASKS') && renderNavItem('/tasks', CheckSquare, 'Tasks')}
         
         <div className="pt-6 mt-6 border-t border-white/10 space-y-2">
           <div className="text-xs uppercase tracking-wider text-gray-500 font-bold px-4 mb-2">Admin</div>
           {user?.role === 'SUPER_ADMIN' && (
             <>
-              <NavItem href="/users" icon={Shield} label="User Management" color="text-blue-300" />
-              <NavItem href="/activity-logs" icon={Activity} label="Activity Logs" color="text-emerald-300" />
+              {renderNavItem('/users', Shield, 'User Management', 'text-blue-300')}
+              {renderNavItem('/activity-logs', Activity, 'Activity Logs', 'text-emerald-300')}
             </>
           )}
-          <NavItem href="/settings" icon={Settings} label="Settings" color="text-gray-300" />
+          {renderNavItem('/settings', Settings, 'Settings', 'text-gray-300')}
         </div>
       </nav>
       
