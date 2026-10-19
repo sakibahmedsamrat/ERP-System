@@ -1,6 +1,7 @@
 'use client'
 
 import { useFormState, useFormStatus } from 'react-dom';
+import Image from 'next/image';
 import { loginAction } from './actions';
 
 function SubmitButton() {
@@ -23,9 +24,19 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden">
-        <div className="bg-gray-900 p-8 text-center">
-          <h1 className="text-3xl font-bold text-white mb-2">{appName}</h1>
-          <p className="text-gray-400">Sign in to continue</p>
+        <div className="bg-gray-900 p-8 text-center flex flex-col items-center">
+          <div className="w-16 h-16 mb-3 flex items-center justify-center">
+            <Image 
+              src="/logo-hr.png" 
+              alt="MEP HR Logo" 
+              width={64} 
+              height={64} 
+              className="w-full h-full object-contain filter drop-shadow-lg" 
+              priority 
+            />
+          </div>
+          <h1 className="text-3xl font-bold text-white mb-1">{appName}</h1>
+          <p className="text-gray-400 text-sm">Sign in to continue</p>
         </div>
         
         <div className="p-8">

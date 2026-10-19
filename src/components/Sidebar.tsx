@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { 
   LayoutDashboard, 
@@ -229,8 +230,15 @@ export default function Sidebar({
         
         <div className="p-6 font-extrabold text-2xl border-b border-white/10 flex items-center justify-between relative z-10">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-500 to-indigo-500 flex items-center justify-center shadow-lg">
-              <Layers size={18} className="text-white" />
+            <div className="w-9 h-9 relative flex items-center justify-center shrink-0">
+              <Image
+                src="/logo-hr.png"
+                alt="MEP HR Logo"
+                width={36}
+                height={36}
+                className="w-full h-full object-contain filter drop-shadow-md"
+                priority
+              />
             </div>
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-300">
               {appName}
