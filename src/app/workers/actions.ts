@@ -327,10 +327,16 @@ export async function validateBulkDeleteWorkers(rawInput: string): Promise<BulkD
       return { error: 'Please enter at least one Worker ID.' };
     }
 
-    // Parse IDs by splitting on commas, newlines, semicolons, tabs, and spaces
-    const tokens = rawInput
-      .split(/[\s,;]+/)
-      .map(t => t.trim())
+    // Strip line bullet markers (e.g. "1. ", "2) ", "- ", "* ") and split on standard delimiters
+    const cleanedLines = rawInput
+      .split('\n')
+      .map(line => line.replace(/^\s*(?:\d+[\.\)\-:]|[-*•])\s*/, '').trim())
+      .join('\n');
+
+    // Parse IDs by splitting on commas, newlines, semicolons, tabs, pipes, and spaces
+    const tokens = cleanedLines
+      .split(/[\s,;|]+/)
+      .map(t => t.replace(/^["'\[\]\(\)<>]+|["'\[\]\(\)<>,;.]+$/g, '').trim())
       .filter(t => t.length > 0);
 
     // Deduplicate while preserving order
@@ -348,36 +354,45 @@ export async function validateBulkDeleteWorkers(rawInput: string): Promise<BulkD
       return { error: 'Please enter at least one valid Worker ID.' };
     }
 
-    // Query active workers matching these IDs
-    const activeWorkers = await prisma.worker.findMany({
-      where: {
-        workerId: { in: idList, mode: 'insensitive' },
-        isDeleted: false,
-      },
-      select: {
-        id: true,
-        workerId: true,
-        name: true,
-        designation: true,
-        department: { select: { name: true } },
-        section: { select: { name: true } },
-        company: { select: { name: true } },
-      },
-      orderBy: { workerId: 'asc' },
-    });
+    // Query active and deleted workers in chunks to guard against PostgreSQL parameter limits
+    const chunkSize = 1000;
+    const activeWorkers: any[] = [];
+    const deletedWorkers: any[] = [];
 
-    // Query workers already soft-deleted in recycle bin
-    const deletedWorkers = await prisma.worker.findMany({
-      where: {
-        workerId: { in: idList, mode: 'insensitive' },
-        isDeleted: true,
-      },
-      select: {
-        id: true,
-        workerId: true,
-        name: true,
-      },
-    });
+    for (let i = 0; i < idList.length; i += chunkSize) {
+      const chunk = idList.slice(i, i + chunkSize);
+      const [activeBatch, deletedBatch] = await Promise.all([
+        prisma.worker.findMany({
+          where: {
+            workerId: { in: chunk, mode: 'insensitive' },
+            isDeleted: false,
+          },
+          select: {
+            id: true,
+            workerId: true,
+            name: true,
+            designation: true,
+            department: { select: { name: true } },
+            section: { select: { name: true } },
+            company: { select: { name: true } },
+          },
+          orderBy: { workerId: 'asc' },
+        }),
+        prisma.worker.findMany({
+          where: {
+            workerId: { in: chunk, mode: 'insensitive' },
+            isDeleted: true,
+          },
+          select: {
+            id: true,
+            workerId: true,
+            name: true,
+          },
+        }),
+      ]);
+      activeWorkers.push(...activeBatch);
+      deletedWorkers.push(...deletedBatch);
+    }
 
     const activeMap = new Map(activeWorkers.map(w => [w.workerId.toLowerCase(), w]));
     const deletedMap = new Map(deletedWorkers.map(w => [w.workerId.toLowerCase(), w]));
@@ -428,34 +443,50 @@ export async function bulkDeleteWorkers(workerDbIds: string[]) {
       return { error: 'No workers selected for deletion.' };
     }
 
-    const activeWorkers = await prisma.worker.findMany({
-      where: {
-        id: { in: workerDbIds },
-        isDeleted: false,
-      },
-      select: {
-        id: true,
-        workerId: true,
-        name: true,
-      },
-    });
+    // Support matching by either database ID or employee Worker ID
+    const chunkSize = 1000;
+    const activeWorkers: { id: string; workerId: string; name: string }[] = [];
+
+    for (let i = 0; i < workerDbIds.length; i += chunkSize) {
+      const chunk = workerDbIds.slice(i, i + chunkSize);
+      const batch = await prisma.worker.findMany({
+        where: {
+          OR: [
+            { id: { in: chunk } },
+            { workerId: { in: chunk, mode: 'insensitive' } },
+          ],
+          isDeleted: false,
+        },
+        select: {
+          id: true,
+          workerId: true,
+          name: true,
+        },
+      });
+      activeWorkers.push(...batch);
+    }
 
     if (activeWorkers.length === 0) {
       return { error: 'No active employees found matching the selected IDs.' };
     }
 
     const idsToUpdate = activeWorkers.map(w => w.id);
+    let totalUpdated = 0;
 
-    const updateResult = await prisma.worker.updateMany({
-      where: {
-        id: { in: idsToUpdate },
-      },
-      data: {
-        isDeleted: true,
-        deletedAt: new Date(),
-        isActive: false,
-      },
-    });
+    for (let i = 0; i < idsToUpdate.length; i += chunkSize) {
+      const chunk = idsToUpdate.slice(i, i + chunkSize);
+      const updateResult = await prisma.worker.updateMany({
+        where: {
+          id: { in: chunk },
+        },
+        data: {
+          isDeleted: true,
+          deletedAt: new Date(),
+          isActive: false,
+        },
+      });
+      totalUpdated += updateResult.count;
+    }
 
     const sampleSummary = activeWorkers
       .slice(0, 10)
@@ -466,17 +497,20 @@ export async function bulkDeleteWorkers(workerDbIds: string[]) {
     await logAction(
       'WORKERS',
       'BULK_DELETE',
-      `Bulk moved ${updateResult.count} worker(s) to recycle bin: ${sampleSummary}${moreSuffix}`
+      `Bulk moved ${totalUpdated} worker(s) to recycle bin: ${sampleSummary}${moreSuffix}`
     );
 
     safeRevalidatePath('/workers');
     safeRevalidatePath('/workers/recycle-bin');
-    safeRevalidatePath('/');
+    safeRevalidatePath('/attendance');
+    safeRevalidatePath('/confirmations');
+    safeRevalidatePath('/id-cards');
     safeRevalidatePath('/payroll');
+    safeRevalidatePath('/');
 
     return {
       success: true,
-      count: updateResult.count,
+      count: totalUpdated,
     };
   } catch (error) {
     console.error('Failed to bulk delete workers:', error);

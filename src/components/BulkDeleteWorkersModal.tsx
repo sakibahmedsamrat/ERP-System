@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Trash2,
@@ -13,6 +13,8 @@ import {
   Loader2,
   AlertCircle,
   HelpCircle,
+  Copy,
+  Check,
 } from 'lucide-react';
 import {
   validateBulkDeleteWorkers,
@@ -30,6 +32,8 @@ export default function BulkDeleteWorkersModal() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [previewFilter, setPreviewFilter] = useState('');
+  const [copiedNotFound, setCopiedNotFound] = useState(false);
 
   // Preview & selection state
   const [validationData, setValidationData] = useState<BulkDeleteValidationResult | null>(null);
@@ -47,7 +51,21 @@ export default function BulkDeleteWorkersModal() {
     setValidationData(null);
     setSelectedIds(new Set());
     setConfirmCheck(false);
+    setPreviewFilter('');
+    setCopiedNotFound(false);
   };
+
+  // Keyboard shortcut: close modal on Escape
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isDeleting && !isValidating) {
+        resetModal();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, isDeleting, isValidating]);
 
   const handleValidate = async () => {
     if (!rawInput.trim()) {
@@ -71,6 +89,7 @@ export default function BulkDeleteWorkersModal() {
       const matched = res.matchedWorkers || [];
       setSelectedIds(new Set(matched.map((w) => w.id)));
       setConfirmCheck(false);
+      setPreviewFilter('');
       setStep('preview');
     } catch (err: any) {
       setError(err?.message || 'Failed to validate Worker IDs. Please try again.');
@@ -89,6 +108,7 @@ export default function BulkDeleteWorkersModal() {
   };
 
   const toggleSelect = (id: string) => {
+    if (isDeleting) return;
     const next = new Set(selectedIds);
     if (next.has(id)) {
       next.delete(id);
@@ -96,6 +116,17 @@ export default function BulkDeleteWorkersModal() {
       next.add(id);
     }
     setSelectedIds(next);
+  };
+
+  const handleCopyNotFound = async () => {
+    if (!validationData?.notFoundIds || validationData.notFoundIds.length === 0) return;
+    try {
+      await navigator.clipboard.writeText(validationData.notFoundIds.join('\n'));
+      setCopiedNotFound(true);
+      setTimeout(() => setCopiedNotFound(false), 2000);
+    } catch {
+      // Fallback
+    }
   };
 
   const handleConfirmDelete = async () => {
@@ -113,9 +144,10 @@ export default function BulkDeleteWorkersModal() {
 
     try {
       const res = await bulkDeleteWorkers(Array.from(selectedIds));
+      setIsDeleting(false);
+
       if (res.error) {
         setError(res.error);
-        setIsDeleting(false);
         return;
       }
 
@@ -135,9 +167,22 @@ export default function BulkDeleteWorkersModal() {
   const notFoundIds = validationData?.notFoundIds || [];
   const alreadyDeleted = validationData?.alreadyDeleted || [];
 
+  const filteredMatchedWorkers = matchedWorkers.filter((w) => {
+    if (!previewFilter.trim()) return true;
+    const term = previewFilter.toLowerCase().trim();
+    return (
+      w.workerId.toLowerCase().includes(term) ||
+      w.name.toLowerCase().includes(term) ||
+      w.designation.toLowerCase().includes(term) ||
+      w.department.toLowerCase().includes(term) ||
+      w.company.toLowerCase().includes(term)
+    );
+  });
+
   return (
     <>
       <button
+        type="button"
         onClick={() => setIsOpen(true)}
         className="bg-red-600 text-white px-3 py-2 rounded flex items-center gap-2 hover:bg-red-700 transition text-sm font-medium shadow-sm"
         title="Bulk Delete Employees by ID numbers"
@@ -146,7 +191,14 @@ export default function BulkDeleteWorkersModal() {
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+        <div 
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isDeleting && !isValidating) {
+              resetModal();
+            }
+          }}
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+        >
           <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full border border-gray-100 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
             {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-4 bg-gray-50/80 border-b border-gray-100">
@@ -166,6 +218,7 @@ export default function BulkDeleteWorkersModal() {
                 </div>
               </div>
               <button
+                type="button"
                 onClick={resetModal}
                 disabled={isValidating || isDeleting}
                 className="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100 transition disabled:opacity-50"
@@ -217,6 +270,7 @@ export default function BulkDeleteWorkersModal() {
                       <button
                         type="button"
                         onClick={() => setRawInput('')}
+                        disabled={isValidating}
                         className="text-gray-400 hover:text-gray-600 underline font-medium"
                       >
                         Clear Text
@@ -271,41 +325,65 @@ export default function BulkDeleteWorkersModal() {
                   {/* Not Found warning */}
                   {notFoundIds.length > 0 && (
                     <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs text-gray-700">
-                      <span className="font-semibold text-gray-800">Unmatched IDs:</span>{' '}
-                      <span className="font-mono text-gray-600">{notFoundIds.join(', ')}</span>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="font-semibold text-gray-800">Unmatched IDs ({notFoundIds.length}):</span>
+                        <button
+                          type="button"
+                          onClick={handleCopyNotFound}
+                          className="inline-flex items-center gap-1 text-[11px] text-blue-600 hover:text-blue-800 font-medium"
+                        >
+                          {copiedNotFound ? <Check size={12} className="text-green-600" /> : <Copy size={12} />}
+                          {copiedNotFound ? 'Copied!' : 'Copy IDs'}
+                        </button>
+                      </div>
+                      <div className="font-mono text-gray-600 max-h-20 overflow-y-auto break-all">
+                        {notFoundIds.join(', ')}
+                      </div>
                     </div>
                   )}
 
                   {/* Already deleted note */}
                   {alreadyDeleted.length > 0 && (
                     <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
-                      <span className="font-semibold">Already in Recycle Bin:</span>{' '}
-                      <span className="font-mono">
+                      <div className="font-semibold mb-1">Already in Recycle Bin ({alreadyDeleted.length}):</div>
+                      <div className="font-mono max-h-20 overflow-y-auto">
                         {alreadyDeleted.map((w) => `${w.workerId} (${w.name})`).join(', ')}
-                      </span>
+                      </div>
                     </div>
                   )}
 
                   {/* Matched Workers Table */}
                   {matchedWorkers.length > 0 ? (
                     <div>
-                      <div className="flex items-center justify-between mb-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
                         <div className="text-sm font-semibold text-gray-800 flex items-center gap-2">
                           <Users size={16} className="text-gray-500" />
                           Matching Employees ({selectedIds.size} of {matchedWorkers.length} selected)
                         </div>
-                        <button
-                          type="button"
-                          onClick={toggleSelectAll}
-                          className="text-xs text-blue-600 hover:text-blue-800 font-medium"
-                        >
-                          {selectedIds.size === matchedWorkers.length
-                            ? 'Deselect All'
-                            : 'Select All'}
-                        </button>
+                        <div className="flex items-center gap-3">
+                          {matchedWorkers.length > 5 && (
+                            <input
+                              type="text"
+                              placeholder="Filter matching..."
+                              value={previewFilter}
+                              onChange={(e) => setPreviewFilter(e.target.value)}
+                              className="px-2.5 py-1 text-xs border border-gray-200 rounded-lg outline-none focus:border-red-500 w-36"
+                            />
+                          )}
+                          <button
+                            type="button"
+                            onClick={toggleSelectAll}
+                            disabled={isDeleting}
+                            className="text-xs text-blue-600 hover:text-blue-800 font-medium whitespace-nowrap disabled:opacity-50"
+                          >
+                            {selectedIds.size === matchedWorkers.length
+                              ? 'Deselect All'
+                              : 'Select All'}
+                          </button>
+                        </div>
                       </div>
 
-                      <div className="border border-gray-200 rounded-xl overflow-hidden max-h-56 overflow-y-auto">
+                      <div className="border border-gray-200 rounded-xl overflow-x-auto max-h-56 overflow-y-auto">
                         <table className="w-full text-left text-xs whitespace-nowrap">
                           <thead className="bg-gray-50 border-b border-gray-200 text-gray-600 sticky top-0">
                             <tr>
@@ -316,8 +394,9 @@ export default function BulkDeleteWorkersModal() {
                                     matchedWorkers.length > 0 &&
                                     selectedIds.size === matchedWorkers.length
                                   }
+                                  disabled={isDeleting}
                                   onChange={toggleSelectAll}
-                                  className="rounded text-red-600 focus:ring-red-500"
+                                  className="rounded text-red-600 focus:ring-red-500 cursor-pointer"
                                 />
                               </th>
                               <th className="p-2.5 font-semibold">Worker ID</th>
@@ -328,7 +407,7 @@ export default function BulkDeleteWorkersModal() {
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-gray-100">
-                            {matchedWorkers.map((w) => {
+                            {filteredMatchedWorkers.map((w) => {
                               const isChecked = selectedIds.has(w.id);
                               return (
                                 <tr
@@ -342,8 +421,13 @@ export default function BulkDeleteWorkersModal() {
                                     <input
                                       type="checkbox"
                                       checked={isChecked}
-                                      onChange={() => {}}
-                                      className="rounded text-red-600 focus:ring-red-500"
+                                      disabled={isDeleting}
+                                      onChange={(e) => {
+                                        e.stopPropagation();
+                                        toggleSelect(w.id);
+                                      }}
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="rounded text-red-600 focus:ring-red-500 cursor-pointer"
                                     />
                                   </td>
                                   <td className="p-2.5 font-mono font-bold text-gray-900">
@@ -372,8 +456,9 @@ export default function BulkDeleteWorkersModal() {
                       <input
                         type="checkbox"
                         checked={confirmCheck}
+                        disabled={isDeleting}
                         onChange={(e) => setConfirmCheck(e.target.checked)}
-                        className="mt-0.5 rounded text-red-600 focus:ring-red-500 shrink-0"
+                        className="mt-0.5 rounded text-red-600 focus:ring-red-500 shrink-0 cursor-pointer"
                       />
                       <span className="text-xs text-red-900 font-medium">
                         I confirm that I want to move {selectedIds.size} selected employee(s) to the
@@ -404,12 +489,16 @@ export default function BulkDeleteWorkersModal() {
                   <button
                     type="button"
                     onClick={handleConfirmDelete}
-                    disabled={isDeleting || selectedIds.size === 0 || !confirmCheck}
+                    disabled={isDeleting || selectedIds.size === 0 || !confirmCheck || !!successMessage}
                     className="inline-flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-bold bg-red-600 text-white hover:bg-red-700 transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isDeleting ? (
                       <>
                         <Loader2 size={16} className="animate-spin" /> Moving to Recycle Bin...
+                      </>
+                    ) : successMessage ? (
+                      <>
+                        <CheckCircle2 size={16} /> Deletion Completed
                       </>
                     ) : (
                       <>

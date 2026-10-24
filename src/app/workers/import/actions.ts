@@ -1,13 +1,34 @@
 'use server'
 
-
 import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { parseFlexibleDate } from '@/lib/formatDate';
+import { getSession } from '@/lib/auth';
+import { logAction } from '@/lib/audit';
 
+function safeRevalidatePath(path: string) {
+  try {
+    revalidatePath(path);
+  } catch {
+    // Gracefully handle calls outside active Next.js request context (e.g. tests)
+  }
+}
 
 export async function bulkImportWorkers(workers: any[]) {
   try {
+    const session = await getSession();
+    if (!session?.user) {
+      return { error: 'Unauthorized: Please log in to perform this action.' };
+    }
+    const role = session.user.role;
+    if (role !== 'SUPER_ADMIN' && role !== 'ADMIN') {
+      return { error: 'Forbidden: Administrator privileges required to import employees.' };
+    }
+
+    if (!Array.isArray(workers) || workers.length === 0) {
+      return { error: 'No employee records provided in import payload.' };
+    }
+
     const companiesCache = new Map<string, string>();
     const deptsCache = new Map<string, string>();
     const sectionsCache = new Map<string, string>();
@@ -20,10 +41,10 @@ export async function bulkImportWorkers(workers: any[]) {
       prisma.subSection.findMany()
     ]);
 
-    allCompanies.forEach(c => companiesCache.set(c.name.toLowerCase(), c.id));
-    allDepts.forEach(d => deptsCache.set(`${d.companyId}_${d.name.toLowerCase()}`, d.id));
-    allSecs.forEach(s => sectionsCache.set(`${s.departmentId}_${s.name.toLowerCase()}`, s.id));
-    allSubSecs.forEach(s => subSectionsCache.set(`${s.sectionId}_${s.name.toLowerCase()}`, s.id));
+    allCompanies.forEach(c => companiesCache.set(c.name.toLowerCase().trim(), c.id));
+    allDepts.forEach(d => deptsCache.set(`${d.companyId}_${d.name.toLowerCase().trim()}`, d.id));
+    allSecs.forEach(s => sectionsCache.set(`${s.departmentId}_${s.name.toLowerCase().trim()}`, s.id));
+    allSubSecs.forEach(s => subSectionsCache.set(`${s.sectionId}_${s.name.toLowerCase().trim()}`, s.id));
 
     const upsertOperations = [];
 
@@ -33,18 +54,46 @@ export async function bulkImportWorkers(workers: any[]) {
         return foundKey ? w[foundKey] : undefined;
       };
 
-      const companyName = getVal(['company', 'company name'])?.trim() || 'Main Company';
-      
-      let companyId = companiesCache.get(companyName.toLowerCase());
+      const rawWorkerId = String(getVal(['workerid', 'staff id', 'id', 'worker id', 'employee id']) ?? '').trim();
+      const rawName = getVal(['name', 'staff name', 'worker name', 'employee name'])?.toString().trim();
+
+      // Skip empty or comment rows
+      if (!rawWorkerId && !rawName) {
+        continue;
+      }
+
+      // Determine company
+      const companyVal = getVal(['company', 'company name'])?.toString().trim();
+      let companyId: string | undefined;
+
+      if (companyVal) {
+        companyId = companiesCache.get(companyVal.toLowerCase());
+        if (!companyId) {
+          // Check for punctuation/fuzzy match (e.g. "MEP Fan Limited" vs "MEP Fan Limited.")
+          const normalizedVal = companyVal.toLowerCase().replace(/[^a-z0-9]/g, '');
+          for (const [nameKey, id] of companiesCache.entries()) {
+            if (nameKey.replace(/[^a-z0-9]/g, '') === normalizedVal) {
+              companyId = id;
+              break;
+            }
+          }
+        }
+      }
+
+      // If still not matched, fall back to the first existing company instead of creating dummy companies
       if (!companyId) {
-        const company = await prisma.company.create({ data: { name: companyName } });
-        companyId = company.id;
-        companiesCache.set(companyName.toLowerCase(), companyId);
+        if (allCompanies.length > 0) {
+          companyId = allCompanies[0].id;
+        } else {
+          const newComp = await prisma.company.create({ data: { name: companyVal || 'Main Company' } });
+          companyId = newComp.id;
+          companiesCache.set((companyVal || 'Main Company').toLowerCase().trim(), companyId);
+        }
       }
 
       let deptId = null;
-      const dName = getVal(['department'])?.trim();
-      if (dName) {
+      const dName = getVal(['department'])?.toString().trim();
+      if (dName && companyId) {
         const deptKey = `${companyId}_${dName.toLowerCase()}`;
         deptId = deptsCache.get(deptKey);
         if (!deptId) {
@@ -55,7 +104,7 @@ export async function bulkImportWorkers(workers: any[]) {
       }
 
       let secId = null;
-      const sName = getVal(['section'])?.trim();
+      const sName = getVal(['section'])?.toString().trim();
       if (deptId && sName) {
         const secKey = `${deptId}_${sName.toLowerCase()}`;
         secId = sectionsCache.get(secKey);
@@ -67,7 +116,7 @@ export async function bulkImportWorkers(workers: any[]) {
       }
 
       let subSecId = null;
-      const ssName = getVal(['sub section', 'sub-section', 'subsection'])?.trim();
+      const ssName = getVal(['sub section', 'sub-section', 'subsection'])?.toString().trim();
       if (secId && ssName) {
         const subSecKey = `${secId}_${ssName.toLowerCase()}`;
         subSecId = subSectionsCache.get(subSecKey);
@@ -100,22 +149,32 @@ export async function bulkImportWorkers(workers: any[]) {
         medicalAllowance = Math.round(grossSalary * 0.10);
       }
 
+      // Check if explicit breakdown is provided in the CSV (e.g. from an export file)
+      const explicitBasic = parseFloat(getVal(['basicsalary', 'basic salary', 'basic']) || '0');
+      if (!isNaN(explicitBasic) && explicitBasic > 0) basicSalary = explicitBasic;
+      const explicitHouse = parseFloat(getVal(['houserent', 'house rent']) || '0');
+      if (!isNaN(explicitHouse) && explicitHouse > 0) houseRent = explicitHouse;
+      const explicitConveyance = parseFloat(getVal(['conveyanceallowance', 'conveyance allowance', 'conveyance']) || '0');
+      if (!isNaN(explicitConveyance) && explicitConveyance > 0) conveyanceAllowance = explicitConveyance;
+      const explicitMedical = parseFloat(getVal(['medicalallowance', 'medical allowance', 'medical']) || '0');
+      if (!isNaN(explicitMedical) && explicitMedical > 0) medicalAllowance = explicitMedical;
+
       const record = {
-        workerId: String(getVal(['workerid', 'staff id', 'id', 'worker id', 'employee id']) ?? '').trim() || `TMP-${Math.floor(Math.random() * 100000)}`,
-        name: getVal(['name', 'staff name', 'worker name', 'employee name']) || 'Unknown',
-        designation: getVal(['designation', 'position', 'job title']) || null,
-        gender: getVal(['gender', 'sex']) || null,
-        bloodGroup: getVal(['bloodgroup', 'blood group', 'blood']) || null,
-        religion: getVal(['religion']) || null,
-        nationalId: getVal(['nationalid', 'national id', 'nid'])?.toString() || null,
-        phone: getVal(['phone', 'mobile', 'mobile number', 'contact', 'phone number'])?.toString() || null,
-        address: getVal(['address', 'present address']) || null,
-        permanentAddress: getVal(['permanentaddress', 'permanent address']) || null,
+        workerId: rawWorkerId || `TMP-${Math.floor(Math.random() * 100000)}`,
+        name: rawName || 'Unknown',
+        designation: getVal(['designation', 'position', 'job title'])?.toString().trim() || null,
+        gender: getVal(['gender', 'sex'])?.toString().trim() || null,
+        bloodGroup: getVal(['bloodgroup', 'blood group', 'blood'])?.toString().trim() || null,
+        religion: getVal(['religion'])?.toString().trim() || null,
+        nationalId: getVal(['nationalid', 'national id', 'nid'])?.toString().trim() || null,
+        phone: getVal(['phone', 'mobile', 'mobile number', 'contact', 'phone number'])?.toString().trim() || null,
+        address: getVal(['address', 'present address'])?.toString().trim() || null,
+        permanentAddress: getVal(['permanentaddress', 'permanent address'])?.toString().trim() || null,
         joinDate: jDate,
         departmentId: deptId,
         sectionId: secId,
         subSectionId: subSecId,
-        grade: getVal(['grade']) || null,
+        grade: getVal(['grade'])?.toString().trim() || null,
         companyId: companyId,
         grossSalary,
         basicSalary,
@@ -142,12 +201,29 @@ export async function bulkImportWorkers(workers: any[]) {
       );
     }
 
+    if (upsertOperations.length === 0) {
+      return { success: true, count: 0 };
+    }
+
     await prisma.$transaction(upsertOperations);
 
-    revalidatePath('/workers');
-    return { success: true, count: workers.length };
+    await logAction(
+      'WORKERS',
+      'BULK_IMPORT',
+      `Bulk imported / updated ${upsertOperations.length} employee record(s) via CSV`
+    );
+
+    safeRevalidatePath('/workers');
+    safeRevalidatePath('/workers/recycle-bin');
+    safeRevalidatePath('/attendance');
+    safeRevalidatePath('/confirmations');
+    safeRevalidatePath('/id-cards');
+    safeRevalidatePath('/payroll');
+    safeRevalidatePath('/');
+
+    return { success: true, count: upsertOperations.length };
   } catch (error: any) {
     console.error("Bulk import failed:", error);
-    return { error: 'Failed to import workers. Check format.' };
+    return { error: 'Failed to import workers. Check format and data types.' };
   }
 }
