@@ -330,12 +330,12 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
   }, [settlements]);
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-8">
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-200 pb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200/60 pb-6">
         <div>
-          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Settlements</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Settlements</h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
             Search employees to update resignation dates, track pending settlements, and calculate final benefits.
           </p>
         </div>
@@ -346,31 +346,31 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
               setIsResignPanelOpen(!isResignPanelOpen);
               if (resignationSuccess) setResignationSuccess(null);
             }}
-            className={`px-4 py-2.5 rounded-lg flex items-center gap-2 font-semibold text-sm transition shadow-sm ${
+            className={`px-4 py-2.5 rounded-xl flex items-center gap-2 font-bold text-xs sm:text-sm transition shadow-xs ${
               isResignPanelOpen
-                ? 'bg-gray-100 text-gray-800 hover:bg-gray-200 border border-gray-300'
-                : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                ? 'bg-white/80 hover:bg-white text-slate-800 border border-slate-200/80 shadow-xs'
+                : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/20'
             }`}
           >
-            <UserMinus size={18} />
+            <UserMinus size={17} />
             {isResignPanelOpen ? 'Close Resignation Panel' : 'Record Resignation'}
           </button>
           <Link
             href="/settlements/new"
-            className="bg-blue-600 text-white px-4 py-2.5 rounded-lg flex items-center gap-2 font-semibold text-sm hover:bg-blue-700 transition shadow-sm"
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 font-bold text-xs sm:text-sm transition shadow-md shadow-blue-600/20"
           >
-            <Plus size={18} /> New Settlement
+            <Plus size={17} /> New Settlement
           </Link>
         </div>
       </div>
 
       {/* Success Banner (when resignation is recorded) */}
       {resignationSuccess && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="glass-card rounded-2xl p-5 shadow-sm border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-emerald-50/80">
           <div className="flex items-start gap-3">
             <CheckCircle2 className="text-emerald-600 mt-0.5 flex-shrink-0" size={22} />
             <div>
-              <h4 className="text-sm font-bold text-emerald-900">
+              <h4 className="text-sm font-bold text-emerald-950">
                 Resignation Recorded for {resignationSuccess.workerName}
               </h4>
               <p className="text-xs text-emerald-700 mt-0.5">
@@ -381,14 +381,14 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
           <div className="flex items-center gap-2">
             <Link
               href={`/settlements/${resignationSuccess.settlementId}/edit`}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-1.5 shadow-sm transition"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-sm transition"
             >
-              <FileText size={16} /> Open Settlement Form <ArrowRight size={14} />
+              <FileText size={15} /> Open Settlement Form <ArrowRight size={14} />
             </Link>
             <button
               type="button"
               onClick={() => setResignationSuccess(null)}
-              className="text-emerald-700 hover:text-emerald-900 p-1.5 rounded-md hover:bg-emerald-100 transition"
+              className="text-emerald-700 hover:text-emerald-900 p-1.5 rounded-lg hover:bg-emerald-100 transition"
               title="Dismiss"
             >
               <X size={16} />
@@ -399,15 +399,15 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
 
       {/* Record Employee Resignation Section (Collapsible / Prominent Card) */}
       <div className={`transition-all duration-200 ${isResignPanelOpen ? 'block' : 'hidden'}`}>
-        <div className="bg-white rounded-2xl shadow-sm border border-indigo-100 p-6 md:p-8 relative">
-          <div className="flex items-center justify-between pb-4 mb-6 border-b border-gray-100">
+        <div className="glass-card rounded-3xl shadow-sm border border-white/70 p-6 md:p-8 relative">
+          <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-200/60">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+              <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 border border-indigo-200/50 flex items-center justify-center text-indigo-600 shadow-xs">
                 <UserMinus size={20} />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-gray-900">Record Employee Resignation</h2>
-                <p className="text-xs text-gray-500">
+                <h2 className="text-xl font-extrabold text-slate-900">Record Employee Resignation</h2>
+                <p className="text-xs text-slate-500 mt-0.5">
                   Search an employee to update Resign Apply Date and Last Working Day. This creates or updates a PENDING settlement.
                 </p>
               </div>
@@ -415,15 +415,15 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
             <button
               type="button"
               onClick={() => setIsResignPanelOpen(false)}
-              className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition"
+              className="text-slate-400 hover:text-slate-700 p-1.5 rounded-xl hover:bg-white/60 transition"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
           </div>
 
           {errorMessage && (
-            <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
-              <AlertCircle size={18} className="flex-shrink-0" />
+            <div className="mb-6 bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-2xl text-xs font-semibold flex items-center gap-2">
+              <AlertCircle size={17} className="flex-shrink-0" />
               <span>{errorMessage}</span>
             </div>
           )}
@@ -684,60 +684,60 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
       </div>
 
       {/* Settlements Table Section */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="glass-table-container rounded-3xl shadow-sm border border-white/70 overflow-hidden">
         {/* Controls: Filter Tabs & Search */}
-        <div className="p-5 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="p-5 border-b border-slate-200/60 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/40">
           {/* Status Tabs */}
-          <div className="flex items-center gap-1.5 bg-gray-100 p-1 rounded-xl">
+          <div className="flex items-center gap-1.5 bg-slate-100/70 backdrop-blur-sm p-1 rounded-2xl border border-slate-200/60">
             <button
               type="button"
               onClick={() => setStatusFilter('ALL')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                 statusFilter === 'ALL'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-white text-slate-900 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               All Settlements
-              <span className="bg-gray-200 text-gray-700 text-[10px] px-1.5 py-0.2 rounded-full font-bold">
+              <span className="bg-slate-200 text-slate-700 text-[10px] px-1.5 py-0.2 rounded-full font-bold">
                 {counts.all}
               </span>
             </button>
             <button
               type="button"
               onClick={() => setStatusFilter('PENDING')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                 statusFilter === 'PENDING'
-                  ? 'bg-white text-yellow-800 shadow-sm'
-                  : 'text-gray-600 hover:text-yellow-700'
+                  ? 'bg-white text-amber-800 shadow-xs'
+                  : 'text-slate-600 hover:text-amber-700'
               }`}
             >
               Pending
-              <span className="bg-yellow-100 text-yellow-800 text-[10px] px-1.5 py-0.2 rounded-full font-bold">
+              <span className="bg-amber-100 text-amber-800 text-[10px] px-1.5 py-0.2 rounded-full font-bold">
                 {counts.pending}
               </span>
             </button>
             <button
               type="button"
               onClick={() => setStatusFilter('APPROVED')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                 statusFilter === 'APPROVED'
-                  ? 'bg-white text-green-800 shadow-sm'
-                  : 'text-gray-600 hover:text-green-700'
+                  ? 'bg-white text-emerald-800 shadow-xs'
+                  : 'text-slate-600 hover:text-emerald-700'
               }`}
             >
               Approved
-              <span className="bg-green-100 text-green-800 text-[10px] px-1.5 py-0.2 rounded-full font-bold">
+              <span className="bg-emerald-100 text-emerald-800 text-[10px] px-1.5 py-0.2 rounded-full font-bold">
                 {counts.approved}
               </span>
             </button>
             <button
               type="button"
               onClick={() => setStatusFilter('PAID')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                 statusFilter === 'PAID'
-                  ? 'bg-white text-blue-800 shadow-sm'
-                  : 'text-gray-600 hover:text-blue-700'
+                  ? 'bg-white text-blue-800 shadow-xs'
+                  : 'text-slate-600 hover:text-blue-700'
               }`}
             >
               Paid
@@ -754,14 +754,14 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
               placeholder="Filter by name, ID, or dept..."
               value={tableSearchQuery}
               onChange={e => setTableSearchQuery(e.target.value)}
-              className="w-full border border-gray-300 rounded-xl pl-9 pr-8 py-2 text-xs outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full bg-white/70 backdrop-blur-sm border border-slate-200/80 rounded-xl pl-9 pr-8 py-2 text-xs outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15 shadow-xs"
             />
-            <Search className="absolute left-3 top-2.5 text-gray-400" size={14} />
+            <Search className="absolute left-3 top-2.5 text-slate-400" size={14} />
             {tableSearchQuery && (
               <button
                 type="button"
                 onClick={() => setTableSearchQuery('')}
-                className="absolute right-2.5 top-2.5 text-gray-400 hover:text-gray-600"
+                className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600"
               >
                 <X size={14} />
               </button>
@@ -771,10 +771,10 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
 
         {/* Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead className="bg-gray-50 border-b border-gray-200">
+          <table className="w-full text-left border-collapse text-xs">
+            <thead className="bg-slate-50/80 backdrop-blur-md border-b border-slate-200/70">
               <tr>
-                <th className="p-4 font-bold text-xs text-gray-500 uppercase tracking-wider">Employee</th>
+                <th className="p-4 font-bold text-xs text-slate-600 uppercase tracking-wider">Employee</th>
                 <th className="p-4 font-bold text-xs text-gray-500 uppercase tracking-wider">Resignation Dates</th>
                 <th className="p-4 font-bold text-xs text-gray-500 uppercase tracking-wider">Salary Month</th>
                 <th className="p-4 font-bold text-xs text-gray-500 uppercase tracking-wider">Total Amount</th>

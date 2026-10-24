@@ -116,41 +116,53 @@ export default async function WorkersPage({
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4">
-        <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-          Employees 
-          <span className="text-sm font-semibold bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
-            {totalWorkers} Total
-          </span>
-        </h1>
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto">
+      {/* Top Bar */}
+      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
+        <div>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Employees</h1>
+            <span className="text-xs font-bold bg-blue-500/10 text-blue-700 border border-blue-200/60 px-3 py-1 rounded-full shadow-xs">
+              {totalWorkers} Total Active
+            </span>
+          </div>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Central employee registry, department alignments, and profile operations
+          </p>
+        </div>
         
         <div className="flex flex-wrap items-center gap-2">
           {hasModule('CONFIRMATIONS') && (
             <Link 
               href="/confirmations" 
-              className="bg-indigo-600 text-white px-3 py-2 rounded flex items-center gap-2 hover:bg-indigo-700 transition text-sm font-medium shadow-sm"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-xl flex items-center gap-2 transition text-xs font-bold shadow-sm shadow-indigo-600/20"
               title="Employee Confirmation"
             >
-              <UserCheck size={16} /> Employee Confirmation
+              <UserCheck size={15} /> Confirmation
             </Link>
           )}
           {hasModule('IDCARD') && (
             <Link 
               href="/id-cards" 
-              className="bg-teal-600 text-white px-3 py-2 rounded flex items-center gap-2 hover:bg-teal-700 transition text-sm font-medium shadow-sm"
+              className="bg-teal-600 hover:bg-teal-700 text-white px-3.5 py-2 rounded-xl flex items-center gap-2 transition text-xs font-bold shadow-sm shadow-teal-600/20"
               title="ID Card"
             >
-              <Contact size={16} /> ID Card
+              <Contact size={15} /> ID Card
             </Link>
           )}
           {isAdmin && (
             <>
-              <Link href="/api/workers/export" className="bg-green-600 text-white px-3 py-2 rounded flex items-center gap-2 hover:bg-green-700 transition text-sm font-medium shadow-sm">
-                <Download size={16} /> Export CSV
+              <Link 
+                href="/api/workers/export" 
+                className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl flex items-center gap-2 transition text-xs font-bold shadow-sm shadow-emerald-600/20"
+              >
+                <Download size={15} /> Export CSV
               </Link>
-              <Link href="/workers/import" className="bg-purple-600 text-white px-3 py-2 rounded flex items-center gap-2 hover:bg-purple-700 transition text-sm font-medium shadow-sm">
-                <Upload size={16} /> Import CSV
+              <Link 
+                href="/workers/import" 
+                className="bg-purple-600 hover:bg-purple-700 text-white px-3.5 py-2 rounded-xl flex items-center gap-2 transition text-xs font-bold shadow-sm shadow-purple-600/20"
+              >
+                <Upload size={15} /> Import CSV
               </Link>
               <BulkDeleteWorkersModal />
             </>
@@ -158,19 +170,22 @@ export default async function WorkersPage({
           {role === 'SUPER_ADMIN' && (
             <Link 
               href="/workers/recycle-bin" 
-              className="bg-rose-600 text-white px-3 py-2 rounded flex items-center gap-2 hover:bg-rose-700 transition text-sm font-medium shadow-sm"
+              className="bg-rose-600 hover:bg-rose-700 text-white px-3.5 py-2 rounded-xl flex items-center gap-2 transition text-xs font-bold shadow-sm shadow-rose-600/20"
               title="Employee Recycle Bin"
             >
-              <Trash2 size={16} /> Recycle Bin
+              <Trash2 size={15} /> Recycle Bin
               {deletedWorkersCount > 0 && (
-                <span className="bg-white/25 text-white text-xs px-2 py-0.5 rounded-full font-bold">
+                <span className="bg-white/25 text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold">
                   {deletedWorkersCount}
                 </span>
               )}
             </Link>
           )}
           {hasModule('WORKERS') && (
-            <Link href="/workers/new" className="bg-blue-600 text-white px-4 py-2 rounded flex items-center gap-2 hover:bg-blue-700 transition text-sm font-medium shadow-sm">
+            <Link 
+              href="/workers/new" 
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2 rounded-xl flex items-center gap-2 transition text-xs font-bold shadow-md shadow-blue-600/20"
+            >
               <Plus size={16} /> Add Employee
             </Link>
           )}
@@ -194,163 +209,222 @@ export default async function WorkersPage({
         {designations.map((d: any) => <option key={d.designation} value={d.designation} />)}
       </datalist>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-6 p-5">
-        <div className="flex items-center gap-2 mb-4 text-gray-800 font-semibold">
-          <Search size={18} className="text-blue-600" />
+      {/* Filter Glass Card */}
+      <div className="glass-card rounded-2xl p-5 shadow-sm border border-white/70">
+        <div className="flex items-center gap-2 mb-4 text-slate-800 font-bold text-sm">
+          <div className="p-1 rounded-lg bg-blue-500/10 text-blue-600">
+            <Search size={15} />
+          </div>
           <h2>Filter Employees</h2>
         </div>
-        <form className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-3 w-full text-sm">
+        <form className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-3 w-full text-xs">
           
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-              <Hash size={14} />
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+              <Hash size={13} />
             </div>
-            <input type="text" name="workerId" defaultValue={workerId} placeholder="ID..." className="w-full pl-8 pr-3 py-2.5 border border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-gray-50 hover:bg-white" />
+            <input 
+              type="text" 
+              name="workerId" 
+              defaultValue={workerId} 
+              placeholder="Worker ID..." 
+              className="w-full pl-8 pr-3 py-2 bg-white/70 backdrop-blur-sm border border-slate-200/80 rounded-xl outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15 transition-all text-slate-900" 
+            />
           </div>
 
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-              <User size={14} />
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+              <User size={13} />
             </div>
-            <input type="text" name="name" defaultValue={name} placeholder="Name..." className="w-full pl-8 pr-3 py-2.5 border border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-gray-50 hover:bg-white" />
+            <input 
+              type="text" 
+              name="name" 
+              defaultValue={name} 
+              placeholder="Name..." 
+              className="w-full pl-8 pr-3 py-2 bg-white/70 backdrop-blur-sm border border-slate-200/80 rounded-xl outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15 transition-all text-slate-900" 
+            />
           </div>
 
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-              <Building2 size={14} />
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+              <Building2 size={13} />
             </div>
-            <input type="text" name="company" list="company-list" defaultValue={company} placeholder="Company..." className="w-full pl-8 pr-3 py-2.5 border border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-gray-50 hover:bg-white" />
+            <input 
+              type="text" 
+              name="company" 
+              list="company-list" 
+              defaultValue={company} 
+              placeholder="Company..." 
+              className="w-full pl-8 pr-3 py-2 bg-white/70 backdrop-blur-sm border border-slate-200/80 rounded-xl outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15 transition-all text-slate-900" 
+            />
           </div>
 
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-              <Briefcase size={14} />
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+              <Briefcase size={13} />
             </div>
-            <input type="text" name="designation" list="designation-list" defaultValue={designation} placeholder="Designation..." className="w-full pl-8 pr-3 py-2.5 border border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-gray-50 hover:bg-white" />
+            <input 
+              type="text" 
+              name="designation" 
+              list="designation-list" 
+              defaultValue={designation} 
+              placeholder="Designation..." 
+              className="w-full pl-8 pr-3 py-2 bg-white/70 backdrop-blur-sm border border-slate-200/80 rounded-xl outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15 transition-all text-slate-900" 
+            />
           </div>
 
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-              <Layers size={14} />
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+              <Layers size={13} />
             </div>
-            <input type="text" name="department" list="department-list" defaultValue={department} placeholder="Department..." className="w-full pl-8 pr-3 py-2.5 border border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-gray-50 hover:bg-white" />
+            <input 
+              type="text" 
+              name="department" 
+              list="department-list" 
+              defaultValue={department} 
+              placeholder="Department..." 
+              className="w-full pl-8 pr-3 py-2 bg-white/70 backdrop-blur-sm border border-slate-200/80 rounded-xl outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15 transition-all text-slate-900" 
+            />
           </div>
 
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-              <Network size={14} />
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+              <Network size={13} />
             </div>
-            <input type="text" name="section" list="section-list" defaultValue={section} placeholder="Section..." className="w-full pl-8 pr-3 py-2.5 border border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-gray-50 hover:bg-white" />
+            <input 
+              type="text" 
+              name="section" 
+              list="section-list" 
+              defaultValue={section} 
+              placeholder="Section..." 
+              className="w-full pl-8 pr-3 py-2 bg-white/70 backdrop-blur-sm border border-slate-200/80 rounded-xl outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15 transition-all text-slate-900" 
+            />
           </div>
 
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-              <FolderTree size={14} />
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+              <FolderTree size={13} />
             </div>
-            <input type="text" name="subSection" list="subsection-list" defaultValue={subSection} placeholder="Sub-Section..." className="w-full pl-8 pr-3 py-2.5 border border-gray-200 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-gray-50 hover:bg-white" />
+            <input 
+              type="text" 
+              name="subSection" 
+              list="subsection-list" 
+              defaultValue={subSection} 
+              placeholder="Sub-Section..." 
+              className="w-full pl-8 pr-3 py-2 bg-white/70 backdrop-blur-sm border border-slate-200/80 rounded-xl outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15 transition-all text-slate-900" 
+            />
           </div>
           
-          <div className="md:col-span-2 lg:col-span-3 xl:col-span-7 flex justify-end gap-3 mt-2">
-            <Link href="/workers" className="flex items-center gap-1.5 px-5 py-2 text-gray-600 bg-white hover:bg-gray-100 hover:text-gray-900 rounded-lg border border-gray-200 transition-all shadow-sm">
-              <X size={14} /> Clear
+          <div className="md:col-span-2 lg:col-span-3 xl:col-span-7 flex justify-end gap-2.5 mt-2">
+            <Link 
+              href="/workers" 
+              className="flex items-center gap-1.5 px-4 py-2 text-slate-600 bg-white/80 hover:bg-white hover:text-slate-900 rounded-xl border border-slate-200/80 transition shadow-xs text-xs font-semibold"
+            >
+              <X size={13} /> Clear
             </Link>
-            <button type="submit" className="bg-gray-800 text-white px-6 py-2 rounded-lg hover:bg-gray-900 transition-all flex items-center gap-2 shadow-sm font-medium">
-              <Search size={16} /> Filter Results
+            <button 
+              type="submit" 
+              className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2 rounded-xl transition flex items-center gap-2 shadow-sm text-xs font-bold"
+            >
+              <Search size={14} /> Filter Results
             </button>
           </div>
         </form>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
-        <table className="w-full text-left whitespace-nowrap text-sm">
-          <thead className="bg-gray-50 border-b border-gray-100">
-            <tr>
-              <th className="p-4 font-medium text-gray-600">ID</th>
-              <th className="p-4 font-medium text-gray-600">Name</th>
-              <th className="p-4 font-medium text-gray-600">Company</th>
-              <th className="p-4 font-medium text-gray-600">Dept</th>
-              <th className="p-4 font-medium text-gray-600">Section</th>
-              <th className="p-4 font-medium text-gray-600">Sub-Section</th>
-              <th className="p-4 font-medium text-gray-600">Designation</th>
-              <th className="p-4 font-medium text-gray-600 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {workers.map((worker: any) => (
-              <tr key={worker.id} className="hover:bg-gray-50 transition">
-                <td className="p-4 font-medium text-gray-900">{worker.workerId}</td>
-                <td className="p-4 flex items-center gap-2">
-                  <User size={16} className="text-gray-400" />
-                  {worker.name}
-                </td>
-                <td className="p-4">
-                  <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs">
-                    {worker.company?.name || '-'}
-                  </span>
-                </td>
-                <td className="p-4 text-gray-600">{worker.department?.name || '-'}</td>
-                <td className="p-4 text-gray-600">{worker.section?.name || '-'}</td>
-                <td className="p-4 text-gray-600">{worker.subSection?.name || '-'}</td>
-                <td className="p-4 text-gray-600">{worker.designation || '-'}</td>
-                <td className="p-4 text-right flex justify-end gap-2">
-                  <Link 
-                    href={`/workers/${worker.id}/edit`} 
-                    className="text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-1.5 rounded transition"
-                  >
-                    Edit
-                  </Link>
-                  <DeleteWorkerButton id={worker.id} onDelete={deleteWorker} />
-                </td>
-              </tr>
-            ))}
-            {workers.length === 0 && (
+      {/* Table Glass Container */}
+      <div className="glass-table-container rounded-2xl overflow-hidden shadow-sm border border-white/70">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left whitespace-nowrap text-xs">
+            <thead className="bg-slate-50/80 backdrop-blur-md border-b border-slate-200/70 text-slate-600 uppercase font-bold tracking-wider">
               <tr>
-                <td colSpan={8} className="p-8 text-center text-gray-500">
-                  No workers found matching your criteria.
-                </td>
+                <th className="p-3.5">ID</th>
+                <th className="p-3.5">Name</th>
+                <th className="p-3.5">Company</th>
+                <th className="p-3.5">Department</th>
+                <th className="p-3.5">Section</th>
+                <th className="p-3.5">Sub-Section</th>
+                <th className="p-3.5">Designation</th>
+                <th className="p-3.5 text-right">Actions</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-100/80 bg-white/40">
+              {workers.map((worker: any) => (
+                <tr key={worker.id} className="hover:bg-blue-50/40 transition-colors">
+                  <td className="p-3.5 font-mono font-bold text-slate-900">{worker.workerId}</td>
+                  <td className="p-3.5 font-medium text-slate-800 flex items-center gap-2">
+                    <User size={14} className="text-slate-400" />
+                    <span>{worker.name}</span>
+                  </td>
+                  <td className="p-3.5">
+                    <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md border border-blue-100 text-[11px] font-semibold">
+                      {worker.company?.name || '-'}
+                    </span>
+                  </td>
+                  <td className="p-3.5 text-slate-600">{worker.department?.name || '-'}</td>
+                  <td className="p-3.5 text-slate-600">{worker.section?.name || '-'}</td>
+                  <td className="p-3.5 text-slate-600">{worker.subSection?.name || '-'}</td>
+                  <td className="p-3.5 text-slate-600 font-medium">{worker.designation || '-'}</td>
+                  <td className="p-3.5 text-right flex justify-end items-center gap-2">
+                    <Link 
+                      href={`/workers/${worker.id}/edit`} 
+                      className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 px-2.5 py-1 rounded-lg border border-blue-100 transition font-semibold"
+                    >
+                      Edit
+                    </Link>
+                    <DeleteWorkerButton id={worker.id} onDelete={deleteWorker} />
+                  </td>
+                </tr>
+              ))}
+              {workers.length === 0 && (
+                <tr>
+                  <td colSpan={8} className="p-10 text-center text-slate-500 font-medium">
+                    No employees found matching your criteria.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Pagination Controls */}
       {totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-          <div className="text-sm text-gray-500">
-            Showing <span className="font-semibold text-gray-800">{totalWorkers === 0 ? 0 : skip + 1}</span> to{' '}
-            <span className="font-semibold text-gray-800">{Math.min(skip + pageSize, totalWorkers)}</span> of{' '}
-            <span className="font-semibold text-gray-800">{totalWorkers}</span> employees
+        <div className="glass-panel p-4 rounded-2xl border border-white/70 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="text-xs text-slate-500">
+            Showing <span className="font-bold text-slate-800">{totalWorkers === 0 ? 0 : skip + 1}</span> to{' '}
+            <span className="font-bold text-slate-800">{Math.min(skip + pageSize, totalWorkers)}</span> of{' '}
+            <span className="font-bold text-slate-800">{totalWorkers}</span> employees
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 text-xs">
             {page > 1 ? (
               <Link
                 href={createPageURL(page - 1)}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 flex items-center gap-1 transition"
+                className="px-3 py-1.5 border border-slate-200/80 rounded-xl text-slate-700 hover:bg-white flex items-center gap-1 transition font-semibold bg-white/70 shadow-xs"
               >
-                <ChevronLeft size={16} /> Previous
+                <ChevronLeft size={14} /> Previous
               </Link>
             ) : (
-              <span className="px-3 py-1.5 border border-gray-100 rounded-lg text-sm text-gray-300 flex items-center gap-1 cursor-not-allowed">
-                <ChevronLeft size={16} /> Previous
+              <span className="px-3 py-1.5 border border-slate-100 rounded-xl text-slate-300 flex items-center gap-1 cursor-not-allowed">
+                <ChevronLeft size={14} /> Previous
               </span>
             )}
 
-            <div className="text-sm font-medium px-3 text-gray-700">
+            <div className="font-bold px-3 text-slate-700">
               Page {page} of {totalPages}
             </div>
 
             {page < totalPages ? (
               <Link
                 href={createPageURL(page + 1)}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 flex items-center gap-1 transition"
+                className="px-3 py-1.5 border border-slate-200/80 rounded-xl text-slate-700 hover:bg-white flex items-center gap-1 transition font-semibold bg-white/70 shadow-xs"
               >
-                Next <ChevronRight size={16} />
+                Next <ChevronRight size={14} />
               </Link>
             ) : (
-              <span className="px-3 py-1.5 border border-gray-100 rounded-lg text-sm text-gray-300 flex items-center gap-1 cursor-not-allowed">
-                Next <ChevronRight size={16} />
+              <span className="px-3 py-1.5 border border-slate-100 rounded-xl text-slate-300 flex items-center gap-1 cursor-not-allowed">
+                Next <ChevronRight size={14} />
               </span>
             )}
           </div>

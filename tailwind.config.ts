@@ -12,6 +12,14 @@ const config: Config = {
         background: "var(--background)",
         foreground: "var(--foreground)",
       },
+      boxShadow: {
+        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
+        'glass-hover': '0 16px 40px 0 rgba(31, 38, 135, 0.12)',
+        'glass-glow': '0 0 25px rgba(59, 130, 246, 0.18)',
+      },
+      backdropBlur: {
+        'xs': '2px',
+      }
     },
   },
   plugins: [],

@@ -460,17 +460,17 @@ export default function RecruitmentClient({
       )}
 
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 print:shadow-none print:border-none print:p-0">
+      <div className="glass-card p-6 rounded-3xl shadow-sm border border-white/70 print:shadow-none print:border-none print:p-0 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md">
-              <Briefcase size={22} />
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
+              <Briefcase size={20} />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-                Recruitment & Manpower
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+                Recruitment &amp; Manpower
               </h1>
-              <p className="text-sm text-gray-500 font-medium">
+              <p className="text-xs sm:text-sm text-slate-500 font-medium">
                 Detailed summary of authorized, existing, and remaining (vacancy) manpower by company, department, section, and sub-section
               </p>
             </div>
@@ -481,88 +481,88 @@ export default function RecruitmentClient({
         <div className="flex flex-wrap items-center gap-2.5 print:hidden">
           <button
             onClick={() => switchTab('entry')}
-            className={`inline-flex items-center gap-2 font-semibold px-4 py-2.5 rounded-xl transition-all duration-200 shadow-sm ${
+            className={`inline-flex items-center gap-2 font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl transition-all duration-200 shadow-sm ${
               activeTab === 'entry'
                 ? 'bg-gradient-to-r from-blue-700 to-indigo-700 text-white shadow-blue-500/20'
-                : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700'
+                : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-blue-600/20'
             }`}
           >
-            <Sliders size={18} />
+            <Sliders size={16} />
             <span>Set Authorized Manpower</span>
           </button>
 
           <Link
             href="/recruitment/new"
             prefetch={true}
-            className="inline-flex items-center gap-2 bg-white text-gray-700 font-semibold px-4 py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"
+            className="inline-flex items-center gap-2 bg-white/80 hover:bg-white text-slate-700 font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl border border-slate-200/80 transition-all shadow-xs"
           >
-            <Plus size={18} className="text-blue-600" />
+            <Plus size={16} className="text-blue-600" />
             <span>Open Job Circular</span>
           </Link>
 
           <button
             onClick={exportToCSV}
             title="Export to CSV"
-            className="inline-flex items-center gap-2 bg-white text-gray-700 px-3.5 py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all"
+            className="inline-flex items-center gap-2 bg-white/80 hover:bg-white text-slate-700 text-xs font-bold px-3.5 py-2.5 rounded-xl border border-slate-200/80 transition-all shadow-xs"
           >
-            <Download size={18} className="text-emerald-600" />
+            <Download size={15} className="text-emerald-600" />
             <span className="hidden sm:inline">Export</span>
           </button>
 
           <button
             onClick={() => window.print()}
             title="Print Report"
-            className="inline-flex items-center gap-2 bg-white text-gray-700 px-3.5 py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all"
+            className="inline-flex items-center gap-2 bg-white/80 hover:bg-white text-slate-700 text-xs font-bold px-3.5 py-2.5 rounded-xl border border-slate-200/80 transition-all shadow-xs"
           >
-            <Printer size={18} className="text-gray-600" />
+            <Printer size={15} className="text-slate-600" />
             <span className="hidden sm:inline">Print</span>
           </button>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-gray-200 print:hidden">
+      <div className="flex items-center gap-2 border-b border-slate-200/60 print:hidden">
         <button
           onClick={() => switchTab('overview')}
-          className={`flex items-center gap-2 px-5 py-3 font-semibold text-sm border-b-2 transition-all ${
+          className={`flex items-center gap-2 px-5 py-3 font-bold text-xs sm:text-sm border-b-2 transition-all ${
             activeTab === 'overview'
               ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
           }`}
         >
-          <Users size={18} />
-          <span>Manpower Details & Analysis</span>
-          <span className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full font-bold">
+          <Users size={16} />
+          <span>Manpower Details &amp; Analysis</span>
+          <span className="bg-blue-100/80 text-blue-800 text-[11px] px-2 py-0.5 rounded-full font-bold">
             {items.length}
           </span>
         </button>
 
         <button
           onClick={() => switchTab('entry')}
-          className={`flex items-center gap-2 px-5 py-3 font-semibold text-sm border-b-2 transition-all ${
+          className={`flex items-center gap-2 px-5 py-3 font-bold text-xs sm:text-sm border-b-2 transition-all ${
             activeTab === 'entry'
               ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
           }`}
         >
-          <Sliders size={18} />
+          <Sliders size={16} />
           <span>Cascading Manpower Entry</span>
-          <span className="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded-full font-bold">
+          <span className="bg-emerald-100/80 text-emerald-800 text-[11px] px-2 py-0.5 rounded-full font-bold">
             Step-by-Step
           </span>
         </button>
 
         <button
           onClick={() => switchTab('jobs')}
-          className={`flex items-center gap-2 px-5 py-3 font-semibold text-sm border-b-2 transition-all ${
+          className={`flex items-center gap-2 px-5 py-3 font-bold text-xs sm:text-sm border-b-2 transition-all ${
             activeTab === 'jobs'
               ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
           }`}
         >
-          <Briefcase size={18} />
+          <Briefcase size={16} />
           <span>Job Circulars</span>
-          <span className="bg-gray-100 text-gray-700 text-xs px-2 py-0.5 rounded-full font-bold">
+          <span className="bg-slate-100 text-slate-700 text-[11px] px-2 py-0.5 rounded-full font-bold">
             {recruitments.length}
           </span>
         </button>
@@ -573,89 +573,89 @@ export default function RecruitmentClient({
           {/* KPI Summary Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 print:grid-cols-4">
             {/* Authorized Manpower */}
-            <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm relative overflow-hidden group hover:border-blue-200 transition-all">
+            <div className="glass-card glass-card-hover rounded-3xl p-5 border border-white/70 shadow-sm relative overflow-hidden group">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                     Authorized Manpower
                   </p>
-                  <p className="text-xs text-gray-400 font-medium mb-1">Total Authorized Manpower</p>
-                  <p className="text-3xl font-extrabold text-gray-900">{metrics.totalAuthorized}</p>
+                  <p className="text-xs text-slate-400 font-medium mb-1">Total Authorized Manpower</p>
+                  <p className="text-3xl font-extrabold text-slate-900">{metrics.totalAuthorized}</p>
                 </div>
-                <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Users size={24} />
+                <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-600 border border-blue-200/50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Users size={22} />
                 </div>
               </div>
-              <div className="mt-3 flex items-center gap-2 text-xs text-gray-500">
-                <span className="font-semibold text-blue-600">{metrics.subSectionCount}</span> sub-sections total
+              <div className="mt-3 flex items-center gap-2 text-xs text-slate-500">
+                <span className="font-bold text-blue-600">{metrics.subSectionCount}</span> sub-sections total
               </div>
             </div>
 
             {/* Existing Manpower */}
-            <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm relative overflow-hidden group hover:border-emerald-200 transition-all">
+            <div className="glass-card glass-card-hover rounded-3xl p-5 border border-white/70 shadow-sm relative overflow-hidden group">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                     Existing Manpower
                   </p>
-                  <p className="text-xs text-gray-400 font-medium mb-1">Total Existing Manpower</p>
+                  <p className="text-xs text-slate-400 font-medium mb-1">Total Existing Manpower</p>
                   <p className="text-3xl font-extrabold text-emerald-600">{metrics.totalExisting}</p>
                 </div>
-                <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <UserCheck size={24} />
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 border border-emerald-200/50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <UserCheck size={22} />
                 </div>
               </div>
-              <div className="mt-3 flex items-center gap-2 text-xs text-gray-500">
-                <span className="font-semibold text-emerald-600">{metrics.fulfillmentRate}%</span> staffing fulfillment
+              <div className="mt-3 flex items-center gap-2 text-xs text-slate-500">
+                <span className="font-bold text-emerald-600">{metrics.fulfillmentRate}%</span> staffing fulfillment
               </div>
             </div>
 
             {/* Remaining / Vacancy (Deficit) */}
-            <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm relative overflow-hidden group hover:border-rose-200 transition-all">
+            <div className="glass-card glass-card-hover rounded-3xl p-5 border border-white/70 shadow-sm relative overflow-hidden group">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-bold text-rose-600 uppercase tracking-wider">
                     Remaining / Vacancy
                   </p>
-                  <p className="text-xs text-gray-400 font-medium mb-1">Remaining Shortfall</p>
+                  <p className="text-xs text-slate-400 font-medium mb-1">Remaining Shortfall</p>
                   <p className="text-3xl font-extrabold text-rose-600">
                     {metrics.totalVacancy > 0 ? `+${metrics.totalVacancy}` : 0}
                   </p>
                 </div>
-                <div className="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <UserPlus size={24} />
+                <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-600 border border-rose-200/50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <UserPlus size={22} />
                 </div>
               </div>
               <div className="mt-3 flex items-center gap-2 text-xs text-rose-600 font-medium">
                 {metrics.totalVacancy > 0 ? (
                   <span>Vacancies remaining to be filled</span>
                 ) : (
-                  <span className="text-emerald-600">No open vacancies</span>
+                  <span className="text-emerald-600 font-semibold">No open vacancies</span>
                 )}
               </div>
             </div>
 
             {/* Fulfillment Status / Surplus */}
-            <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm relative overflow-hidden group hover:border-purple-200 transition-all">
+            <div className="glass-card glass-card-hover rounded-3xl p-5 border border-white/70 shadow-sm relative overflow-hidden group">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                     Surplus / Fulfilled
                   </p>
-                  <p className="text-xs text-gray-400 font-medium mb-1">Surplus & Fulfilled Sections</p>
+                  <p className="text-xs text-slate-400 font-medium mb-1">Surplus &amp; Fulfilled Sections</p>
                   <div className="flex items-baseline gap-2">
                     <p className="text-3xl font-extrabold text-indigo-600">
                       {metrics.totalSurplus > 0 ? `+${metrics.totalSurplus}` : 0}
                     </p>
-                    <span className="text-xs text-gray-400 font-semibold">surplus</span>
+                    <span className="text-xs text-slate-400 font-semibold">surplus</span>
                   </div>
                 </div>
-                <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <CheckCircle2 size={24} />
+                <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-600 border border-indigo-200/50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <CheckCircle2 size={22} />
                 </div>
               </div>
-              <div className="mt-3 flex items-center gap-2 text-xs text-gray-500">
-                <span className="font-semibold text-indigo-600">{metrics.fulfilledCount}</span> sub-sections 100% full
+              <div className="mt-3 flex items-center gap-2 text-xs text-slate-500">
+                <span className="font-bold text-indigo-600">{metrics.fulfilledCount}</span> sub-sections 100% full
               </div>
             </div>
           </div>

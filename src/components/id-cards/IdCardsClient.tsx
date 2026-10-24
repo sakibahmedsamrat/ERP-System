@@ -40,13 +40,13 @@ export default function IdCardsClient({
         </div>
 
         {/* Tab Switcher Pills */}
-        <div className="flex items-center p-1.5 bg-gray-200/70 rounded-2xl shadow-inner">
+        <div className="flex items-center p-1.5 glass-card bg-white/70 backdrop-blur-xl rounded-2xl border border-white/60 shadow-glass">
           <button
             onClick={() => setActiveTab('employee')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 ${
               activeTab === 'employee'
-                ? 'bg-white text-blue-600 shadow-md shadow-gray-200 translate-y-[-1px]'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-white text-blue-600 shadow-md shadow-blue-500/20 translate-y-[-1px]'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-white/40'
             }`}
           >
             <UserCheck size={18} />
@@ -57,8 +57,8 @@ export default function IdCardsClient({
             onClick={() => setActiveTab('visitor')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 ${
               activeTab === 'visitor'
-                ? 'bg-white text-indigo-600 shadow-md shadow-gray-200 translate-y-[-1px]'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-white text-indigo-600 shadow-md shadow-indigo-500/20 translate-y-[-1px]'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-white/40'
             }`}
           >
             <ShieldCheck size={18} />

@@ -1,10 +1,8 @@
 import prisma from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
-import { Settings, Lock } from 'lucide-react';
-import { changePassword } from './actions';
+import { Settings, Lock, UserCircle, Sparkles } from 'lucide-react';
 import PasswordChangeForm from './PasswordChangeForm';
 import ProfileImageUpload from './ProfileImageUpload';
-
 
 export default async function SettingsPage() {
   const session = await getSession();
@@ -16,46 +14,52 @@ export default async function SettingsPage() {
   }
 
   return (
-    <div className="p-8 max-w-2xl mx-auto">
-      <div className="flex items-center gap-3 mb-8 border-b pb-4">
-        <Settings size={28} className="text-gray-700" />
-        <h1 className="text-3xl font-bold text-gray-800">Account Settings</h1>
+    <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
+      <div className="border-b border-slate-200/60 pb-5">
+        <div className="flex items-center gap-1.5 text-xs font-bold text-blue-600 uppercase tracking-wider mb-1">
+          <Sparkles size={13} />
+          <span>User Preferences</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-2xl bg-blue-500/10 text-blue-600 border border-blue-200/50">
+            <Settings size={22} />
+          </div>
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Account Settings</h1>
+        </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
+      <div className="glass-card rounded-3xl p-6 sm:p-7 border border-white/70 shadow-sm">
         <ProfileImageUpload currentImage={profileImage} />
         
-        <h2 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2 flex items-center gap-2">
-          <UserIcon /> Profile Information
+        <h2 className="text-lg font-bold text-slate-900 mb-4 border-b border-slate-200/60 pb-2.5 flex items-center gap-2">
+          <UserCircle size={20} className="text-blue-600" />
+          <span>Profile Information</span>
         </h2>
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <span className="text-gray-500 block mb-1">Name</span>
-            <span className="font-medium text-gray-800 text-base">{session?.user?.name}</span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+          <div className="bg-white/60 backdrop-blur-xs p-3.5 rounded-2xl border border-slate-200/60">
+            <span className="text-slate-500 block font-semibold mb-1 uppercase tracking-wider text-[10px]">Name</span>
+            <span className="font-bold text-slate-900 text-sm">{session?.user?.name}</span>
           </div>
-          <div>
-            <span className="text-gray-500 block mb-1">User ID</span>
-            <span className="font-medium text-gray-800 text-base">{session?.user?.userId || session?.user?.email}</span>
+          <div className="bg-white/60 backdrop-blur-xs p-3.5 rounded-2xl border border-slate-200/60">
+            <span className="text-slate-500 block font-semibold mb-1 uppercase tracking-wider text-[10px]">User ID</span>
+            <span className="font-bold text-slate-900 text-sm font-mono">{session?.user?.userId || session?.user?.email}</span>
           </div>
-          <div>
-            <span className="text-gray-500 block mb-1">Role</span>
-            <span className="font-medium text-gray-800 text-base">{session?.user?.role}</span>
+          <div className="bg-white/60 backdrop-blur-xs p-3.5 rounded-2xl border border-slate-200/60 sm:col-span-2">
+            <span className="text-slate-500 block font-semibold mb-1 uppercase tracking-wider text-[10px]">Role</span>
+            <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100">
+              {session?.user?.role}
+            </span>
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-        <h2 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2 flex items-center gap-2">
-          <Lock size={20} /> Change Password
+      <div className="glass-card rounded-3xl p-6 sm:p-7 border border-white/70 shadow-sm">
+        <h2 className="text-lg font-bold text-slate-900 mb-4 border-b border-slate-200/60 pb-2.5 flex items-center gap-2">
+          <Lock size={19} className="text-indigo-600" />
+          <span>Change Password</span>
         </h2>
         <PasswordChangeForm />
       </div>
     </div>
-  );
-}
-
-function UserIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
   );
 }

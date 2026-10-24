@@ -457,36 +457,36 @@ export default function SalaryStatementClient() {
       />
 
       {/* Top Navbar & Action Bar */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm print:hidden">
+      <div className="glass-header sticky top-0 z-30 print:hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link
               href="/payroll"
-              className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition"
+              className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50/80 rounded-xl transition border border-transparent hover:border-blue-100"
               title="Back to Payroll"
             >
               <ArrowLeft size={20} />
             </Link>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                <span className="text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50/80 px-2 py-0.5 rounded border border-blue-100">
                   Payroll Module
                 </span>
-                <span className="text-gray-300">•</span>
-                <span className="text-xs font-semibold text-gray-500">2-Page Statement & Certificate</span>
+                <span className="text-slate-300">•</span>
+                <span className="text-xs font-semibold text-slate-500">2-Page Statement & Certificate</span>
               </div>
-              <h1 className="text-xl font-bold text-gray-900 tracking-tight">Salary Statement Generator</h1>
+              <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">Salary Statement Generator</h1>
             </div>
           </div>
 
           {/* Action buttons */}
           <div className="flex flex-wrap items-center gap-2.5">
             {/* View Mode Toggle */}
-            <div className="hidden lg:flex items-center bg-gray-100 p-1 rounded-xl border border-gray-200 text-xs font-semibold">
+            <div className="hidden lg:flex items-center bg-slate-100/80 backdrop-blur-sm p-1 rounded-xl border border-slate-200/70 text-xs font-bold">
               <button
                 onClick={() => setViewMode('split')}
                 className={`px-3 py-1.5 rounded-lg transition ${
-                  viewMode === 'split' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                  viewMode === 'split' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 Split View
@@ -494,7 +494,7 @@ export default function SalaryStatementClient() {
               <button
                 onClick={() => setViewMode('form')}
                 className={`px-3 py-1.5 rounded-lg transition ${
-                  viewMode === 'form' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                  viewMode === 'form' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 Form Only
@@ -502,7 +502,7 @@ export default function SalaryStatementClient() {
               <button
                 onClick={() => setViewMode('preview')}
                 className={`px-3 py-1.5 rounded-lg transition ${
-                  viewMode === 'preview' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                  viewMode === 'preview' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 Preview Only
@@ -511,23 +511,23 @@ export default function SalaryStatementClient() {
 
             <button
               onClick={handlePrint}
-              className="inline-flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-800 border border-gray-300 px-3.5 py-2 rounded-xl text-sm font-semibold shadow-sm transition hover:border-gray-400"
+              className="inline-flex items-center gap-2 bg-white/80 hover:bg-white text-slate-800 border border-slate-200/80 px-3.5 py-2 rounded-xl text-xs font-bold shadow-xs transition hover:border-slate-300"
             >
-              <Printer size={16} /> Print / Save PDF
+              <Printer size={15} /> Print / Save PDF
             </button>
 
             <button
               onClick={handleDownloadPdf}
               disabled={isGeneratingPdf}
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md shadow-blue-600/20 transition-all disabled:opacity-50"
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md shadow-blue-600/20 transition-all disabled:opacity-50"
             >
               {isGeneratingPdf ? (
                 <>
-                  <Loader2 size={16} className="animate-spin" /> Compiling 2-Page PDF...
+                  <Loader2 size={15} className="animate-spin" /> Compiling 2-Page PDF...
                 </>
               ) : (
                 <>
-                  <Download size={16} /> Download 2-Page PDF
+                  <Download size={15} /> Download 2-Page PDF
                 </>
               )}
             </button>
@@ -538,7 +538,7 @@ export default function SalaryStatementClient() {
       {/* Main Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
         {/* Worker Quick Search Bar */}
-        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-200 mb-6 print:hidden relative">
+        <div className="glass-card p-4 rounded-3xl shadow-sm border border-white/70 mb-6 print:hidden relative">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex-1 relative">
               <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
@@ -623,30 +623,30 @@ export default function SalaryStatementClient() {
           {(viewMode === 'split' || viewMode === 'form') && (
             <div className={viewMode === 'split' ? 'lg:col-span-5 space-y-6 print:hidden' : 'max-w-4xl mx-auto space-y-6 print:hidden w-full'}>
               {/* Form Navigation Tabs */}
-              <div className="bg-white rounded-2xl p-2 border border-gray-200 shadow-sm flex items-center gap-1 text-xs font-bold">
+              <div className="glass-panel rounded-2xl p-1.5 border border-white/70 shadow-xs flex items-center gap-1 text-xs font-bold">
                 <button
                   onClick={() => setActiveTab('p1')}
                   className={`flex-1 py-2 px-3 rounded-xl transition flex items-center justify-center gap-1.5 ${
-                    activeTab === 'p1' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'
+                    activeTab === 'p1' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:bg-white/60'
                   }`}
                 >
-                  <FileText size={15} /> Page 1: 3-Month Breakdown
+                  <FileText size={14} /> Page 1: 3-Month Breakdown
                 </button>
                 <button
                   onClick={() => setActiveTab('p2')}
                   className={`flex-1 py-2 px-3 rounded-xl transition flex items-center justify-center gap-1.5 ${
-                    activeTab === 'p2' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'
+                    activeTab === 'p2' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:bg-white/60'
                   }`}
                 >
-                  <CreditCard size={15} /> Page 2: Salary Certificate
+                  <CreditCard size={14} /> Page 2: Salary Certificate
                 </button>
                 <button
                   onClick={() => setActiveTab('signatory')}
                   className={`flex-1 py-2 px-3 rounded-xl transition flex items-center justify-center gap-1.5 ${
-                    activeTab === 'signatory' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'
+                    activeTab === 'signatory' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:bg-white/60'
                   }`}
                 >
-                  <ShieldCheck size={15} /> Signatory
+                  <ShieldCheck size={14} /> Signatory
                 </button>
               </div>
 
@@ -654,8 +654,8 @@ export default function SalaryStatementClient() {
               {activeTab === 'p1' && (
                 <div className="space-y-6">
                   {/* General / Header Info */}
-                  <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm space-y-4">
-                    <h3 className="font-bold text-gray-800 text-sm flex items-center gap-2 border-b pb-2">
+                  <div className="glass-card rounded-3xl p-5 border border-white/70 shadow-sm space-y-4">
+                    <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2 border-b border-slate-200/60 pb-2">
                       <FileSpreadsheet size={16} className="text-blue-600" /> Header & Reference
                     </h3>
 

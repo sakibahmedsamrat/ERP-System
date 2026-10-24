@@ -28,7 +28,7 @@ export default async function NewWorkerPage() {
         </Link>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm p-8 border border-gray-100">
+      <div className="glass-card bg-white/75 backdrop-blur-xl rounded-2xl shadow-glass p-8 border border-white/60">
         <form action={createWorker} className="space-y-6" encType="multipart/form-data">
           {/* Basic Info */}
           <div>

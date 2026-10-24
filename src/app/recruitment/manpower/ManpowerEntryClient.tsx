@@ -289,16 +289,16 @@ export default function ManpowerEntryClient({
       )}
 
       {/* Main Form Card */}
-      <div className="bg-white rounded-2xl p-6 sm:p-8 border border-gray-100 shadow-sm relative overflow-hidden">
+      <div className="glass-card rounded-3xl p-6 sm:p-8 border border-white/70 shadow-sm relative overflow-hidden">
         <div className="flex items-start gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shrink-0">
-            <Sliders size={24} />
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20 shrink-0">
+            <Sliders size={22} />
           </div>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               Sub Section Manpower Entry
             </h1>
-            <p className="text-sm text-gray-500 mt-1 leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
               Select Company &gt; Department &gt; Section &gt; Sub Section to define or adjust authorized manpower count.
             </p>
           </div>
@@ -309,7 +309,7 @@ export default function ManpowerEntryClient({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {/* Step 1: Company */}
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1.5 flex items-center gap-1.5">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center gap-1.5">
                 <span className="w-5 h-5 rounded-full bg-blue-600 text-white text-xs inline-flex items-center justify-center font-bold">1</span>
                 <span>Select Company *</span>
               </label>
@@ -322,7 +322,7 @@ export default function ManpowerEntryClient({
                   setSelectedSectionId('');
                   setSelectedSubSectionId('');
                 }}
-                className="w-full text-sm border border-gray-300 rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition font-medium"
+                className="w-full text-xs sm:text-sm bg-white/70 backdrop-blur-sm border border-slate-200/80 rounded-xl px-4 py-3 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition font-medium text-slate-800 shadow-xs"
               >
                 <option value="">-- Choose Company --</option>
                 {companyList.map(c => (

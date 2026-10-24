@@ -130,7 +130,7 @@ export default function EmployeeIdCardSection({
   return (
     <div className="space-y-6">
       {/* Top Search & Worker Auto-Fill Bar */}
-      <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+      <div className="glass-card bg-white/70 backdrop-blur-xl p-5 rounded-2xl border border-white/60 shadow-glass">
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
           
           {/* Search Box with Suggestions */}
@@ -144,7 +144,7 @@ export default function EmployeeIdCardSection({
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search Employee by Name or Card Number to Auto-Fill..."
-                className="w-full pl-10 pr-10 py-3 bg-gray-50 hover:bg-white focus:bg-white border border-gray-200 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm font-medium transition"
+                className="w-full pl-10 pr-10 py-3 bg-white/60 hover:bg-white focus:bg-white border border-slate-200/80 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm font-medium transition"
               />
               {isSearching && (
                 <div className="absolute right-3.5 top-3.5 text-xs text-gray-400 animate-spin">

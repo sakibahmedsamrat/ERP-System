@@ -165,7 +165,7 @@ export default function VisitorIdCardSection() {
   return (
     <div className="space-y-6">
       {/* Control Bar */}
-      <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="glass-card bg-white/70 backdrop-blur-xl p-6 rounded-2xl border border-white/60 shadow-glass flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-4 w-full md:w-auto">
           <div className="relative flex-1 md:w-64">
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
@@ -176,7 +176,7 @@ export default function VisitorIdCardSection() {
               value={cardNo}
               onChange={(e) => setCardNo(e.target.value)}
               placeholder="Enter Card No (e.g. 1021)"
-              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 hover:bg-white focus:bg-white border border-gray-200 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 font-semibold text-gray-800 transition"
+              className="w-full pl-10 pr-4 py-2.5 bg-white/60 hover:bg-white focus:bg-white border border-slate-200/80 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 font-semibold text-gray-800 transition"
             />
           </div>
           <div className="text-xs text-gray-500 hidden sm:block">
@@ -187,13 +187,13 @@ export default function VisitorIdCardSection() {
         <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-end">
           <button
             onClick={downloadFront}
-            className="px-4 py-2 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 rounded-xl text-sm font-semibold flex items-center gap-2 shadow-sm transition"
+            className="px-4 py-2 bg-white/80 border border-slate-200/80 text-gray-700 hover:bg-white rounded-xl text-sm font-semibold flex items-center gap-2 shadow-xs transition"
           >
             <Download size={16} className="text-blue-600" /> Download Front
           </button>
           <button
             onClick={downloadBack}
-            className="px-4 py-2 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 rounded-xl text-sm font-semibold flex items-center gap-2 shadow-sm transition"
+            className="px-4 py-2 bg-white/80 border border-slate-200/80 text-gray-700 hover:bg-white rounded-xl text-sm font-semibold flex items-center gap-2 shadow-xs transition"
           >
             <Download size={16} className="text-indigo-600" /> Download Back
           </button>
@@ -205,7 +205,7 @@ export default function VisitorIdCardSection() {
           </button>
           <button
             onClick={handlePrint}
-            className="px-4 py-2 bg-gray-800 text-white hover:bg-gray-900 rounded-xl text-sm font-semibold flex items-center gap-2 shadow-sm transition"
+            className="px-4 py-2 bg-slate-800 text-white hover:bg-slate-900 rounded-xl text-sm font-semibold flex items-center gap-2 shadow-sm transition"
           >
             <Printer size={16} /> Print
           </button>
@@ -215,8 +215,8 @@ export default function VisitorIdCardSection() {
       {/* Cards Preview Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start justify-center">
         {/* Front Card */}
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center">
-          <div className="w-full flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
+        <div className="glass-card bg-white/70 backdrop-blur-xl p-6 rounded-2xl border border-white/60 shadow-glass flex flex-col items-center">
+          <div className="w-full flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
             <h3 className="font-bold text-gray-800 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-blue-600"></span> Front Side
             </h3>
@@ -234,14 +234,14 @@ export default function VisitorIdCardSection() {
 
           <button
             onClick={downloadFront}
-            className="mt-5 w-full max-w-[340px] py-2.5 bg-gray-50 hover:bg-blue-50 text-gray-700 hover:text-blue-600 border border-gray-200 hover:border-blue-200 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition"
+            className="mt-5 w-full max-w-[340px] py-2.5 bg-white/60 hover:bg-blue-50 text-gray-700 hover:text-blue-600 border border-slate-200/80 hover:border-blue-200 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition"
           >
             <Download size={16} /> Download Front (JPG)
           </button>
         </div>
 
         {/* Back Card */}
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center">
+        <div className="glass-card bg-white/70 backdrop-blur-xl p-6 rounded-2xl border border-white/60 shadow-glass flex flex-col items-center">
           <div className="w-full flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
             <h3 className="font-bold text-gray-800 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-indigo-600"></span> Back Side

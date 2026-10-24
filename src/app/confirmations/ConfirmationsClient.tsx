@@ -306,7 +306,7 @@ export default function ConfirmationsClient({
       </div>
 
       {/* Module Navigation Tabs */}
-      <div className="print:hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-2 rounded-2xl border border-gray-200/80 shadow-sm">
+      <div className="print:hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-card bg-white/70 backdrop-blur-xl p-2 rounded-2xl border border-white/60 shadow-glass">
         {/* Main Category Tabs: 6m vs 3y */}
         <div className="flex gap-2">
           <button
@@ -314,7 +314,7 @@ export default function ConfirmationsClient({
             className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
               activeTab === '6m'
                 ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
             }`}
           >
             <FileCheck size={18} />
@@ -333,7 +333,7 @@ export default function ConfirmationsClient({
             className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
               activeTab === '3y'
                 ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
             }`}
           >
             <ShieldCheck size={18} />
@@ -349,7 +349,7 @@ export default function ConfirmationsClient({
         </div>
 
         {/* Sub Toggle: Pending vs Confirmed */}
-        <div className="flex items-center bg-gray-100 p-1 rounded-xl self-start sm:self-auto">
+        <div className="flex items-center bg-slate-100/80 backdrop-blur-sm p-1 rounded-xl self-start sm:self-auto border border-white/60">
           <button
             onClick={() => setViewStatus('pending')}
             className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
@@ -376,9 +376,9 @@ export default function ConfirmationsClient({
       </div>
 
       {/* Criteria Info Banner */}
-      <div className="print:hidden bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200/80 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-sm text-blue-900">
+      <div className="print:hidden glass-panel bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 backdrop-blur-xl border border-blue-200/50 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-sm text-blue-900 shadow-glass">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-100 rounded-lg text-blue-700 shrink-0">
+          <div className="p-2 bg-blue-500/15 backdrop-blur-sm rounded-lg text-blue-700 shrink-0 border border-blue-200/40">
             <Sparkles size={20} />
           </div>
           <div>
@@ -403,13 +403,13 @@ export default function ConfirmationsClient({
           </div>
         </div>
 
-        <div className="text-xs font-medium px-3 py-1 bg-white/80 rounded-lg border border-blue-200 text-blue-800 shrink-0">
+        <div className="text-xs font-medium px-3 py-1 bg-white/80 rounded-lg border border-blue-200/60 text-blue-800 shrink-0 shadow-xs">
           Total in view: <strong className="text-blue-950 font-bold">{displayedWorkers.length}</strong>
         </div>
       </div>
 
       {/* Filter and Search Bar (Hidden during print) */}
-      <div className="print:hidden bg-white p-4 rounded-2xl border border-gray-200/80 shadow-sm grid grid-cols-1 md:grid-cols-4 gap-3">
+      <div className="print:hidden glass-card bg-white/70 backdrop-blur-xl p-4 rounded-2xl border border-white/60 shadow-glass grid grid-cols-1 md:grid-cols-4 gap-3">
         <div className="md:col-span-2 relative">
           <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
@@ -417,7 +417,7 @@ export default function ConfirmationsClient({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by Employee ID, Name, Designation, Department..."
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 focus:bg-white transition"
+            className="w-full pl-10 pr-4 py-2 border border-slate-200/80 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/60 focus:bg-white transition"
           />
           {searchQuery && (
             <button
@@ -433,7 +433,7 @@ export default function ConfirmationsClient({
           <select
             value={selectedCompany}
             onChange={(e) => setSelectedCompany(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 focus:bg-white transition text-gray-700"
+            className="w-full px-3 py-2 border border-slate-200/80 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/60 focus:bg-white transition text-gray-700"
           >
             <option value="">All Companies</option>
             {companies.map((c) => (
@@ -448,7 +448,7 @@ export default function ConfirmationsClient({
           <select
             value={selectedDepartment}
             onChange={(e) => setSelectedDepartment(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 focus:bg-white transition text-gray-700"
+            className="w-full px-3 py-2 border border-slate-200/80 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/60 focus:bg-white transition text-gray-700"
           >
             <option value="">All Departments</option>
             {departments.map((d) => (
@@ -461,7 +461,7 @@ export default function ConfirmationsClient({
       </div>
 
       {/* Employees Table */}
-      <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm overflow-hidden">
+      <div className="glass-table-container bg-white/70 backdrop-blur-xl rounded-2xl border border-white/60 shadow-glass overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -653,11 +653,11 @@ export default function ConfirmationsClient({
 
       {/* Done Confirmation Modal */}
       {selectedWorkerForDone && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+        <div className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="glass-modal bg-white/90 backdrop-blur-2xl rounded-2xl border border-white/80 shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200/60">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-emerald-100 text-emerald-700 rounded-xl">
+                <div className="p-2 bg-emerald-500/15 backdrop-blur-sm text-emerald-700 rounded-xl border border-emerald-500/20">
                   <CheckCircle2 size={22} />
                 </div>
                 <h3 className="font-bold text-gray-900 text-lg">
@@ -666,7 +666,7 @@ export default function ConfirmationsClient({
               </div>
               <button
                 onClick={() => setSelectedWorkerForDone(null)}
-                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg"
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg transition"
               >
                 <X size={20} />
               </button>
@@ -677,7 +677,7 @@ export default function ConfirmationsClient({
                 Are you sure you want to mark confirmation as <strong>Done</strong> for this employee?
               </p>
 
-              <div className="bg-gray-50 p-3.5 rounded-xl border border-gray-100 text-sm space-y-1">
+              <div className="bg-slate-50/80 backdrop-blur-sm p-3.5 rounded-xl border border-slate-200/60 text-sm space-y-1">
                 <div className="flex justify-between">
                   <span className="text-gray-500">Employee ID:</span>
                   <span className="font-mono font-bold text-gray-900">
@@ -715,7 +715,7 @@ export default function ConfirmationsClient({
                   value={remarks}
                   onChange={(e) => setRemarks(e.target.value)}
                   placeholder="e.g. Regularized, Good performance, Grade incremented..."
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-slate-200/80 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white/70 focus:bg-white transition"
                 />
               </div>
 
@@ -724,10 +724,10 @@ export default function ConfirmationsClient({
               </p>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200/60">
               <button
                 onClick={() => setSelectedWorkerForDone(null)}
-                className="px-4 py-2 border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition"
+                className="px-4 py-2 border border-slate-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-slate-100/70 transition"
               >
                 Cancel
               </button>

@@ -16,14 +16,12 @@ import {
   Shield,
   Settings,
   Activity,
-  Layers,
   Sliders,
   Banknote,
   FileSpreadsheet,
   ChevronDown,
   X
 } from 'lucide-react';
-import { logoutAction } from '@/app/logout/actions';
 
 interface NavItemProps {
   href: string;
@@ -35,7 +33,7 @@ interface NavItemProps {
   onClose?: () => void;
 }
 
-function NavItem({ href, icon: Icon, label, color = "text-white", isActive, tabIndex, onClose }: NavItemProps) {
+function NavItem({ href, icon: Icon, label, color = "text-slate-300", isActive, tabIndex, onClose }: NavItemProps) {
   return (
     <Link 
       href={href} 
@@ -44,14 +42,14 @@ function NavItem({ href, icon: Icon, label, color = "text-white", isActive, tabI
       onClick={() => {
         onClose?.();
       }}
-      className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-300 font-medium ${
+      className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-300 text-sm font-medium ${
         isActive 
-          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-900/50 translate-x-1' 
-          : `hover:bg-white/10 ${color} hover:translate-x-1`
+          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/30 ring-1 ring-white/25 translate-x-1 font-semibold' 
+          : `hover:bg-white/10 hover:text-white ${color} hover:translate-x-1 hover:backdrop-blur-xs`
       }`}
     >
-      <Icon size={18} className={isActive ? 'text-white' : 'opacity-80'} /> 
-      <span className="text-sm">{label}</span>
+      <Icon size={18} className={isActive ? 'text-white' : 'opacity-75'} /> 
+      <span>{label}</span>
     </Link>
   );
 }
@@ -195,7 +193,7 @@ export default function Sidebar({
     href: string,
     icon: any,
     label: string,
-    color = "text-white",
+    color = "text-slate-300",
     exact = false,
     tabIndex?: number
   ) => (
@@ -213,20 +211,22 @@ export default function Sidebar({
 
   return (
     <>
-      {/* Mobile backdrop overlay */}
+      {/* Mobile backdrop overlay with frosted blur */}
       {isMobileOpen && (
         <div 
           onClick={onClose}
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300"
+          className="fixed inset-0 bg-slate-950/70 backdrop-blur-md z-40 lg:hidden transition-opacity duration-300"
           aria-hidden="true"
         />
       )}
 
-      <aside className={`w-72 bg-[#0F172A] text-white h-screen shrink-0 flex flex-col print:hidden shadow-2xl relative overflow-hidden z-50 transition-transform duration-300 ease-in-out fixed inset-y-0 left-0 lg:static lg:translate-x-0 ${
+      <aside className={`w-72 bg-slate-950/95 backdrop-blur-2xl text-white h-screen shrink-0 flex flex-col print:hidden shadow-2xl relative overflow-hidden z-50 border-r border-slate-800/80 transition-transform duration-300 ease-in-out fixed inset-y-0 left-0 lg:static lg:translate-x-0 ${
         isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       }`}>
-        {/* Decorative background gradients */}
-        <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-blue-600/20 to-transparent pointer-events-none"></div>
+        {/* Ambient interior glowing orbs */}
+        <div className="absolute top-0 left-0 w-full h-72 bg-gradient-to-b from-blue-600/15 via-indigo-600/10 to-transparent pointer-events-none" />
+        <div className="absolute top-1/2 -left-20 w-44 h-44 rounded-full bg-blue-500/10 blur-2xl pointer-events-none" />
+        <div className="absolute bottom-10 right-0 w-36 h-36 rounded-full bg-purple-500/10 blur-2xl pointer-events-none" />
         
         <div className="p-6 font-extrabold text-2xl border-b border-white/10 flex items-center justify-between relative z-10">
           <div className="flex items-center gap-3">
@@ -240,7 +240,7 @@ export default function Sidebar({
                 priority
               />
             </div>
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-300">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-slate-300 tracking-tight">
               {appName}
             </span>
           </div>
@@ -255,180 +255,175 @@ export default function Sidebar({
           </button>
         </div>
         
-        <nav className="flex-1 p-5 space-y-2 overflow-y-auto relative z-10 custom-scrollbar">
-        {renderNavItem('/', LayoutDashboard, 'Dashboard', 'text-white', true)}
-        
-        {(hasModule('WORKERS') || hasModule('CONFIRMATIONS') || hasModule('IDCARD')) && (
-          renderNavItem(employeesHref, Users, 'Employees')
-        )}
-        {hasModule('COMPANIES') && renderNavItem('/companies', Building2, 'Companies')}
-        {hasModule('ATTENDANCE') && renderNavItem('/attendance', CalendarCheck, 'Attendance')}
-        {(hasModule('PAYROLL') || hasModule('SETTLEMENTS')) && (
-          <div className="space-y-1">
-            <div
-              className={`group flex items-center justify-between rounded-xl transition-all duration-300 font-medium ${
-                isPayrollExactActive
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-900/50 translate-x-1'
-                  : 'hover:bg-white/10 text-white hover:translate-x-1'
-              }`}
-            >
-              <Link
-                href="/payroll"
-                prefetch={true}
-                onClick={(e) => {
-                  if (normalizedPath === '/payroll') {
-                    e.preventDefault();
-                    setIsPayrollOpen((prev) => !prev);
-                  } else {
-                    setIsPayrollOpen(true);
-                    onClose?.();
-                  }
-                }}
-                className="flex items-center gap-3 px-4 py-2.5 flex-1 min-w-0"
-              >
-                <Banknote size={18} className={isPayrollExactActive ? 'text-white' : 'opacity-80'} />
-                <span className="text-sm">Payroll</span>
-              </Link>
-
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setIsPayrollOpen((prev) => !prev);
-                }}
-                aria-label={isPayrollOpen ? 'Collapse Payroll sub-menu' : 'Expand Payroll sub-menu'}
-                aria-expanded={isPayrollOpen}
-                aria-controls="payroll-submenu"
-                title={isPayrollOpen ? 'Collapse sub-menu' : 'Expand sub-menu'}
-                className={`self-stretch px-3.5 flex items-center justify-center rounded-r-xl transition-colors cursor-pointer ${
+        <nav className="flex-1 p-5 space-y-1.5 overflow-y-auto relative z-10 custom-scrollbar">
+          {renderNavItem('/', LayoutDashboard, 'Dashboard', 'text-slate-300', true)}
+          
+          {(hasModule('WORKERS') || hasModule('CONFIRMATIONS') || hasModule('IDCARD')) && (
+            renderNavItem(employeesHref, Users, 'Employees')
+          )}
+          {hasModule('COMPANIES') && renderNavItem('/companies', Building2, 'Companies')}
+          {hasModule('ATTENDANCE') && renderNavItem('/attendance', CalendarCheck, 'Attendance')}
+          {(hasModule('PAYROLL') || hasModule('SETTLEMENTS')) && (
+            <div className="space-y-1">
+              <div
+                className={`group flex items-center justify-between rounded-xl transition-all duration-300 font-medium ${
                   isPayrollExactActive
-                    ? 'hover:bg-white/20 text-white'
-                    : 'text-slate-400 hover:text-white hover:bg-white/10'
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/30 ring-1 ring-white/25 translate-x-1 font-semibold'
+                    : 'hover:bg-white/10 text-slate-300 hover:text-white hover:translate-x-1'
                 }`}
               >
-                <ChevronDown
-                  size={16}
-                  className={`transition-transform duration-300 ease-in-out ${
-                    isPayrollOpen ? 'rotate-180 text-white' : 'text-slate-400 group-hover:text-white'
-                  }`}
-                />
-              </button>
-            </div>
+                <Link
+                  href="/payroll"
+                  prefetch={true}
+                  onClick={(e) => {
+                    if (normalizedPath === '/payroll') {
+                      e.preventDefault();
+                      setIsPayrollOpen((prev) => !prev);
+                    } else {
+                      setIsPayrollOpen(true);
+                      onClose?.();
+                    }
+                  }}
+                  className="flex items-center gap-3 px-4 py-2.5 flex-1 min-w-0"
+                >
+                  <Banknote size={18} className={isPayrollExactActive ? 'text-white' : 'opacity-75'} />
+                  <span className="text-sm">Payroll</span>
+                </Link>
 
-            <div
-              id="payroll-submenu"
-              aria-hidden={!isPayrollOpen}
-              className={`grid transition-all duration-300 ease-in-out ${
-                isPayrollOpen
-                  ? 'grid-rows-[1fr] opacity-100'
-                  : 'grid-rows-[0fr] opacity-0 pointer-events-none'
-              }`}
-            >
-              <div className="min-h-0 overflow-hidden">
-                <div className="pl-4 space-y-1 border-l border-white/10 ml-5 py-1">
-                  {renderNavItem('/payroll/settlements', CreditCard, 'Settlements', 'text-slate-300', false, isPayrollOpen ? 0 : -1)}
-                  {renderNavItem('/payroll/salary-statement', FileSpreadsheet, 'Salary Statement', 'text-slate-300', false, isPayrollOpen ? 0 : -1)}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsPayrollOpen((prev) => !prev);
+                  }}
+                  aria-label={isPayrollOpen ? 'Collapse Payroll sub-menu' : 'Expand Payroll sub-menu'}
+                  aria-expanded={isPayrollOpen}
+                  aria-controls="payroll-submenu"
+                  title={isPayrollOpen ? 'Collapse sub-menu' : 'Expand sub-menu'}
+                  className={`self-stretch px-3.5 flex items-center justify-center rounded-r-xl transition-colors cursor-pointer ${
+                    isPayrollExactActive
+                      ? 'hover:bg-white/20 text-white'
+                      : 'text-slate-400 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  <ChevronDown
+                    size={16}
+                    className={`transition-transform duration-300 ease-in-out ${
+                      isPayrollOpen ? 'rotate-180 text-white' : 'text-slate-400 group-hover:text-white'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              <div
+                id="payroll-submenu"
+                aria-hidden={!isPayrollOpen}
+                className={`grid transition-all duration-300 ease-in-out ${
+                  isPayrollOpen
+                    ? 'grid-rows-[1fr] opacity-100'
+                    : 'grid-rows-[0fr] opacity-0 pointer-events-none'
+                }`}
+              >
+                <div className="min-h-0 overflow-hidden">
+                  <div className="pl-4 space-y-1 border-l border-white/15 ml-5 py-1">
+                    {renderNavItem('/payroll/settlements', CreditCard, 'Settlements', 'text-slate-400', false, isPayrollOpen ? 0 : -1)}
+                    {renderNavItem('/payroll/salary-statement', FileSpreadsheet, 'Salary Statement', 'text-slate-400', false, isPayrollOpen ? 0 : -1)}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
-        {hasModule('TRAINING') && renderNavItem('/training', GraduationCap, 'Training')}
-        {hasModule('RECRUITMENT') && (
-          <div className="space-y-1">
-            <div
-              className={`group flex items-center justify-between rounded-xl transition-all duration-300 font-medium ${
-                isRecruitmentParentActive
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-900/50 translate-x-1'
-                  : 'hover:bg-white/10 text-white hover:translate-x-1'
-              }`}
-            >
-              <Link
-                href="/recruitment"
-                prefetch={true}
-                onClick={(e) => {
-                  if (normalizedPath === '/recruitment') {
-                    if (isRecruitmentParentActive) {
-                      e.preventDefault();
-                      setIsRecruitmentOpen((prev) => !prev);
+          )}
+          {hasModule('TRAINING') && renderNavItem('/training', GraduationCap, 'Training')}
+          {hasModule('RECRUITMENT') && (
+            <div className="space-y-1">
+              <div
+                className={`group flex items-center justify-between rounded-xl transition-all duration-300 font-medium ${
+                  isRecruitmentParentActive
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/30 ring-1 ring-white/25 translate-x-1 font-semibold'
+                    : 'hover:bg-white/10 text-slate-300 hover:text-white hover:translate-x-1'
+                }`}
+              >
+                <Link
+                  href="/recruitment"
+                  prefetch={true}
+                  onClick={(e) => {
+                    if (normalizedPath === '/recruitment') {
+                      if (isRecruitmentParentActive) {
+                        e.preventDefault();
+                        setIsRecruitmentOpen((prev) => !prev);
+                      } else {
+                        setIsRecruitmentOpen(true);
+                      }
                     } else {
                       setIsRecruitmentOpen(true);
+                      onClose?.();
                     }
-                  } else {
-                    setIsRecruitmentOpen(true);
-                    onClose?.();
-                  }
-                }}
-                className="flex items-center gap-3 px-4 py-2.5 flex-1 min-w-0"
-              >
-                <Briefcase size={18} className={isRecruitmentParentActive ? 'text-white' : 'opacity-80'} />
-                <span className="text-sm">Recruitment</span>
-              </Link>
+                  }}
+                  className="flex items-center gap-3 px-4 py-2.5 flex-1 min-w-0"
+                >
+                  <Briefcase size={18} className={isRecruitmentParentActive ? 'text-white' : 'opacity-75'} />
+                  <span className="text-sm">Recruitment</span>
+                </Link>
 
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setIsRecruitmentOpen((prev) => !prev);
-                }}
-                aria-label={isRecruitmentOpen ? 'Collapse Recruitment sub-menu' : 'Expand Recruitment sub-menu'}
-                aria-expanded={isRecruitmentOpen}
-                aria-controls="recruitment-submenu"
-                title={isRecruitmentOpen ? 'Collapse sub-menu' : 'Expand sub-menu'}
-                className={`self-stretch px-3.5 flex items-center justify-center rounded-r-xl transition-colors cursor-pointer ${
-                  isRecruitmentParentActive
-                    ? 'hover:bg-white/20 text-white'
-                    : 'text-slate-400 hover:text-white hover:bg-white/10'
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsRecruitmentOpen((prev) => !prev);
+                  }}
+                  aria-label={isRecruitmentOpen ? 'Collapse Recruitment sub-menu' : 'Expand Recruitment sub-menu'}
+                  aria-expanded={isRecruitmentOpen}
+                  aria-controls="recruitment-submenu"
+                  title={isRecruitmentOpen ? 'Collapse sub-menu' : 'Expand sub-menu'}
+                  className={`self-stretch px-3.5 flex items-center justify-center rounded-r-xl transition-colors cursor-pointer ${
+                    isRecruitmentParentActive
+                      ? 'hover:bg-white/20 text-white'
+                      : 'text-slate-400 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  <ChevronDown
+                    size={16}
+                    className={`transition-transform duration-300 ease-in-out ${
+                      isRecruitmentOpen ? 'rotate-180 text-white' : 'text-slate-400 group-hover:text-white'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              <div
+                id="recruitment-submenu"
+                aria-hidden={!isRecruitmentOpen}
+                className={`grid transition-all duration-300 ease-in-out ${
+                  isRecruitmentOpen
+                    ? 'grid-rows-[1fr] opacity-100'
+                    : 'grid-rows-[0fr] opacity-0 pointer-events-none'
                 }`}
               >
-                <ChevronDown
-                  size={16}
-                  className={`transition-transform duration-300 ease-in-out ${
-                    isRecruitmentOpen ? 'rotate-180 text-white' : 'text-slate-400 group-hover:text-white'
-                  }`}
-                />
-              </button>
-            </div>
-
-            <div
-              id="recruitment-submenu"
-              aria-hidden={!isRecruitmentOpen}
-              className={`grid transition-all duration-300 ease-in-out ${
-                isRecruitmentOpen
-                  ? 'grid-rows-[1fr] opacity-100'
-                  : 'grid-rows-[0fr] opacity-0 pointer-events-none'
-              }`}
-            >
-              <div className="min-h-0 overflow-hidden">
-                <div className="pl-4 space-y-1 border-l border-white/10 ml-5 py-1">
-                  {renderNavItem('/recruitment/manpower', Sliders, 'Manpower Entry', 'text-slate-300', false, isRecruitmentOpen ? 0 : -1)}
-                  {renderNavItem('/recruitment?tab=jobs', Briefcase, 'Job Circulars', 'text-slate-300', false, isRecruitmentOpen ? 0 : -1)}
+                <div className="min-h-0 overflow-hidden">
+                  <div className="pl-4 space-y-1 border-l border-white/15 ml-5 py-1">
+                    {renderNavItem('/recruitment/manpower', Sliders, 'Manpower Entry', 'text-slate-400', false, isRecruitmentOpen ? 0 : -1)}
+                    {renderNavItem('/recruitment?tab=jobs', Briefcase, 'Job Circulars', 'text-slate-400', false, isRecruitmentOpen ? 0 : -1)}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
-        {hasModule('TASKS') && renderNavItem('/tasks', CheckSquare, 'Tasks')}
-        
-        <div className="pt-6 mt-6 border-t border-white/10 space-y-2">
-          <div className="text-xs uppercase tracking-wider text-gray-500 font-bold px-4 mb-2">Admin</div>
-          {user?.role === 'SUPER_ADMIN' && (
-            <>
-              {renderNavItem('/users', Shield, 'User Management', 'text-blue-300')}
-              {renderNavItem('/activity-logs', Activity, 'Activity Logs', 'text-emerald-300')}
-            </>
           )}
-          {renderNavItem('/settings', Settings, 'Settings', 'text-gray-300')}
-        </div>
-      </nav>
-      
-      {/* We removed the bottom logout form since it's in the Header now. */}
+          {hasModule('TASKS') && renderNavItem('/tasks', CheckSquare, 'Tasks')}
+          
+          <div className="pt-5 mt-5 border-t border-white/10 space-y-1.5">
+            <div className="text-[11px] uppercase tracking-wider text-slate-400 font-bold px-4 mb-2">Admin</div>
+            {user?.role === 'SUPER_ADMIN' && (
+              <>
+                {renderNavItem('/users', Shield, 'User Management', 'text-blue-300')}
+                {renderNavItem('/activity-logs', Activity, 'Activity Logs', 'text-emerald-300')}
+              </>
+            )}
+            {renderNavItem('/settings', Settings, 'Settings', 'text-slate-300')}
+          </div>
+        </nav>
       </aside>
     </>
   );
 }
-
-
-
