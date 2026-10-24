@@ -101,14 +101,14 @@ export async function bulkImportWorkers(workers: any[]) {
       }
 
       const record = {
-        workerId: String(getVal(['workerid', 'staff id', 'id']) ?? '').trim() || `TMP-${Math.floor(Math.random() * 100000)}`,
-        name: getVal(['name', 'staff name', 'worker name']) || 'Unknown',
-        designation: getVal(['designation']) || null,
-        gender: getVal(['gender']) || null,
-        bloodGroup: getVal(['bloodgroup', 'blood group']) || null,
+        workerId: String(getVal(['workerid', 'staff id', 'id', 'worker id', 'employee id']) ?? '').trim() || `TMP-${Math.floor(Math.random() * 100000)}`,
+        name: getVal(['name', 'staff name', 'worker name', 'employee name']) || 'Unknown',
+        designation: getVal(['designation', 'position', 'job title']) || null,
+        gender: getVal(['gender', 'sex']) || null,
+        bloodGroup: getVal(['bloodgroup', 'blood group', 'blood']) || null,
         religion: getVal(['religion']) || null,
         nationalId: getVal(['nationalid', 'national id', 'nid'])?.toString() || null,
-        phone: getVal(['phone', 'mobile', 'mobile number'])?.toString() || null,
+        phone: getVal(['phone', 'mobile', 'mobile number', 'contact', 'phone number'])?.toString() || null,
         address: getVal(['address', 'present address']) || null,
         permanentAddress: getVal(['permanentaddress', 'permanent address']) || null,
         joinDate: jDate,
@@ -127,8 +127,17 @@ export async function bulkImportWorkers(workers: any[]) {
       upsertOperations.push(
         prisma.worker.upsert({
           where: { workerId: record.workerId },
-          update: record,
-          create: record,
+          update: {
+            ...record,
+            isDeleted: false,
+            isActive: true,
+            deletedAt: null,
+          },
+          create: {
+            ...record,
+            isDeleted: false,
+            isActive: true,
+          },
         })
       );
     }

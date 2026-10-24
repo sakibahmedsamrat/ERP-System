@@ -5,6 +5,7 @@ import { Plus, User, Building2, Trash2, Search, Download, Upload, Hash, Briefcas
 import { deleteWorker } from './actions';
 import { getSession } from '@/lib/auth';
 import DeleteWorkerButton from '@/components/DeleteWorkerButton';
+import BulkDeleteWorkersModal from '@/components/BulkDeleteWorkersModal';
 
 export const metadata = {
   title: 'Employees | HR ERP',
@@ -151,6 +152,7 @@ export default async function WorkersPage({
               <Link href="/workers/import" className="bg-purple-600 text-white px-3 py-2 rounded flex items-center gap-2 hover:bg-purple-700 transition text-sm font-medium shadow-sm">
                 <Upload size={16} /> Import CSV
               </Link>
+              <BulkDeleteWorkersModal />
             </>
           )}
           {role === 'SUPER_ADMIN' && (

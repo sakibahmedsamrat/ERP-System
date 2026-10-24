@@ -295,3 +295,192 @@ export async function updateWorker(id: string, formData: FormData): Promise<void
   redirect('/workers');
 }
 
+export interface MatchedWorkerPreview {
+  id: string;
+  workerId: string;
+  name: string;
+  designation: string;
+  department: string;
+  section: string;
+  company: string;
+}
+
+export interface BulkDeleteValidationResult {
+  success?: boolean;
+  error?: string;
+  totalEntered?: number;
+  matchedWorkers?: MatchedWorkerPreview[];
+  alreadyDeleted?: { id: string; workerId: string; name: string }[];
+  notFoundIds?: string[];
+}
+
+export async function validateBulkDeleteWorkers(rawInput: string): Promise<BulkDeleteValidationResult> {
+  try {
+    const session = await getSession();
+    if (!session?.user) return { error: 'Unauthorized: Please log in to perform this action.' };
+    const role = session.user.role;
+    if (role !== 'SUPER_ADMIN' && role !== 'ADMIN') {
+      return { error: 'Forbidden: Administrator privileges required.' };
+    }
+
+    if (!rawInput || typeof rawInput !== 'string') {
+      return { error: 'Please enter at least one Worker ID.' };
+    }
+
+    // Parse IDs by splitting on commas, newlines, semicolons, tabs, and spaces
+    const tokens = rawInput
+      .split(/[\s,;]+/)
+      .map(t => t.trim())
+      .filter(t => t.length > 0);
+
+    // Deduplicate while preserving order
+    const idList: string[] = [];
+    const seen = new Set<string>();
+    for (const token of tokens) {
+      const lower = token.toLowerCase();
+      if (!seen.has(lower)) {
+        seen.add(lower);
+        idList.push(token);
+      }
+    }
+
+    if (idList.length === 0) {
+      return { error: 'Please enter at least one valid Worker ID.' };
+    }
+
+    // Query active workers matching these IDs
+    const activeWorkers = await prisma.worker.findMany({
+      where: {
+        workerId: { in: idList, mode: 'insensitive' },
+        isDeleted: false,
+      },
+      select: {
+        id: true,
+        workerId: true,
+        name: true,
+        designation: true,
+        department: { select: { name: true } },
+        section: { select: { name: true } },
+        company: { select: { name: true } },
+      },
+      orderBy: { workerId: 'asc' },
+    });
+
+    // Query workers already soft-deleted in recycle bin
+    const deletedWorkers = await prisma.worker.findMany({
+      where: {
+        workerId: { in: idList, mode: 'insensitive' },
+        isDeleted: true,
+      },
+      select: {
+        id: true,
+        workerId: true,
+        name: true,
+      },
+    });
+
+    const activeMap = new Map(activeWorkers.map(w => [w.workerId.toLowerCase(), w]));
+    const deletedMap = new Map(deletedWorkers.map(w => [w.workerId.toLowerCase(), w]));
+
+    const notFoundIds = idList.filter(
+      id => !activeMap.has(id.toLowerCase()) && !deletedMap.has(id.toLowerCase())
+    );
+
+    const matchedWorkers: MatchedWorkerPreview[] = activeWorkers.map(w => ({
+      id: w.id,
+      workerId: w.workerId,
+      name: w.name,
+      designation: w.designation || 'N/A',
+      department: w.department?.name || 'N/A',
+      section: w.section?.name || 'N/A',
+      company: w.company?.name || 'N/A',
+    }));
+
+    const alreadyDeleted = deletedWorkers.map(w => ({
+      id: w.id,
+      workerId: w.workerId,
+      name: w.name,
+    }));
+
+    return {
+      success: true,
+      totalEntered: idList.length,
+      matchedWorkers,
+      alreadyDeleted,
+      notFoundIds,
+    };
+  } catch (error) {
+    console.error('Failed to validate worker IDs for bulk deletion:', error);
+    return { error: 'Failed to validate Worker IDs. Please check database connection.' };
+  }
+}
+
+export async function bulkDeleteWorkers(workerDbIds: string[]) {
+  try {
+    const session = await getSession();
+    if (!session?.user) return { error: 'Unauthorized: Please log in to perform this action.' };
+    const role = session.user.role;
+    if (role !== 'SUPER_ADMIN' && role !== 'ADMIN') {
+      return { error: 'Forbidden: Administrator privileges required.' };
+    }
+
+    if (!Array.isArray(workerDbIds) || workerDbIds.length === 0) {
+      return { error: 'No workers selected for deletion.' };
+    }
+
+    const activeWorkers = await prisma.worker.findMany({
+      where: {
+        id: { in: workerDbIds },
+        isDeleted: false,
+      },
+      select: {
+        id: true,
+        workerId: true,
+        name: true,
+      },
+    });
+
+    if (activeWorkers.length === 0) {
+      return { error: 'No active employees found matching the selected IDs.' };
+    }
+
+    const idsToUpdate = activeWorkers.map(w => w.id);
+
+    const updateResult = await prisma.worker.updateMany({
+      where: {
+        id: { in: idsToUpdate },
+      },
+      data: {
+        isDeleted: true,
+        deletedAt: new Date(),
+        isActive: false,
+      },
+    });
+
+    const sampleSummary = activeWorkers
+      .slice(0, 10)
+      .map(w => `${w.workerId} (${w.name})`)
+      .join(', ');
+    const moreSuffix = activeWorkers.length > 10 ? ` and ${activeWorkers.length - 10} more` : '';
+
+    await logAction(
+      'WORKERS',
+      'BULK_DELETE',
+      `Bulk moved ${updateResult.count} worker(s) to recycle bin: ${sampleSummary}${moreSuffix}`
+    );
+
+    safeRevalidatePath('/workers');
+    safeRevalidatePath('/workers/recycle-bin');
+    safeRevalidatePath('/');
+    safeRevalidatePath('/payroll');
+
+    return {
+      success: true,
+      count: updateResult.count,
+    };
+  } catch (error) {
+    console.error('Failed to bulk delete workers:', error);
+    return { error: 'Failed to bulk delete workers. Please try again.' };
+  }
+}
+
