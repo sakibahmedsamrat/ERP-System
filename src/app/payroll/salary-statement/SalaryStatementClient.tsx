@@ -415,7 +415,7 @@ export default function SalaryStatementClient() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-16">
+    <div className="min-h-screen bg-transparent print:bg-white text-slate-900 pb-16">
       {/* Print CSS styles */}
       <style
         dangerouslySetInnerHTML={{

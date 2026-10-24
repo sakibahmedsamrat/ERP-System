@@ -60,30 +60,41 @@ export default function NotificationBell() {
     <div className="relative" ref={dropdownRef}>
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="text-gray-500 hover:text-blue-600 transition relative p-2"
+        className="text-slate-600 hover:text-blue-600 hover:bg-white/80 transition relative p-2.5 rounded-xl border border-transparent hover:border-slate-200/60 hover:shadow-xs"
+        aria-label="Notifications"
       >
-        <Bell size={20} />
+        <Bell size={19} />
         {unreadCount > 0 && (
-          <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full border-2 border-white flex items-center justify-center animate-pulse">
+          <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-rose-500 text-white text-[10px] font-bold rounded-full border-2 border-white flex items-center justify-center animate-pulse shadow-xs">
             {unreadCount}
           </span>
         )}
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-50">
-          <div className="flex justify-between items-center px-4 py-3 bg-gray-50 border-b border-gray-100">
-            <h3 className="font-bold text-gray-800">Notifications</h3>
+        <div className="absolute right-0 mt-2 w-84 sm:w-96 glass-modal rounded-2xl shadow-2xl border border-white/80 overflow-hidden z-50">
+          <div className="flex justify-between items-center px-4 py-3.5 bg-white/70 backdrop-blur-md border-b border-slate-200/70">
+            <div className="flex items-center gap-2">
+              <h3 className="font-extrabold text-slate-900 text-sm">Notifications</h3>
+              {unreadCount > 0 && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-600 border border-blue-500/20">
+                  {unreadCount} new
+                </span>
+              )}
+            </div>
             {unreadCount > 0 && (
-              <button onClick={handleMarkAllAsRead} className="text-xs text-blue-600 hover:text-blue-800 font-medium">
+              <button 
+                onClick={handleMarkAllAsRead} 
+                className="text-xs text-blue-600 hover:text-blue-700 font-bold transition hover:underline"
+              >
                 Mark all read
               </button>
             )}
           </div>
           
-          <div className="max-h-[350px] overflow-y-auto">
+          <div className="max-h-[360px] overflow-y-auto divide-y divide-slate-100/60">
             {notifications.length === 0 ? (
-              <div className="p-6 text-center text-gray-500 text-sm">
+              <div className="p-8 text-center text-slate-500 text-sm font-medium">
                 No new notifications
               </div>
             ) : (
@@ -91,14 +102,14 @@ export default function NotificationBell() {
                 <div 
                   key={n.id} 
                   onClick={() => handleNotificationClick(n)}
-                  className={`p-4 border-b border-gray-50 hover:bg-gray-50 cursor-pointer transition flex items-start gap-3 ${!n.isRead ? 'bg-blue-50/30' : ''}`}
+                  className={`p-4 hover:bg-blue-50/50 cursor-pointer transition flex items-start gap-3 ${!n.isRead ? 'bg-blue-50/30' : ''}`}
                 >
-                  <div className={`w-2 h-2 mt-2 rounded-full flex-shrink-0 ${!n.isRead ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
-                  <div>
-                    <p className={`text-sm ${!n.isRead ? 'text-gray-800 font-semibold' : 'text-gray-600'}`}>
+                  <div className={`w-2 h-2 mt-2 rounded-full flex-shrink-0 ${!n.isRead ? 'bg-blue-600 ring-4 ring-blue-500/20' : 'bg-slate-300'}`} />
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm leading-snug ${!n.isRead ? 'text-slate-900 font-semibold' : 'text-slate-600'}`}>
                       {n.message}
                     </p>
-                    <p className="text-xs text-gray-400 mt-1">
+                    <p className="text-xs text-slate-400 mt-1 font-medium">
                       {formatDateTime(n.createdAt)}
                     </p>
                   </div>

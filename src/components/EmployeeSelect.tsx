@@ -63,47 +63,47 @@ export default function EmployeeSelect({
       
       <div className="flex flex-wrap gap-2">
         {selected.map((w) => (
-          <div key={w.id} className="bg-blue-50 text-blue-800 px-3 py-1.5 rounded-full flex items-center gap-2 text-sm border border-blue-100">
-            <span>{w.name} <span className="text-blue-500 text-xs">({w.workerId})</span></span>
-            <button type="button" onClick={() => removeWorker(w.id)} className="text-blue-400 hover:text-red-500 transition">
-              <X size={14} />
+          <div key={w.id} className="bg-blue-500/10 text-blue-700 font-semibold px-3 py-1.5 rounded-full flex items-center gap-2 text-xs border border-blue-500/20 backdrop-blur-sm shadow-xs">
+            <span>{w.name} <span className="text-blue-500 font-mono text-[11px]">({w.workerId})</span></span>
+            <button type="button" onClick={() => removeWorker(w.id)} className="text-blue-400 hover:text-rose-500 transition">
+              <X size={13} />
             </button>
           </div>
         ))}
       </div>
 
       <div className="relative">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <Search className="h-4 w-4 text-gray-400" />
+        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+          <Search className="h-4 w-4 text-slate-400" />
         </div>
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={placeholder}
-          className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+          className="w-full pl-10 pr-4 py-2.5 bg-white/70 backdrop-blur-sm border border-slate-200/80 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition font-medium placeholder:text-slate-400 text-sm"
         />
         {isSearching && (
-          <div className="absolute right-3 top-2.5 text-xs text-gray-400">Searching...</div>
+          <div className="absolute right-3.5 top-3 text-xs text-slate-400 font-medium">Searching...</div>
         )}
 
         {results.length > 0 && query.length >= 2 && (
-          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+          <div className="absolute z-50 w-full mt-1.5 glass-panel border border-white/80 rounded-2xl shadow-2xl max-h-60 overflow-y-auto backdrop-blur-2xl divide-y divide-slate-100/60">
             {results.map((w) => (
               <div 
                 key={w.id} 
                 onClick={() => addWorker(w)}
-                className="px-4 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0"
+                className="px-4 py-2.5 hover:bg-blue-50/60 cursor-pointer transition text-left"
               >
-                <div className="font-medium text-gray-800">{w.name}</div>
-                <div className="text-xs text-gray-500">ID: {w.workerId} {w.designation ? `• ${w.designation}` : ''}</div>
+                <div className="font-bold text-slate-900 text-sm">{w.name}</div>
+                <div className="text-xs text-slate-500 mt-0.5">ID: {w.workerId} {w.designation ? `• ${w.designation}` : ''}</div>
               </div>
             ))}
           </div>
         )}
         
         {results.length === 0 && query.length >= 2 && !isSearching && (
-          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl p-4 text-center text-sm text-gray-500">
+          <div className="absolute z-50 w-full mt-1.5 glass-panel border border-white/80 rounded-2xl shadow-2xl p-4 text-center text-sm text-slate-500 backdrop-blur-2xl">
             No employees found.
           </div>
         )}

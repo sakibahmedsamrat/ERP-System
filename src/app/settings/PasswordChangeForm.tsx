@@ -36,34 +36,55 @@ export default function PasswordChangeForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <div className="bg-red-50 text-red-600 p-3 rounded text-sm">
+        <div className="bg-rose-50/80 border border-rose-200 text-rose-700 p-3.5 rounded-xl text-sm font-medium backdrop-blur-sm">
           {error}
         </div>
       )}
       {success && (
-        <div className="bg-green-50 text-green-600 p-3 rounded text-sm">
+        <div className="bg-emerald-50/80 border border-emerald-200 text-emerald-700 p-3.5 rounded-xl text-sm font-medium backdrop-blur-sm">
           {success}
         </div>
       )}
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Current Password *</label>
-        <input type="password" name="currentPassword" required className="w-full border rounded p-2 outline-none focus:border-blue-500" />
+        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+          Current Password *
+        </label>
+        <input 
+          type="password" 
+          name="currentPassword" 
+          required 
+          className="w-full bg-white/70 backdrop-blur-sm border border-slate-200/80 rounded-xl px-4 py-2.5 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition font-medium text-sm placeholder:text-slate-400" 
+        />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">New Password *</label>
-        <input type="password" name="newPassword" required className="w-full border rounded p-2 outline-none focus:border-blue-500" />
+        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+          New Password *
+        </label>
+        <input 
+          type="password" 
+          name="newPassword" 
+          required 
+          className="w-full bg-white/70 backdrop-blur-sm border border-slate-200/80 rounded-xl px-4 py-2.5 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition font-medium text-sm placeholder:text-slate-400" 
+        />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password *</label>
-        <input type="password" name="confirmPassword" required className="w-full border rounded p-2 outline-none focus:border-blue-500" />
+        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+          Confirm New Password *
+        </label>
+        <input 
+          type="password" 
+          name="confirmPassword" 
+          required 
+          className="w-full bg-white/70 backdrop-blur-sm border border-slate-200/80 rounded-xl px-4 py-2.5 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition font-medium text-sm placeholder:text-slate-400" 
+        />
       </div>
 
       <div className="pt-2">
         <button 
           type="submit" 
           disabled={loading}
-          className={`bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition w-full md:w-auto ${loading ? 'opacity-50' : ''}`}
+          className={`bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-2.5 rounded-xl font-bold transition shadow-md shadow-blue-500/20 disabled:opacity-50 text-sm ${loading ? 'opacity-50' : ''}`}
         >
           {loading ? 'Changing...' : 'Change Password'}
         </button>

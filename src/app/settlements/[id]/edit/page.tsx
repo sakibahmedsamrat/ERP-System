@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { formatDate, calculateServiceAge, parseFlexibleDate, getPayrollCycleDays, formatDateToInput, numberToWords } from '@/lib/formatDate';
 import Link from 'next/link';
-import { Search, Save, Check, RotateCcw, RefreshCw } from 'lucide-react';
+import { Search, Save, Check, RotateCcw, RefreshCw, ArrowLeft, Sparkles } from 'lucide-react';
 import { getSettlement, updateSettlement } from '../../actions';
 import { useRouter } from 'next/navigation';
 
@@ -673,50 +673,64 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
   };
 
   if (!dataLoaded) {
-    return <div className="p-8 text-center text-gray-500">Loading settlement data...</div>;
+    return (
+      <div className="p-8 max-w-5xl mx-auto">
+        <div className="glass-card rounded-3xl p-12 text-center border border-white/70 shadow-sm">
+          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-sm font-semibold text-slate-600">Loading settlement data...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="p-8 max-w-5xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">Edit Settlement</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-blue-600 uppercase tracking-wider mb-1">
+            <Sparkles size={13} />
+            <span>Settlement Management</span>
+          </div>
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Edit Settlement</h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
             Any manual edits made to fields will be saved to the database.
           </p>
         </div>
-        <Link href="/settlements" className="text-blue-600 hover:underline">
-          &larr; Back to Settlements
+        <Link 
+          href="/settlements" 
+          className="inline-flex items-center gap-2 px-4 py-2 bg-white/80 hover:bg-white text-slate-700 hover:text-slate-900 rounded-xl border border-slate-200/80 transition text-xs font-bold shadow-xs w-fit"
+        >
+          <ArrowLeft size={16} /> Back to Settlements
         </Link>
       </div>
 
       {/* Form Section */}
       {selectedWorker && (
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm p-8 border border-gray-100">
+        <form onSubmit={handleSubmit} className="glass-card rounded-3xl p-6 sm:p-10 border border-white/70 shadow-sm space-y-6">
           
-          <div className="flex flex-col sm:flex-row items-center justify-between mb-8 pb-4 border-b border-gray-100 gap-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between pb-6 border-b border-slate-200/70 gap-4">
             <div className="text-center sm:text-left">
-              <h2 className="text-2xl font-bold uppercase text-gray-800">{selectedWorker.company?.name || 'MEP GROUP'}</h2>
-              <h3 className="text-lg font-bold underline mt-1">Resign Benefits</h3>
+              <h2 className="text-2xl font-extrabold uppercase text-slate-900 tracking-tight">{selectedWorker.company?.name || 'MEP GROUP'}</h2>
+              <h3 className="text-base font-bold text-blue-600 mt-1 uppercase tracking-wider">Resign Benefits &amp; Final Settlement</h3>
             </div>
             <div className="flex items-center gap-3">
               {Object.keys(manualOverrides).length > 0 && (
                 <button
                   type="button"
                   onClick={resetToAutoCalculation}
-                  className="text-xs bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow-sm"
+                  className="text-xs bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition shadow-xs"
                   title="Reset all manual overrides to standard labour law formulas"
                 >
                   <RefreshCw size={13} /> Reset All Overrides
                 </button>
               )}
-              <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 shadow-sm">
-                <label className="text-xs font-bold text-gray-600 uppercase tracking-wide">Status:</label>
+              <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-slate-200/80 rounded-xl px-3 py-1.5 shadow-xs">
+                <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Status:</label>
                 <select
                   name="status"
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
-                  className={`text-xs font-bold px-2.5 py-1 rounded border outline-none cursor-pointer ${
+                  className={`text-xs font-bold px-2.5 py-1 rounded-lg border outline-none cursor-pointer ${
                     status === 'APPROVED' ? 'bg-green-100 text-green-800 border-green-300' :
                     status === 'PAID' ? 'bg-blue-100 text-blue-800 border-blue-300' :
                     'bg-yellow-100 text-yellow-800 border-yellow-300'
@@ -796,17 +810,17 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
             <div className="flex items-center"><strong className="w-40">Conveyance Allow :</strong> <input type="number" name="conveyanceAllowance" value={formVals.conveyanceAllowance || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
           </div>
 
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-gray-100 p-2 mb-4 gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-slate-100/70 backdrop-blur-sm p-3 rounded-2xl mb-4 gap-2 border border-slate-200/60">
             <div className="flex items-center gap-2">
-              <h4 className="font-bold text-gray-800">Leave & work day info</h4>
+              <h4 className="font-bold text-slate-800 text-sm">Leave &amp; work day info</h4>
               {payrollCycle && (
-                <span className="text-xs bg-indigo-600 text-white px-2 py-0.5 rounded font-bold uppercase tracking-wide">
+                <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-wide">
                   {payrollCycle.monthName}
                 </span>
               )}
             </div>
             {payrollCycle && (
-              <span className="text-xs bg-indigo-50 border border-indigo-200 text-indigo-900 px-2.5 py-1 rounded font-semibold">
+              <span className="text-xs bg-white/80 border border-slate-200 text-slate-800 px-2.5 py-1 rounded-xl font-semibold">
                 🗓️ Salary Month ({payrollCycle.monthName}): {formatDate(payrollCycle.cycleStart)} to {formatDate(payrollCycle.cycleEnd)} ({payrollCycle.daysInCycle} Days)
               </span>
             )}
@@ -844,17 +858,17 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
             })()}
           </div>
 
-          <div className="flex items-center justify-between bg-gray-100 p-2 mb-4">
-            <h4 className="font-bold text-gray-800">Pay calculation info</h4>
+          <div className="flex items-center justify-between bg-slate-100/70 backdrop-blur-sm p-3 rounded-2xl mb-4 border border-slate-200/60">
+            <h4 className="font-bold text-slate-800 text-sm">Pay calculation info</h4>
             {Object.keys(manualOverrides).length > 0 && (
               <button
                 type="button"
                 onClick={resetToAutoCalculation}
-                className="text-xs text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1 bg-white px-2.5 py-1 rounded border shadow-sm transition"
+                className="text-xs text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1 bg-white/90 px-2.5 py-1 rounded-xl border border-slate-200 shadow-xs transition"
                 title="Reset manual entries and recalculate using formulas"
               >
                 <RefreshCw size={12} />
-                🔄 Re-calculate All Automatically
+                Re-calculate All Automatically
               </button>
             )}
           </div>
@@ -976,11 +990,11 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
           </div>
 
           {/* Total Pay Amount */}
-          <div className="bg-blue-50 p-4 rounded-lg my-6 flex items-center justify-between border border-blue-100">
+          <div className="bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 backdrop-blur-sm p-4 rounded-2xl my-6 flex items-center justify-between border border-blue-200/60">
             <div>
-              <strong className="text-lg">Total Pay Amount :</strong>
+              <strong className="text-lg text-slate-900">Total Pay Amount :</strong>
               {manualOverrides.totalPayAmount && (
-                <span className="ml-2 text-xs text-amber-700 font-semibold bg-amber-100 px-2 py-0.5 rounded">
+                <span className="ml-2 text-xs text-amber-700 font-semibold bg-amber-100 px-2 py-0.5 rounded-full">
                   Manual Entry
                 </span>
               )}
@@ -991,9 +1005,9 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
                 name="totalPayAmount"
                 value={totalPayAmount || ''}
                 onChange={handleValChange}
-                className="text-2xl font-bold text-blue-700 bg-white border border-blue-300 rounded px-2 py-1 outline-none text-right w-44 shadow-inner"
+                className="text-2xl font-extrabold text-blue-700 bg-white/90 border border-blue-300 rounded-xl px-3 py-1 outline-none text-right w-48 shadow-inner"
               />
-              <span className="text-sm font-semibold text-gray-600">Taka</span>
+              <span className="text-sm font-bold text-slate-600">Taka</span>
             </div>
           </div>
 
@@ -1026,21 +1040,21 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
             />
           </div>
 
-          <div className="pt-6 border-t border-gray-200 flex justify-between items-center gap-4">
+          <div className="pt-6 border-t border-slate-200/70 flex justify-between items-center gap-4">
             <button 
               type="button" 
               onClick={handleReset}
-              className="bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-bold hover:bg-gray-300 transition flex items-center gap-2"
+              className="px-6 py-3 rounded-xl font-bold bg-white/80 hover:bg-white text-slate-700 border border-slate-200/80 transition flex items-center gap-2 shadow-xs"
             >
-              <RotateCcw size={20} />
+              <RotateCcw size={18} />
               Reset Form
             </button>
             <button 
               type="submit" 
               disabled={loading}
-              className={`bg-green-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-green-700 transition flex items-center gap-2 ${loading ? 'opacity-50' : ''}`}
+              className={`bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-8 py-3 rounded-xl font-bold transition flex items-center gap-2 shadow-lg shadow-emerald-500/20 ${loading ? 'opacity-50' : ''}`}
             >
-              <Save size={20} />
+              <Save size={18} />
               {loading ? 'Updating...' : 'Update Settlement'}
             </button>
           </div>
