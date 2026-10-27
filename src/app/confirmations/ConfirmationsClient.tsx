@@ -1,31 +1,41 @@
 'use client';
 
-import React, { useState, useMemo, useTransition } from 'react';
+import React, { useState, useMemo, useTransition, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { 
   UserCheck, 
   CheckCircle2, 
   Clock, 
   Search, 
-  Filter, 
   Printer, 
   RotateCcw, 
   AlertCircle,
-  Building2,
   Calendar,
-  Layers,
-  Check,
-  X,
-  Sparkles,
-  ChevronRight,
-  User,
-  ShieldCheck,
-  FileCheck,
-  ArrowLeft
+  Check, 
+  X, 
+  Sparkles, 
+  User, 
+  ShieldCheck, 
+  FileCheck, 
+  ArrowLeft,
+  Download,
+  FileSpreadsheet,
+  CheckCheck,
+  ChevronDown
 } from 'lucide-react';
-import { formatDate, formatDateTime, calculateServiceAge } from '@/lib/formatDate';
-import { markConfirmationDone, undoConfirmation } from './actions';
+import { 
+  formatDate, 
+  formatDateTime, 
+  formatDateToInput, 
+  calculateServiceAge, 
+  parseFlexibleDate 
+} from '@/lib/formatDate';
+import { 
+  markConfirmationDone, 
+  undoConfirmation, 
+  bulkMarkConfirmationDone, 
+  bulkUndoConfirmation 
+} from './actions';
 
 interface WorkerItem {
   id: string;
@@ -71,9 +81,22 @@ export default function ConfirmationsClient({
   const [selectedCompany, setSelectedCompany] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('');
   
-  // Action modal / confirm state
+  // Bulk selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // Action modal / confirm states
   const [selectedWorkerForDone, setSelectedWorkerForDone] = useState<WorkerItem | null>(null);
   const [remarks, setRemarks] = useState('');
+
+  // Bulk action modal states
+  const [showBulkConfirmModal, setShowBulkConfirmModal] = useState(false);
+  const [bulkRemarks, setBulkRemarks] = useState('');
+  const [showBulkUndoModal, setShowBulkUndoModal] = useState(false);
+
+  // Export dropdown state
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+
   const [isPendingAction, startTransition] = useTransition();
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
@@ -85,6 +108,30 @@ export default function ConfirmationsClient({
   };
 
   const now = useMemo(() => new Date(), []);
+
+  // Close export dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target as Node)) {
+        setShowExportMenu(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Reset bulk selection on tab or view switch
+  const handleTabChange = (tab: '6m' | '3y') => {
+    setActiveTab(tab);
+    setSelectedIds(new Set());
+  };
+
+  const handleStatusChange = (status: 'pending' | 'confirmed') => {
+    setViewStatus(status);
+    setSelectedIds(new Set());
+  };
 
   // Filter criteria helper
   const isEligibleFor6M = React.useCallback((worker: WorkerItem): boolean => {
@@ -117,6 +164,20 @@ export default function ConfirmationsClient({
     if (age.years === 2 && age.months >= 11) return true;
     return false;
   }, [now]);
+
+  // Confirmation Due Date calculation helper
+  const getConfirmationDueDate = React.useCallback((joinDateStr: string | null | undefined, type: '6m' | '3y'): string => {
+    if (!joinDateStr) return 'N/A';
+    const d = parseFlexibleDate(joinDateStr);
+    if (!d) return 'N/A';
+    const due = new Date(d);
+    if (type === '6m') {
+      due.setMonth(due.getMonth() + 6);
+    } else {
+      due.setFullYear(due.getFullYear() + 3);
+    }
+    return formatDate(due);
+  }, []);
 
   // Precomputed counts for badges
   const pending6mCount = useMemo(() => {
@@ -182,7 +243,136 @@ export default function ConfirmationsClient({
     });
   }, [workers, activeTab, viewStatus, selectedCompany, selectedDepartment, searchQuery, isEligibleFor6M, isEligibleFor3Y]);
 
-  // Handle Mark Done
+  // Master selection state helpers
+  const isAllDisplayedSelected = useMemo(() => {
+    return displayedWorkers.length > 0 && displayedWorkers.every((w) => selectedIds.has(w.id));
+  }, [displayedWorkers, selectedIds]);
+
+  const isSomeDisplayedSelected = useMemo(() => {
+    return displayedWorkers.some((w) => selectedIds.has(w.id)) && !isAllDisplayedSelected;
+  }, [displayedWorkers, selectedIds, isAllDisplayedSelected]);
+
+  const toggleSelectAll = () => {
+    if (isAllDisplayedSelected) {
+      const next = new Set(selectedIds);
+      displayedWorkers.forEach((w) => next.delete(w.id));
+      setSelectedIds(next);
+    } else {
+      const next = new Set(selectedIds);
+      displayedWorkers.forEach((w) => next.add(w.id));
+      setSelectedIds(next);
+    }
+  };
+
+  const toggleSelectWorker = (id: string) => {
+    const next = new Set(selectedIds);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    setSelectedIds(next);
+  };
+
+  // CSV / Excel Export Handler
+  const escapeCsv = (val: any): string => {
+    if (val === null || val === undefined) return '';
+    const str = String(val);
+    if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+  };
+
+  const exportToCsv = (items: WorkerItem[], labelSuffix: string) => {
+    if (items.length === 0) {
+      showToast('No employee records available to export', 'error');
+      return;
+    }
+
+    const headers = [
+      'SL',
+      'Worker ID',
+      'Name',
+      'Designation',
+      'Department',
+      'Section',
+      'Sub Section',
+      'Company',
+      'Joining Date',
+      'Service Age',
+      'Confirmation Category',
+      'Confirmation Due Date',
+      'Confirmation Status',
+      'Confirmed Date',
+      'Gross Salary',
+      'Grade',
+      'Phone',
+      'Remarks'
+    ];
+
+    const csvRows = [headers.map(escapeCsv).join(',')];
+
+    items.forEach((w, index) => {
+      const isConfirmed = activeTab === '6m' ? !!w.confirmed6mAt : !!w.confirmed3yAt;
+      const confirmedDate = activeTab === '6m' ? w.confirmed6mAt : w.confirmed3yAt;
+      const remarksStr = activeTab === '6m' ? w.confirmed6mRemarks : w.confirmed3yRemarks;
+      const dueDate = getConfirmationDueDate(w.joinDate, activeTab);
+      const age = calculateServiceAge(w.joinDate, now).text;
+      const category = activeTab === '6m' ? '6 Months Confirmation' : '3 Years Confirmation';
+
+      const row = [
+        index + 1,
+        w.workerId,
+        w.name,
+        w.designation || 'N/A',
+        w.department?.name || 'N/A',
+        w.section?.name || 'N/A',
+        w.subSection?.name || 'N/A',
+        w.company?.name || 'N/A',
+        formatDate(w.joinDate),
+        age || 'N/A',
+        category,
+        dueDate,
+        isConfirmed ? 'Confirmed' : 'Pending',
+        confirmedDate ? formatDateTime(confirmedDate) : '-',
+        w.grossSalary ?? 0,
+        w.grade || 'N/A',
+        w.phone || 'N/A',
+        remarksStr || ''
+      ];
+      csvRows.push(row.map(escapeCsv).join(','));
+    });
+
+    // UTF-8 BOM (\uFEFF) ensures Excel properly opens character sets without encoding corruption
+    const csvContent = '\uFEFF' + csvRows.join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const dateStr = formatDateToInput(new Date());
+    link.href = url;
+    link.download = `employee_confirmations_${activeTab}_${labelSuffix}_${dateStr}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    showToast(`Successfully exported ${items.length} employee record(s) to Excel CSV.`);
+  };
+
+  const handleExportAll = () => {
+    exportToCsv(displayedWorkers, `${viewStatus}_all`);
+    setShowExportMenu(false);
+  };
+
+  const handleExportSelected = () => {
+    if (selectedIds.size === 0) return;
+    const selectedList = displayedWorkers.filter((w) => selectedIds.has(w.id));
+    exportToCsv(selectedList, `${viewStatus}_selected`);
+    setShowExportMenu(false);
+  };
+
+  // Handle Mark Done (Single)
   const handleDoneSubmit = async () => {
     if (!selectedWorkerForDone) return;
     const workerId = selectedWorkerForDone.id;
@@ -214,7 +404,7 @@ export default function ConfirmationsClient({
     });
   };
 
-  // Handle Undo
+  // Handle Undo (Single)
   const handleUndo = async (worker: WorkerItem) => {
     if (!confirm(`Are you sure you want to revert confirmation for ${worker.name}?`)) {
       return;
@@ -240,12 +430,71 @@ export default function ConfirmationsClient({
     });
   };
 
+  // Handle Bulk Confirm
+  const handleBulkConfirmSubmit = async () => {
+    if (selectedIds.size === 0) return;
+    const ids = Array.from(selectedIds);
+    const type = activeTab;
+    const remarksVal = bulkRemarks.trim();
+
+    startTransition(async () => {
+      const res = await bulkMarkConfirmationDone(ids, type, remarksVal || undefined);
+      if (res.success) {
+        const nowIso = new Date().toISOString();
+        setWorkers((prev) =>
+          prev.map((w) => {
+            if (selectedIds.has(w.id)) {
+              return type === '6m'
+                ? { ...w, confirmed6mAt: nowIso, confirmed6mRemarks: remarksVal || null }
+                : { ...w, confirmed3yAt: nowIso, confirmed3yRemarks: remarksVal || null };
+            }
+            return w;
+          })
+        );
+        setShowBulkConfirmModal(false);
+        setBulkRemarks('');
+        setSelectedIds(new Set());
+        showToast(`Successfully confirmed ${res.count || ids.length} employee(s) for ${type === '6m' ? '6 Months' : '3 Years'}!`);
+      } else {
+        showToast(res.error || 'Failed to bulk confirm employees', 'error');
+      }
+    });
+  };
+
+  // Handle Bulk Undo
+  const handleBulkUndoSubmit = async () => {
+    if (selectedIds.size === 0) return;
+    const ids = Array.from(selectedIds);
+    const type = activeTab;
+
+    startTransition(async () => {
+      const res = await bulkUndoConfirmation(ids, type);
+      if (res.success) {
+        setWorkers((prev) =>
+          prev.map((w) => {
+            if (selectedIds.has(w.id)) {
+              return type === '6m'
+                ? { ...w, confirmed6mAt: null, confirmed6mRemarks: null }
+                : { ...w, confirmed3yAt: null, confirmed3yRemarks: null };
+            }
+            return w;
+          })
+        );
+        setShowBulkUndoModal(false);
+        setSelectedIds(new Set());
+        showToast(`Reverted confirmation for ${res.count || ids.length} employee(s).`);
+      } else {
+        showToast(res.error || 'Failed to undo confirmations', 'error');
+      }
+    });
+  };
+
   const handlePrint = () => {
     window.print();
   };
 
   return (
-    <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-6 pb-24">
       {/* Toast Notification */}
       {toastMessage && (
         <div
@@ -283,9 +532,59 @@ export default function ConfirmationsClient({
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap">
+          {/* Export Excel / CSV Report Dropdown */}
+          <div className="relative" ref={exportMenuRef}>
+            <button
+              onClick={() => setShowExportMenu((prev) => !prev)}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition shadow-sm shadow-emerald-600/20"
+              title="Export confirmation records to Excel / CSV"
+            >
+              <FileSpreadsheet size={16} />
+              <span>Export Excel / CSV Report</span>
+              <ChevronDown size={14} className={`transition-transform duration-200 ${showExportMenu ? 'rotate-180' : ''}`} />
+            </button>
+
+            {showExportMenu && (
+              <div className="absolute right-0 mt-2 w-64 glass-modal bg-white/95 backdrop-blur-2xl rounded-xl border border-slate-200/80 shadow-xl py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+                <button
+                  onClick={handleExportAll}
+                  className="w-full px-4 py-2 text-left text-xs sm:text-sm text-gray-700 hover:bg-blue-50/80 flex items-center justify-between transition"
+                >
+                  <span className="flex items-center gap-2">
+                    <Download size={14} className="text-emerald-600" />
+                    <span>Export Full Filtered List</span>
+                  </span>
+                  <span className="text-xs bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-medium">
+                    {displayedWorkers.length}
+                  </span>
+                </button>
+
+                <button
+                  onClick={handleExportSelected}
+                  disabled={selectedIds.size === 0}
+                  className={`w-full px-4 py-2 text-left text-xs sm:text-sm flex items-center justify-between transition ${
+                    selectedIds.size > 0
+                      ? 'text-gray-700 hover:bg-blue-50/80'
+                      : 'text-gray-400 cursor-not-allowed bg-gray-50/50'
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <CheckCheck size={14} className={selectedIds.size > 0 ? 'text-blue-600' : 'text-gray-300'} />
+                    <span>Export Selected</span>
+                  </span>
+                  <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                    selectedIds.size > 0 ? 'bg-blue-100 text-blue-700 font-bold' : 'bg-gray-100 text-gray-400'
+                  }`}>
+                    {selectedIds.size}
+                  </span>
+                </button>
+              </div>
+            )}
+          </div>
+
           <button
             onClick={handlePrint}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-50 hover:border-gray-400 transition shadow-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-white/80 hover:bg-white border border-gray-300 text-gray-700 rounded-xl text-sm font-semibold transition shadow-sm"
           >
             <Printer size={16} /> Print Report
           </button>
@@ -310,7 +609,7 @@ export default function ConfirmationsClient({
         {/* Main Category Tabs: 6m vs 3y */}
         <div className="flex gap-2">
           <button
-            onClick={() => setActiveTab('6m')}
+            onClick={() => handleTabChange('6m')}
             className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
               activeTab === '6m'
                 ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
@@ -329,7 +628,7 @@ export default function ConfirmationsClient({
           </button>
 
           <button
-            onClick={() => setActiveTab('3y')}
+            onClick={() => handleTabChange('3y')}
             className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
               activeTab === '3y'
                 ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
@@ -351,7 +650,7 @@ export default function ConfirmationsClient({
         {/* Sub Toggle: Pending vs Confirmed */}
         <div className="flex items-center bg-slate-100/80 backdrop-blur-sm p-1 rounded-xl self-start sm:self-auto border border-white/60">
           <button
-            onClick={() => setViewStatus('pending')}
+            onClick={() => handleStatusChange('pending')}
             className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
               viewStatus === 'pending'
                 ? 'bg-white text-gray-900 shadow-sm'
@@ -362,7 +661,7 @@ export default function ConfirmationsClient({
             Pending ({activeTab === '6m' ? pending6mCount : pending3yCount})
           </button>
           <button
-            onClick={() => setViewStatus('confirmed')}
+            onClick={() => handleStatusChange('confirmed')}
             className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
               viewStatus === 'confirmed'
                 ? 'bg-white text-emerald-700 shadow-sm'
@@ -392,7 +691,7 @@ export default function ConfirmationsClient({
             <div className="text-xs text-gray-600 mt-0.5">
               {activeTab === '6m' ? (
                 <span>
-                  Employees with service tenure of <strong>5 months 15 days</strong> or more will appear in this list. Click <strong>Done</strong> to complete confirmation.
+                  Employees with service tenure of <strong>5 months 15 days</strong> or more will appear in this list. Select employees using checkboxes to confirm them individually or in bulk.
                 </span>
               ) : (
                 <span>
@@ -403,8 +702,13 @@ export default function ConfirmationsClient({
           </div>
         </div>
 
-        <div className="text-xs font-medium px-3 py-1 bg-white/80 rounded-lg border border-blue-200/60 text-blue-800 shrink-0 shadow-xs">
-          Total in view: <strong className="text-blue-950 font-bold">{displayedWorkers.length}</strong>
+        <div className="text-xs font-medium px-3 py-1 bg-white/80 rounded-lg border border-blue-200/60 text-blue-800 shrink-0 shadow-xs flex items-center gap-2">
+          <span>Total in view: <strong className="text-blue-950 font-bold">{displayedWorkers.length}</strong></span>
+          {selectedIds.size > 0 && (
+            <span className="bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full font-bold">
+              {selectedIds.size} selected
+            </span>
+          )}
         </div>
       </div>
 
@@ -466,10 +770,22 @@ export default function ConfirmationsClient({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-50/80 border-b border-gray-200 text-gray-600 text-xs uppercase tracking-wider font-semibold">
+                <th className="py-3.5 px-4 w-12 text-center print:hidden">
+                  <input
+                    type="checkbox"
+                    checked={isAllDisplayedSelected}
+                    ref={(el) => {
+                      if (el) el.indeterminate = isSomeDisplayedSelected;
+                    }}
+                    onChange={toggleSelectAll}
+                    aria-label="Select all employees in list"
+                    className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300 cursor-pointer accent-blue-600"
+                  />
+                </th>
                 <th className="py-3.5 px-4">Employee</th>
                 <th className="py-3.5 px-4">Designation & Grade</th>
                 <th className="py-3.5 px-4">Department & Section</th>
-                <th className="py-3.5 px-4">Join Date</th>
+                <th className="py-3.5 px-4">Join Date & Due Date</th>
                 <th className="py-3.5 px-4">Service Age</th>
                 {viewStatus === 'confirmed' && <th className="py-3.5 px-4">Confirmed At</th>}
                 <th className="py-3.5 px-4 text-right print:hidden">Action</th>
@@ -479,7 +795,7 @@ export default function ConfirmationsClient({
               {displayedWorkers.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={viewStatus === 'confirmed' ? 7 : 6}
+                    colSpan={viewStatus === 'confirmed' ? 8 : 7}
                     className="py-12 px-4 text-center text-gray-400"
                   >
                     <div className="flex flex-col items-center justify-center gap-2">
@@ -500,15 +816,29 @@ export default function ConfirmationsClient({
               ) : (
                 displayedWorkers.map((worker) => {
                   const age = calculateServiceAge(worker.joinDate, now);
-                  const isDone = activeTab === '6m' ? !!worker.confirmed6mAt : !!worker.confirmed3yAt;
                   const confirmedDateStr = activeTab === '6m' ? worker.confirmed6mAt : worker.confirmed3yAt;
                   const remarksStr = activeTab === '6m' ? worker.confirmed6mRemarks : worker.confirmed3yRemarks;
+                  const isSelected = selectedIds.has(worker.id);
+                  const dueDateStr = getConfirmationDueDate(worker.joinDate, activeTab);
 
                   return (
                     <tr
                       key={worker.id}
-                      className="hover:bg-blue-50/40 transition-colors duration-150 group"
+                      className={`transition-colors duration-150 group ${
+                        isSelected ? 'bg-blue-50/80 hover:bg-blue-100/70' : 'hover:bg-blue-50/40'
+                      }`}
                     >
+                      {/* Checkbox */}
+                      <td className="py-3.5 px-4 w-12 text-center print:hidden" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSelectWorker(worker.id)}
+                          aria-label={`Select ${worker.name}`}
+                          className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300 cursor-pointer accent-blue-600"
+                        />
+                      </td>
+
                       {/* Employee Info */}
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
@@ -564,12 +894,15 @@ export default function ConfirmationsClient({
                         </div>
                       </td>
 
-                      {/* Join Date */}
+                      {/* Join Date & Due Date */}
                       <td className="py-3.5 px-4">
                         <div className="font-semibold text-gray-800">
                           {formatDate(worker.joinDate)}
                         </div>
-                        <div className="text-xs text-gray-400">Join Date</div>
+                        <div className="text-xs text-blue-600 font-medium mt-0.5 flex items-center gap-1">
+                          <Calendar size={11} className="text-blue-500" />
+                          <span>Due: {dueDateStr}</span>
+                        </div>
                       </td>
 
                       {/* Service Age */}
@@ -635,6 +968,66 @@ export default function ConfirmationsClient({
         </div>
       </div>
 
+      {/* Floating Bulk Action Bar */}
+      {selectedIds.size > 0 && (
+        <div className="print:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[95%] max-w-4xl glass-modal bg-slate-900/95 text-white backdrop-blur-2xl border border-white/20 rounded-2xl shadow-2xl p-3.5 sm:px-6 sm:py-4 flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in slide-in-from-bottom-5 duration-200 ring-1 ring-blue-500/30 shadow-[0_10px_40px_rgba(30,58,138,0.3)]">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <span className="w-8 h-8 rounded-full bg-blue-500/30 text-blue-300 font-bold text-xs flex items-center justify-center border border-blue-400/40 shrink-0">
+              {selectedIds.size}
+            </span>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-bold text-white flex items-center gap-2">
+                <span>{selectedIds.size} {selectedIds.size === 1 ? 'employee' : 'employees'} selected</span>
+                <span className="text-xs text-slate-400 font-normal hidden sm:inline">
+                  (of {displayedWorkers.length} displayed)
+                </span>
+              </div>
+              <div className="text-xs text-slate-400 truncate">
+                Confirm status or export to Excel report
+              </div>
+            </div>
+            <button
+              onClick={() => setSelectedIds(new Set())}
+              className="text-xs text-slate-300 hover:text-white underline ml-2 transition shrink-0"
+            >
+              Clear
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2.5 flex-wrap justify-end w-full sm:w-auto">
+            <button
+              onClick={handleExportSelected}
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs sm:text-sm font-semibold rounded-xl transition shadow-xs"
+              title="Download Excel / CSV report for selected employees"
+            >
+              <FileSpreadsheet size={15} className="text-emerald-400" />
+              <span>Export Selected</span>
+            </button>
+
+            {viewStatus === 'pending' ? (
+              <button
+                onClick={() => {
+                  setBulkRemarks('');
+                  setShowBulkConfirmModal(true);
+                }}
+                className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm rounded-xl shadow-lg shadow-emerald-600/30 transition active:scale-95"
+              >
+                <CheckCheck size={16} />
+                <span>Confirm Selected ({selectedIds.size})</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowBulkUndoModal(true)}
+                className="flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs sm:text-sm rounded-xl shadow-lg shadow-amber-600/30 transition active:scale-95"
+              >
+                <RotateCcw size={15} />
+                <span>Revert Selected ({selectedIds.size})</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Print Signature Section */}
       <div className="hidden print:grid grid-cols-4 gap-8 pt-16 text-center text-xs text-gray-700">
         <div>
@@ -651,10 +1044,10 @@ export default function ConfirmationsClient({
         </div>
       </div>
 
-      {/* Done Confirmation Modal */}
+      {/* Single Confirmation Done Modal */}
       {selectedWorkerForDone && (
         <div className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="glass-modal bg-white/90 backdrop-blur-2xl rounded-2xl border border-white/80 shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
+          <div className="glass-modal bg-white/95 backdrop-blur-2xl rounded-2xl border border-white/80 shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200/60">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 bg-emerald-500/15 backdrop-blur-sm text-emerald-700 rounded-xl border border-emerald-500/20">
@@ -699,6 +1092,12 @@ export default function ConfirmationsClient({
                   <span className="text-gray-900">{formatDate(selectedWorkerForDone.joinDate)}</span>
                 </div>
                 <div className="flex justify-between">
+                  <span className="text-gray-500">Confirmation Due:</span>
+                  <span className="font-semibold text-blue-700">
+                    {getConfirmationDueDate(selectedWorkerForDone.joinDate, activeTab)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
                   <span className="text-gray-500">Service Age:</span>
                   <span className="font-bold text-emerald-700">
                     {calculateServiceAge(selectedWorkerForDone.joinDate, now).text}
@@ -741,6 +1140,162 @@ export default function ConfirmationsClient({
                 ) : (
                   <>
                     <Check size={16} /> Mark as Done
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Confirm Modal */}
+      {showBulkConfirmModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="glass-modal bg-white/95 backdrop-blur-2xl rounded-2xl border border-white/80 shadow-2xl max-w-lg w-full p-6 animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200/60">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-emerald-500/15 backdrop-blur-sm text-emerald-700 rounded-xl border border-emerald-500/20">
+                  <CheckCheck size={22} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900 text-lg">
+                    Confirm Selected Employees
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    {activeTab === '6m' ? '6 Months Confirmation' : '3 Years Confirmation'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowBulkConfirmModal(false)}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg transition"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="py-4 space-y-4">
+              <p className="text-sm text-gray-600">
+                You are about to confirm tenure status for{' '}
+                <strong className="text-emerald-700 font-bold">{selectedIds.size}</strong> selected employee(s).
+              </p>
+
+              {/* Selected Workers preview list */}
+              <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1 rounded-xl border border-slate-200/80 p-2.5 bg-slate-50/70">
+                {displayedWorkers
+                  .filter((w) => selectedIds.has(w.id))
+                  .map((w) => (
+                    <div
+                      key={w.id}
+                      className="flex items-center justify-between text-xs py-1.5 px-2 bg-white rounded-lg border border-slate-200/50 shadow-2xs"
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <span className="font-mono font-bold text-blue-700 shrink-0">{w.workerId}</span>
+                        <span className="font-semibold text-gray-800 truncate">{w.name}</span>
+                      </div>
+                      <div className="text-gray-500 shrink-0 text-right">
+                        {w.designation || 'N/A'} • {w.department?.name || 'N/A'}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Optional Bulk Remarks / Notes:
+                </label>
+                <input
+                  type="text"
+                  value={bulkRemarks}
+                  onChange={(e) => setBulkRemarks(e.target.value)}
+                  placeholder="e.g. Regularized upon review, Satisfactory performance..."
+                  className="w-full px-3 py-2 border border-slate-200/80 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white/70 focus:bg-white transition"
+                />
+              </div>
+
+              <p className="text-xs text-gray-500 italic">
+                Once confirmed, all selected employees will be updated with today&apos;s confirmation timestamp and recorded in the audit logs.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200/60">
+              <button
+                onClick={() => setShowBulkConfirmModal(false)}
+                className="px-4 py-2 border border-slate-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-slate-100/70 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleBulkConfirmSubmit}
+                disabled={isPendingAction}
+                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold shadow-md shadow-emerald-600/20 transition flex items-center gap-1.5"
+              >
+                {isPendingAction ? (
+                  <>Processing...</>
+                ) : (
+                  <>
+                    <CheckCheck size={16} /> Confirm {selectedIds.size} Employees
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Undo Modal */}
+      {showBulkUndoModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="glass-modal bg-white/95 backdrop-blur-2xl rounded-2xl border border-white/80 shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200/60">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-amber-500/15 backdrop-blur-sm text-amber-700 rounded-xl border border-amber-500/20">
+                  <RotateCcw size={22} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900 text-lg">
+                    Revert Confirmation
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    {activeTab === '6m' ? '6 Months Confirmation' : '3 Years Confirmation'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowBulkUndoModal(false)}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg transition"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="py-4 space-y-3">
+              <p className="text-sm text-gray-600">
+                Are you sure you want to revert confirmation status for{' '}
+                <strong className="text-amber-700 font-bold">{selectedIds.size}</strong> employee(s)?
+              </p>
+              <p className="text-xs text-gray-500">
+                They will be returned to the pending confirmation list.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200/60">
+              <button
+                onClick={() => setShowBulkUndoModal(false)}
+                className="px-4 py-2 border border-slate-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-slate-100/70 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleBulkUndoSubmit}
+                disabled={isPendingAction}
+                className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-sm font-bold shadow-md shadow-amber-600/20 transition flex items-center gap-1.5"
+              >
+                {isPendingAction ? (
+                  <>Processing...</>
+                ) : (
+                  <>
+                    <RotateCcw size={15} /> Revert {selectedIds.size} Employees
                   </>
                 )}
               </button>
