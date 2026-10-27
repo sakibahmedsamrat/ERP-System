@@ -93,9 +93,10 @@ export default function ConfirmationsClient({
   const [bulkRemarks, setBulkRemarks] = useState('');
   const [showBulkUndoModal, setShowBulkUndoModal] = useState(false);
 
-  // Export dropdown state
+  // Export dropdown & master checkbox refs
   const [showExportMenu, setShowExportMenu] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
+  const masterCheckboxRef = useRef<HTMLInputElement>(null);
 
   const [isPendingAction, startTransition] = useTransition();
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
@@ -234,7 +235,9 @@ export default function ConfirmationsClient({
         const matchDes = (w.designation || '').toLowerCase().includes(q);
         const matchDept = (w.department?.name || '').toLowerCase().includes(q);
         const matchSec = (w.section?.name || '').toLowerCase().includes(q);
-        if (!matchId && !matchName && !matchDes && !matchDept && !matchSec) {
+        const matchSubSec = (w.subSection?.name || '').toLowerCase().includes(q);
+        const matchPhone = (w.phone || '').toLowerCase().includes(q);
+        if (!matchId && !matchName && !matchDes && !matchDept && !matchSec && !matchSubSec && !matchPhone) {
           return false;
         }
       }
@@ -251,6 +254,12 @@ export default function ConfirmationsClient({
   const isSomeDisplayedSelected = useMemo(() => {
     return displayedWorkers.some((w) => selectedIds.has(w.id)) && !isAllDisplayedSelected;
   }, [displayedWorkers, selectedIds, isAllDisplayedSelected]);
+
+  useEffect(() => {
+    if (masterCheckboxRef.current) {
+      masterCheckboxRef.current.indeterminate = isSomeDisplayedSelected;
+    }
+  }, [isSomeDisplayedSelected]);
 
   const toggleSelectAll = () => {
     if (isAllDisplayedSelected) {
@@ -277,7 +286,10 @@ export default function ConfirmationsClient({
   // CSV / Excel Export Handler
   const escapeCsv = (val: any): string => {
     if (val === null || val === undefined) return '';
-    const str = String(val);
+    let str = String(val);
+    if (/^[=+\-@]/.test(str)) {
+      str = `'${str}`;
+    }
     if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
       return `"${str.replace(/"/g, '""')}"`;
     }
@@ -367,7 +379,7 @@ export default function ConfirmationsClient({
 
   const handleExportSelected = () => {
     if (selectedIds.size === 0) return;
-    const selectedList = displayedWorkers.filter((w) => selectedIds.has(w.id));
+    const selectedList = workers.filter((w) => selectedIds.has(w.id));
     exportToCsv(selectedList, `${viewStatus}_selected`);
     setShowExportMenu(false);
   };
@@ -395,6 +407,11 @@ export default function ConfirmationsClient({
         );
         setSelectedWorkerForDone(null);
         setRemarks('');
+        setSelectedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(workerId);
+          return next;
+        });
         showToast(
           `${workerName} (${activeTab === '6m' ? '6 Months' : '3 Years'}) confirmation marked as Done!`
         );
@@ -423,6 +440,11 @@ export default function ConfirmationsClient({
             return w;
           })
         );
+        setSelectedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(worker.id);
+          return next;
+        });
         showToast(`Confirmation reverted for ${worker.name}. Back to pending.`);
       } else {
         showToast(res.error || 'Failed to undo confirmation', 'error');
@@ -434,6 +456,7 @@ export default function ConfirmationsClient({
   const handleBulkConfirmSubmit = async () => {
     if (selectedIds.size === 0) return;
     const ids = Array.from(selectedIds);
+    const idSet = new Set(ids);
     const type = activeTab;
     const remarksVal = bulkRemarks.trim();
 
@@ -443,7 +466,7 @@ export default function ConfirmationsClient({
         const nowIso = new Date().toISOString();
         setWorkers((prev) =>
           prev.map((w) => {
-            if (selectedIds.has(w.id)) {
+            if (idSet.has(w.id)) {
               return type === '6m'
                 ? { ...w, confirmed6mAt: nowIso, confirmed6mRemarks: remarksVal || null }
                 : { ...w, confirmed3yAt: nowIso, confirmed3yRemarks: remarksVal || null };
@@ -454,7 +477,7 @@ export default function ConfirmationsClient({
         setShowBulkConfirmModal(false);
         setBulkRemarks('');
         setSelectedIds(new Set());
-        showToast(`Successfully confirmed ${res.count || ids.length} employee(s) for ${type === '6m' ? '6 Months' : '3 Years'}!`);
+        showToast(`Successfully confirmed ${res.count ?? ids.length} employee(s) for ${type === '6m' ? '6 Months' : '3 Years'}!`);
       } else {
         showToast(res.error || 'Failed to bulk confirm employees', 'error');
       }
@@ -465,6 +488,7 @@ export default function ConfirmationsClient({
   const handleBulkUndoSubmit = async () => {
     if (selectedIds.size === 0) return;
     const ids = Array.from(selectedIds);
+    const idSet = new Set(ids);
     const type = activeTab;
 
     startTransition(async () => {
@@ -472,7 +496,7 @@ export default function ConfirmationsClient({
       if (res.success) {
         setWorkers((prev) =>
           prev.map((w) => {
-            if (selectedIds.has(w.id)) {
+            if (idSet.has(w.id)) {
               return type === '6m'
                 ? { ...w, confirmed6mAt: null, confirmed6mRemarks: null }
                 : { ...w, confirmed3yAt: null, confirmed3yRemarks: null };
@@ -482,7 +506,7 @@ export default function ConfirmationsClient({
         );
         setShowBulkUndoModal(false);
         setSelectedIds(new Set());
-        showToast(`Reverted confirmation for ${res.count || ids.length} employee(s).`);
+        showToast(`Reverted confirmation for ${res.count ?? ids.length} employee(s).`);
       } else {
         showToast(res.error || 'Failed to undo confirmations', 'error');
       }
@@ -774,12 +798,11 @@ export default function ConfirmationsClient({
                   <input
                     type="checkbox"
                     checked={isAllDisplayedSelected}
-                    ref={(el) => {
-                      if (el) el.indeterminate = isSomeDisplayedSelected;
-                    }}
+                    ref={masterCheckboxRef}
+                    disabled={displayedWorkers.length === 0}
                     onChange={toggleSelectAll}
                     aria-label="Select all employees in list"
-                    className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300 cursor-pointer accent-blue-600"
+                    className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 accent-blue-600"
                   />
                 </th>
                 <th className="py-3.5 px-4">Employee</th>
@@ -829,11 +852,15 @@ export default function ConfirmationsClient({
                       }`}
                     >
                       {/* Checkbox */}
-                      <td className="py-3.5 px-4 w-12 text-center print:hidden" onClick={(e) => e.stopPropagation()}>
+                      <td
+                        className="py-3.5 px-4 w-12 text-center print:hidden cursor-pointer"
+                        onClick={() => toggleSelectWorker(worker.id)}
+                      >
                         <input
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => toggleSelectWorker(worker.id)}
+                          onClick={(e) => e.stopPropagation()}
                           aria-label={`Select ${worker.name}`}
                           className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300 cursor-pointer accent-blue-600"
                         />
@@ -890,6 +917,7 @@ export default function ConfirmationsClient({
                         </div>
                         <div className="text-xs text-gray-500 mt-0.5">
                           {worker.section?.name || 'General Section'}
+                          {worker.subSection?.name && ` • ${worker.subSection.name}`}
                           {worker.company && ` • ${worker.company.name}`}
                         </div>
                       </td>
@@ -1182,7 +1210,7 @@ export default function ConfirmationsClient({
 
               {/* Selected Workers preview list */}
               <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1 rounded-xl border border-slate-200/80 p-2.5 bg-slate-50/70">
-                {displayedWorkers
+                {workers
                   .filter((w) => selectedIds.has(w.id))
                   .map((w) => (
                     <div
@@ -1246,7 +1274,7 @@ export default function ConfirmationsClient({
       {/* Bulk Undo Modal */}
       {showBulkUndoModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="glass-modal bg-white/95 backdrop-blur-2xl rounded-2xl border border-white/80 shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
+          <div className="glass-modal bg-white/95 backdrop-blur-2xl rounded-2xl border border-white/80 shadow-2xl max-w-lg w-full p-6 animate-in fade-in zoom-in duration-200">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200/60">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 bg-amber-500/15 backdrop-blur-sm text-amber-700 rounded-xl border border-amber-500/20">
@@ -1277,6 +1305,26 @@ export default function ConfirmationsClient({
               <p className="text-xs text-gray-500">
                 They will be returned to the pending confirmation list.
               </p>
+
+              {/* Selected Workers preview list */}
+              <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1 rounded-xl border border-slate-200/80 p-2.5 bg-slate-50/70">
+                {workers
+                  .filter((w) => selectedIds.has(w.id))
+                  .map((w) => (
+                    <div
+                      key={w.id}
+                      className="flex items-center justify-between text-xs py-1.5 px-2 bg-white rounded-lg border border-slate-200/50 shadow-2xs"
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <span className="font-mono font-bold text-amber-700 shrink-0">{w.workerId}</span>
+                        <span className="font-semibold text-gray-800 truncate">{w.name}</span>
+                      </div>
+                      <div className="text-gray-500 shrink-0 text-right">
+                        {w.designation || 'N/A'} • {w.department?.name || 'N/A'}
+                      </div>
+                    </div>
+                  ))}
+              </div>
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200/60">

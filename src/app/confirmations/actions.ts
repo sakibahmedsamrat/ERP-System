@@ -17,7 +17,7 @@ export async function markConfirmationDone(
     }
 
     const role = session.user?.role;
-    const userModules = (session.user?.modules || '').split(',').map((m: string) => m.trim());
+    const userModules = (session.user?.modules || '').split(',').map((m: string) => m.trim().toUpperCase());
     const hasAccess = role === 'SUPER_ADMIN' || session.user?.modules === '*' || userModules.includes('CONFIRMATIONS');
     if (!hasAccess) {
       return { success: false, error: 'Unauthorized: Missing CONFIRMATIONS permission' };
@@ -29,12 +29,13 @@ export async function markConfirmationDone(
     });
 
     const updateData: any = {};
+    const cleanRemarks = remarks && remarks.trim() !== '' ? remarks.trim() : null;
     if (type === '6m') {
       updateData.confirmed6mAt = new Date();
-      if (remarks !== undefined) updateData.confirmed6mRemarks = remarks;
+      updateData.confirmed6mRemarks = cleanRemarks;
     } else if (type === '3y') {
       updateData.confirmed3yAt = new Date();
-      if (remarks !== undefined) updateData.confirmed3yRemarks = remarks;
+      updateData.confirmed3yRemarks = cleanRemarks;
     } else {
       return { success: false, error: 'Invalid confirmation type' };
     }
@@ -48,7 +49,7 @@ export async function markConfirmationDone(
     await logAction(
       'CONFIRMATIONS',
       'CONFIRM',
-      `Confirmed ${label} status for ${worker?.name || workerId} (${worker?.workerId || workerId})${remarks ? ` - Note: ${remarks}` : ''}`
+      `Confirmed ${label} status for ${worker?.name || workerId} (${worker?.workerId || workerId})${cleanRemarks ? ` - Note: ${cleanRemarks}` : ''}`
     );
 
     revalidatePath('/confirmations');
@@ -70,7 +71,7 @@ export async function undoConfirmation(
     }
 
     const role = session.user?.role;
-    const userModules = (session.user?.modules || '').split(',').map((m: string) => m.trim());
+    const userModules = (session.user?.modules || '').split(',').map((m: string) => m.trim().toUpperCase());
     const hasAccess = role === 'SUPER_ADMIN' || session.user?.modules === '*' || userModules.includes('CONFIRMATIONS');
     if (!hasAccess) {
       return { success: false, error: 'Unauthorized: Missing CONFIRMATIONS permission' };
@@ -124,7 +125,7 @@ export async function bulkMarkConfirmationDone(
     }
 
     const role = session.user?.role;
-    const userModules = (session.user?.modules || '').split(',').map((m: string) => m.trim());
+    const userModules = (session.user?.modules || '').split(',').map((m: string) => m.trim().toUpperCase());
     const hasAccess = role === 'SUPER_ADMIN' || session.user?.modules === '*' || userModules.includes('CONFIRMATIONS');
     if (!hasAccess) {
       return { success: false, error: 'Unauthorized: Missing CONFIRMATIONS permission' };
@@ -141,16 +142,13 @@ export async function bulkMarkConfirmationDone(
 
     const updateData: any = {};
     const now = new Date();
+    const cleanRemarks = remarks && remarks.trim() !== '' ? remarks.trim() : null;
     if (type === '6m') {
       updateData.confirmed6mAt = now;
-      if (remarks !== undefined && remarks.trim() !== '') {
-        updateData.confirmed6mRemarks = remarks.trim();
-      }
+      updateData.confirmed6mRemarks = cleanRemarks;
     } else if (type === '3y') {
       updateData.confirmed3yAt = now;
-      if (remarks !== undefined && remarks.trim() !== '') {
-        updateData.confirmed3yRemarks = remarks.trim();
-      }
+      updateData.confirmed3yRemarks = cleanRemarks;
     } else {
       return { success: false, error: 'Invalid confirmation type' };
     }
@@ -163,7 +161,7 @@ export async function bulkMarkConfirmationDone(
     const label = type === '6m' ? '6 Months' : '3 Years';
     const sampleNames = workers.slice(0, 3).map((w) => `${w.name} (${w.workerId})`).join(', ');
     const moreCount = workers.length > 3 ? ` and ${workers.length - 3} more` : '';
-    const logDetails = `Bulk confirmed ${result.count} employee(s) for ${label} status: ${sampleNames}${moreCount}${remarks ? ` [Remarks: ${remarks.trim()}]` : ''}`;
+    const logDetails = `Bulk confirmed ${result.count} employee(s) for ${label} status: ${sampleNames}${moreCount}${cleanRemarks ? ` [Remarks: ${cleanRemarks}]` : ''}`;
 
     await logAction('CONFIRMATIONS', 'BULK_CONFIRM', logDetails);
 
@@ -186,7 +184,7 @@ export async function bulkUndoConfirmation(
     }
 
     const role = session.user?.role;
-    const userModules = (session.user?.modules || '').split(',').map((m: string) => m.trim());
+    const userModules = (session.user?.modules || '').split(',').map((m: string) => m.trim().toUpperCase());
     const hasAccess = role === 'SUPER_ADMIN' || session.user?.modules === '*' || userModules.includes('CONFIRMATIONS');
     if (!hasAccess) {
       return { success: false, error: 'Unauthorized: Missing CONFIRMATIONS permission' };
