@@ -88,6 +88,7 @@ export default async function Dashboard() {
             <Link 
               key={idx} 
               href={card.href}
+              prefetch={true}
               className="glass-card glass-card-hover rounded-3xl p-6 flex items-center justify-between cursor-pointer group relative overflow-hidden"
             >
               <div>
@@ -96,7 +97,7 @@ export default async function Dashboard() {
                 </p>
                 <p className="text-3xl font-extrabold text-slate-900 tracking-tight">{card.value}</p>
               </div>
-              <div className={`p-4 rounded-2xl ${card.bg} border ${card.border} group-hover:scale-110 transition-transform duration-300 shadow-xs`}>
+              <div className={`p-4 rounded-2xl ${card.bg} border ${card.border} group-hover:scale-105 transition-transform duration-200 shadow-xs`}>
                 <Icon className={`w-7 h-7 ${card.color}`} />
               </div>
             </Link>
@@ -108,11 +109,10 @@ export default async function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Welcome Glass Card */}
         <div className="lg:col-span-6 bg-gradient-to-br from-blue-600 via-indigo-600 to-indigo-700 rounded-3xl shadow-xl shadow-indigo-900/10 p-8 text-white relative overflow-hidden border border-white/20">
-          <div className="absolute top-0 right-0 w-72 h-72 bg-white/10 rounded-full blur-3xl -translate-y-1/3 translate-x-1/3 pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-indigo-400/20 rounded-full blur-2xl pointer-events-none" />
+          <div className="absolute top-0 right-0 w-72 h-72 bg-gradient-to-br from-white/10 to-transparent rounded-full -translate-y-1/3 translate-x-1/3 pointer-events-none" />
 
           <div className="relative z-10">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-xs font-semibold text-blue-100 mb-4 border border-white/20">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-sm text-xs font-semibold text-blue-100 mb-4 border border-white/20">
               <Sparkles size={13} />
               <span>Workspace Portal</span>
             </div>
@@ -127,14 +127,16 @@ export default async function Dashboard() {
             <div className="flex flex-wrap gap-3">
               <Link 
                 href="/workers" 
-                className="bg-white text-blue-700 px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-50 transition shadow-sm hover:shadow flex items-center gap-1.5"
+                prefetch={true}
+                className="bg-white text-blue-700 px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-50 transition-colors shadow-sm hover:shadow flex items-center gap-1.5"
               >
                 <span>View Employees</span>
                 <ArrowUpRight size={16} />
               </Link>
               <Link 
                 href="/payroll" 
-                className="bg-white/15 hover:bg-white/25 text-white border border-white/30 px-5 py-2.5 rounded-xl font-semibold text-sm transition backdrop-blur-md"
+                prefetch={true}
+                className="bg-white/15 hover:bg-white/25 text-white border border-white/30 px-5 py-2.5 rounded-xl font-semibold text-sm transition-colors backdrop-blur-sm"
               >
                 Payroll &amp; Settlements
               </Link>
@@ -154,6 +156,7 @@ export default async function Dashboard() {
               </h2>
               <Link 
                 href="/tasks" 
+                prefetch={true}
                 className="text-xs text-blue-600 hover:text-blue-800 font-bold hover:underline flex items-center gap-1"
               >
                 <span>View All</span>

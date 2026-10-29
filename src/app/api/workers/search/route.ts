@@ -14,8 +14,8 @@ export async function GET(request: Request) {
   const withPhoto = searchParams.get('withPhoto') === 'true';
 
   if (id) {
-    const worker = await prisma.worker.findFirst({
-      where: { id, isDeleted: false },
+    const worker = await prisma.worker.findUnique({
+      where: { id },
       include: {
         company: true,
         department: true,
@@ -23,8 +23,9 @@ export async function GET(request: Request) {
         subSection: true
       }
     });
-    const res = NextResponse.json({ worker, workers: worker ? [worker] : [] });
-    res.headers.set('Cache-Control', 'private, max-age=15, stale-while-revalidate=30');
+    const validWorker = worker && !worker.isDeleted ? worker : null;
+    const res = NextResponse.json({ worker: validWorker, workers: validWorker ? [validWorker] : [] });
+    res.headers.set('Cache-Control', 'private, max-age=30, stale-while-revalidate=60');
     return res;
   }
 

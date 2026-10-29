@@ -9,30 +9,32 @@ export default async function RecruitmentPage() {
   const session = await getSession();
   const userRole = session?.user?.role;
 
-  // Fetch companies with departments, sections, and sub-sections with active worker counts
-  const companies = await prisma.company.findMany({
-    orderBy: { name: 'asc' },
-    include: {
-      departments: {
-        orderBy: { name: 'asc' },
-        include: {
-          sections: {
-            orderBy: { name: 'asc' },
-            include: {
-              _count: {
-                select: {
-                  workers: {
-                    where: { isActive: true, isDeleted: false }
+  // Fetch all recruitment data concurrently in parallel
+  const [companies, recruitmentsData, applicantsData] = await Promise.all([
+    prisma.company.findMany({
+      orderBy: { name: 'asc' },
+      include: {
+        departments: {
+          orderBy: { name: 'asc' },
+          include: {
+            sections: {
+              orderBy: { name: 'asc' },
+              include: {
+                _count: {
+                  select: {
+                    workers: {
+                      where: { isActive: true, isDeleted: false }
+                    }
                   }
-                }
-              },
-              subSections: {
-                orderBy: { name: 'asc' },
-                include: {
-                  _count: {
-                    select: {
-                      workers: {
-                        where: { isActive: true, isDeleted: false }
+                },
+                subSections: {
+                  orderBy: { name: 'asc' },
+                  include: {
+                    _count: {
+                      select: {
+                        workers: {
+                          where: { isActive: true, isDeleted: false }
+                        }
                       }
                     }
                   }
@@ -42,8 +44,23 @@ export default async function RecruitmentPage() {
           }
         }
       }
-    }
-  });
+    }),
+    prisma.recruitment.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        _count: {
+          select: { applicants: true }
+        }
+      }
+    }),
+    prisma.applicant.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        company: { select: { id: true, name: true } },
+        department: { select: { id: true, name: true } }
+      }
+    })
+  ]);
 
   // Flatten into table items
   const items: SubSectionManpowerItem[] = [];
@@ -71,25 +88,6 @@ export default async function RecruitmentPage() {
       }
     }
   }
-
-  // Fetch existing job circulars and ATS candidates
-  const [recruitmentsData, applicantsData] = await Promise.all([
-    prisma.recruitment.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: {
-        _count: {
-          select: { applicants: true }
-        }
-      }
-    }),
-    prisma.applicant.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: {
-        company: { select: { id: true, name: true } },
-        department: { select: { id: true, name: true } }
-      }
-    })
-  ]);
 
   const recruitments: JobItem[] = recruitmentsData.map(r => ({
     id: r.id,

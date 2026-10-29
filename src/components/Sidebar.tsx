@@ -42,10 +42,10 @@ function NavItem({ href, icon: Icon, label, color = "text-slate-300", isActive, 
       onClick={() => {
         onClose?.();
       }}
-      className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-300 text-sm font-medium ${
+      className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-colors duration-150 text-sm font-medium ${
         isActive 
           ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/30 ring-1 ring-white/25 translate-x-1 font-semibold' 
-          : `hover:bg-white/10 hover:text-white ${color} hover:translate-x-1 hover:backdrop-blur-xs`
+          : `hover:bg-white/10 hover:text-white ${color} hover:translate-x-1`
       }`}
     >
       <Icon size={18} className={isActive ? 'text-white' : 'opacity-75'} /> 
@@ -220,13 +220,11 @@ export default function Sidebar({
         />
       )}
 
-      <aside className={`w-72 bg-slate-950/95 backdrop-blur-2xl text-white h-screen shrink-0 flex flex-col print:hidden shadow-2xl relative overflow-hidden z-50 border-r border-slate-800/80 transition-transform duration-300 ease-in-out fixed inset-y-0 left-0 lg:static lg:translate-x-0 ${
+      <aside className={`w-72 bg-slate-950/95 backdrop-blur-md text-white h-screen shrink-0 flex flex-col print:hidden shadow-2xl relative overflow-hidden z-50 border-r border-slate-800/80 transition-transform duration-200 ease-in-out fixed inset-y-0 left-0 lg:static lg:translate-x-0 ${
         isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       }`}>
-        {/* Ambient interior glowing orbs */}
-        <div className="absolute top-0 left-0 w-full h-72 bg-gradient-to-b from-blue-600/15 via-indigo-600/10 to-transparent pointer-events-none" />
-        <div className="absolute top-1/2 -left-20 w-44 h-44 rounded-full bg-blue-500/10 blur-2xl pointer-events-none" />
-        <div className="absolute bottom-10 right-0 w-36 h-36 rounded-full bg-purple-500/10 blur-2xl pointer-events-none" />
+        {/* Subtle interior gradient */}
+        <div className="absolute top-0 left-0 w-full h-72 bg-gradient-to-b from-blue-600/10 via-indigo-600/5 to-transparent pointer-events-none" />
         
         <div className="p-6 font-extrabold text-2xl border-b border-white/10 flex items-center justify-between relative z-10">
           <div className="flex items-center gap-3">

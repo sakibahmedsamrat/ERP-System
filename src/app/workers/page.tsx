@@ -6,10 +6,32 @@ import { deleteWorker } from './actions';
 import { getSession } from '@/lib/auth';
 import DeleteWorkerButton from '@/components/DeleteWorkerButton';
 import BulkDeleteWorkersModal from '@/components/BulkDeleteWorkersModal';
+import { unstable_cache } from 'next/cache';
 
 export const metadata = {
   title: 'Employees | HR ERP',
 };
+
+const getWorkerFilterOptions = unstable_cache(
+  async () => {
+    const [companies, departments, sections, subSections, designations] = await Promise.all([
+      prisma.company.findMany({ select: { name: true }, distinct: ['name'], orderBy: { name: 'asc' } }),
+      prisma.department.findMany({ select: { name: true }, distinct: ['name'], orderBy: { name: 'asc' } }),
+      prisma.section.findMany({ select: { name: true }, distinct: ['name'], orderBy: { name: 'asc' } }),
+      prisma.subSection.findMany({ select: { name: true }, distinct: ['name'], orderBy: { name: 'asc' } }),
+      prisma.worker.findMany({
+        where: { isDeleted: false, designation: { not: null } },
+        distinct: ['designation'],
+        select: { designation: true },
+        take: 100,
+        orderBy: { designation: 'asc' }
+      }),
+    ]);
+    return { companies, departments, sections, subSections, designations };
+  },
+  ['worker-filter-options'],
+  { revalidate: 120, tags: ['filter-options', 'workers'] }
+);
 
 export default async function WorkersPage({ 
   searchParams 
@@ -85,18 +107,19 @@ export default async function WorkersPage({
   
   queryOptions.where = whereClause;
 
-  const [totalWorkers, workers, companies, departments, sections, subSections, designations, deletedWorkersCount] = await Promise.all([
+  const [
+    { companies, departments, sections, subSections, designations },
+    totalWorkers,
+    workers,
+    deletedWorkersCount
+  ] = await Promise.all([
+    getWorkerFilterOptions(),
     prisma.worker.count({ where: queryOptions.where }),
     prisma.worker.findMany({
       ...queryOptions,
       skip,
       take: pageSize
     }),
-    prisma.company.findMany({ select: { name: true }, distinct: ['name'] }),
-    prisma.department.findMany({ select: { name: true }, distinct: ['name'] }),
-    prisma.section.findMany({ select: { name: true }, distinct: ['name'] }),
-    prisma.subSection.findMany({ select: { name: true }, distinct: ['name'] }),
-    prisma.worker.findMany({ where: { isDeleted: false, designation: { not: null } }, distinct: ['designation'], select: { designation: true } }),
     role === 'SUPER_ADMIN' ? prisma.worker.count({ where: { isDeleted: true } }) : Promise.resolve(0)
   ]);
 

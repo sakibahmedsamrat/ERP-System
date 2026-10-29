@@ -33,7 +33,9 @@ export default async function IdCardsPage({
   if (searchParams?.tab === 'visitor') initialTab = 'visitor';
   if (searchParams?.tab === 'batch') initialTab = 'batch';
 
-  // Load workers for batch print & visitor host selection
+  const isBatchTab = initialTab === 'batch';
+
+  // Load workers for batch print & visitor host selection (exclude heavy photoUrl blobs on default view)
   const [workersRaw, visitorLogsRaw, companiesRaw] = await Promise.all([
     prisma.worker.findMany({
       where: { isDeleted: false, isActive: true },
@@ -44,7 +46,7 @@ export default async function IdCardsPage({
         designation: true,
         bloodGroup: true,
         phone: true,
-        photoUrl: true,
+        photoUrl: isBatchTab,
         joinDate: true,
         company: { select: { id: true, name: true } },
         department: { select: { id: true, name: true } },

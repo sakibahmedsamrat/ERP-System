@@ -1,14 +1,24 @@
 import prisma from '@/lib/prisma';
-export const dynamic = 'force-dynamic';
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import MainLayout from "@/components/MainLayout";
 import { getSession } from "@/lib/auth";
 import NextTopLoader from 'nextjs-toploader';
+import { unstable_cache } from 'next/cache';
 
+const inter = Inter({ subsets: ["latin"], display: 'swap' });
 
-const inter = Inter({ subsets: ["latin"] });
+const getUserProfileImage = unstable_cache(
+  async (userId: string) => {
+    return prisma.user.findUnique({
+      where: { id: userId },
+      select: { profileImage: true },
+    });
+  },
+  ['user-profile-image'],
+  { revalidate: 300, tags: ['user-profile'] }
+);
 
 export const metadata: Metadata = {
   title: "ERP System",
@@ -32,10 +42,7 @@ export default async function RootLayout({
   const session = await getSession();
   let fullUser = session?.user;
   if (session?.user?.id) {
-    const dbUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { profileImage: true }
-    });
+    const dbUser = await getUserProfileImage(session.user.id);
     if (dbUser) {
       fullUser = { ...session.user, profileImage: dbUser.profileImage };
     }

@@ -21,54 +21,54 @@ export default async function ConfirmationsPage() {
     redirect('/');
   }
 
-  // Fetch all active workers with only required fields (excluding heavy base64 images)
-  const workers = await prisma.worker.findMany({
-    where: {
-      isActive: true,
-      isDeleted: false,
-    },
-    select: {
-      id: true,
-      workerId: true,
-      name: true,
-      designation: true,
-      gender: true,
-      bloodGroup: true,
-      phone: true,
-      grade: true,
-      grossSalary: true,
-      joinDate: true,
-      confirmed6mAt: true,
-      confirmed3yAt: true,
-      confirmed6mRemarks: true,
-      confirmed3yRemarks: true,
-      company: {
-        select: { id: true, name: true },
+  // Fetch concurrent data in parallel for optimal response speed
+  const [workers, companies, departments] = await Promise.all([
+    prisma.worker.findMany({
+      where: {
+        isActive: true,
+        isDeleted: false,
       },
-      department: {
-        select: { id: true, name: true },
+      select: {
+        id: true,
+        workerId: true,
+        name: true,
+        designation: true,
+        gender: true,
+        bloodGroup: true,
+        phone: true,
+        grade: true,
+        grossSalary: true,
+        joinDate: true,
+        confirmed6mAt: true,
+        confirmed3yAt: true,
+        confirmed6mRemarks: true,
+        confirmed3yRemarks: true,
+        company: {
+          select: { id: true, name: true },
+        },
+        department: {
+          select: { id: true, name: true },
+        },
+        section: {
+          select: { id: true, name: true },
+        },
+        subSection: {
+          select: { id: true, name: true },
+        },
       },
-      section: {
-        select: { id: true, name: true },
+      orderBy: {
+        joinDate: 'asc',
       },
-      subSection: {
-        select: { id: true, name: true },
-      },
-    },
-    orderBy: {
-      joinDate: 'asc',
-    },
-  });
-
-  const companies = await prisma.company.findMany({
-    select: { id: true, name: true },
-    orderBy: { name: 'asc' },
-  });
-
-  const departments = await prisma.department.findMany({
-    select: { id: true, name: true },
-    orderBy: { name: 'asc' },
-  });
+    }),
+    prisma.company.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+    }),
+    prisma.department.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+    }),
+  ]);
 
   // Serialize dates to ISO strings for client component safely
   const serializedWorkers = workers.map((w) => ({

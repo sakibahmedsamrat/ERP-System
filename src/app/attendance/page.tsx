@@ -115,30 +115,31 @@ export default async function AttendancePage({ searchParams }: { searchParams: {
     description: h.description,
   }));
 
-  // Statutory Ledger Calculations per worker
+  // High-performance Statutory Ledger Calculations via O(1) Map lookup
+  const leavesByWorker = new Map<string, { casual: number; sick: number; earned: number }>();
+  for (const l of leaveRequestsRaw) {
+    if (l.status === 'APPROVED') {
+      let entry = leavesByWorker.get(l.workerId);
+      if (!entry) {
+        entry = { casual: 0, sick: 0, earned: 0 };
+        leavesByWorker.set(l.workerId, entry);
+      }
+      if (l.leaveType === 'CASUAL') entry.casual += l.days;
+      else if (l.leaveType === 'SICK') entry.sick += l.days;
+      else if (l.leaveType === 'EARNED') entry.earned += l.days;
+    }
+  }
+
   const statutoryLedger = workersRaw.map((w) => {
-    const workerApprovedLeaves = leaveRequestsRaw.filter(
-      (l) => l.workerId === w.id && l.status === 'APPROVED'
-    );
-
-    let casualTaken = 0;
-    let sickTaken = 0;
-    let earnedTaken = 0;
-
-    workerApprovedLeaves.forEach((l) => {
-      if (l.leaveType === 'CASUAL') casualTaken += l.days;
-      else if (l.leaveType === 'SICK') sickTaken += l.days;
-      else if (l.leaveType === 'EARNED') earnedTaken += l.days;
-    });
-
+    const entry = leavesByWorker.get(w.id);
     return {
       workerId: w.id,
       empId: w.workerId,
       name: w.name,
       companyName: w.company?.name || 'N/A',
-      casualTaken,
-      sickTaken,
-      earnedTaken,
+      casualTaken: entry?.casual || 0,
+      sickTaken: entry?.sick || 0,
+      earnedTaken: entry?.earned || 0,
     };
   });
 

@@ -26,8 +26,6 @@ import {
   Loader2
 } from 'lucide-react';
 import { numberToWords, formatDate } from '@/lib/formatDate';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 
 interface MonthBreakdown {
   monthName: string;
@@ -367,6 +365,11 @@ export default function SalaryStatementClient() {
     setIsGeneratingPdf(true);
 
     try {
+      const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
+        import('jspdf'),
+        import('html2canvas')
+      ]);
+
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',

@@ -21,14 +21,6 @@ export default function MainLayout({ children, user }: { children: React.ReactNo
 
   return (
     <div className="ambient-mesh relative flex h-screen overflow-hidden print:bg-white print:h-auto print:overflow-visible font-sans text-slate-800 selection:bg-blue-500/20">
-      {/* Ambient floating gradient orbs for glassmorphism backdrop depth */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0 print:hidden" aria-hidden="true">
-        <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-blue-400/20 blur-3xl" />
-        <div className="absolute top-1/4 -right-32 w-[32rem] h-[32rem] rounded-full bg-indigo-400/15 blur-3xl" />
-        <div className="absolute bottom-10 left-1/3 w-[28rem] h-[28rem] rounded-full bg-purple-400/15 blur-3xl" />
-        <div className="absolute -bottom-20 right-1/4 w-80 h-80 rounded-full bg-teal-300/15 blur-3xl" />
-      </div>
-
       <Suspense fallback={<aside className="w-72 bg-slate-900/95 text-white h-screen shrink-0 hidden lg:block" />}>
         <Sidebar 
           user={user} 

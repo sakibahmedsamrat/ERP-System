@@ -24,7 +24,11 @@ export default function NotificationBell() {
 
   useEffect(() => {
     loadNotifications();
-    const interval = setInterval(loadNotifications, 30000);
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        loadNotifications();
+      }
+    }, 45000);
     return () => clearInterval(interval);
   }, []);
 

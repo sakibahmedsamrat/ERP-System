@@ -72,12 +72,14 @@ export default async function PayrollPage() {
         <div className="flex flex-wrap items-center gap-3">
           <Link
             href="/payroll/salary-statement"
+            prefetch={true}
             className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm shadow-md shadow-blue-600/20 transition-all hover:shadow-lg"
           >
             <FileSpreadsheet size={17} /> Generate Salary Statement
           </Link>
           <Link
             href="/settlements/new"
+            prefetch={true}
             className="inline-flex items-center gap-2 bg-white/80 hover:bg-white text-slate-800 border border-slate-200/80 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition shadow-xs"
           >
             <CreditCard size={17} /> New Settlement
@@ -92,7 +94,7 @@ export default async function PayrollPage() {
             <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Active Employees</p>
             <p className="text-3xl font-extrabold text-slate-900 mt-1">{totalActiveWorkers}</p>
           </div>
-          <div className="p-3.5 bg-blue-500/10 text-blue-600 border border-blue-200/50 rounded-2xl group-hover:scale-110 transition-transform">
+          <div className="p-3.5 bg-blue-500/10 text-blue-600 border border-blue-200/50 rounded-2xl group-hover:scale-105 transition-transform">
             <Users size={22} />
           </div>
         </div>
@@ -102,7 +104,7 @@ export default async function PayrollPage() {
             <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Settlements</p>
             <p className="text-3xl font-extrabold text-slate-900 mt-1">{totalSettlements}</p>
           </div>
-          <div className="p-3.5 bg-indigo-500/10 text-indigo-600 border border-indigo-200/50 rounded-2xl group-hover:scale-110 transition-transform">
+          <div className="p-3.5 bg-indigo-500/10 text-indigo-600 border border-indigo-200/50 rounded-2xl group-hover:scale-105 transition-transform">
             <CreditCard size={22} />
           </div>
         </div>
@@ -112,7 +114,7 @@ export default async function PayrollPage() {
             <p className="text-xs font-bold uppercase tracking-wider text-amber-600">Pending Approvals</p>
             <p className="text-3xl font-extrabold text-amber-600 mt-1">{pendingSettlements}</p>
           </div>
-          <div className="p-3.5 bg-amber-500/10 text-amber-600 border border-amber-200/50 rounded-2xl group-hover:scale-110 transition-transform">
+          <div className="p-3.5 bg-amber-500/10 text-amber-600 border border-amber-200/50 rounded-2xl group-hover:scale-105 transition-transform">
             <Clock size={22} />
           </div>
         </div>
@@ -122,7 +124,7 @@ export default async function PayrollPage() {
             <p className="text-xs font-bold uppercase tracking-wider text-emerald-600">Approved Settlements</p>
             <p className="text-3xl font-extrabold text-emerald-600 mt-1">{approvedSettlements}</p>
           </div>
-          <div className="p-3.5 bg-emerald-500/10 text-emerald-600 border border-emerald-200/50 rounded-2xl group-hover:scale-110 transition-transform">
+          <div className="p-3.5 bg-emerald-500/10 text-emerald-600 border border-emerald-200/50 rounded-2xl group-hover:scale-105 transition-transform">
             <CheckCircle2 size={22} />
           </div>
         </div>
@@ -132,8 +134,6 @@ export default async function PayrollPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-7">
         {/* Settlements Module Card */}
         <div className="glass-card glass-card-hover rounded-3xl border border-white/70 p-8 shadow-sm flex flex-col justify-between group relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
-
           <div className="relative z-10">
             <div className="w-14 h-14 bg-gradient-to-tr from-indigo-500 to-blue-600 text-white rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-transform">
               <CreditCard size={28} />
@@ -162,6 +162,7 @@ export default async function PayrollPage() {
           <div className="pt-6 border-t border-slate-200/60 flex items-center justify-between relative z-10">
             <Link
               href="/payroll/settlements"
+              prefetch={true}
               className="inline-flex items-center gap-2 text-indigo-600 font-bold text-sm hover:text-indigo-800 transition group-hover:translate-x-1"
             >
               <span>Open Settlements</span>
@@ -169,6 +170,7 @@ export default async function PayrollPage() {
             </Link>
             <Link
               href="/settlements/new"
+              prefetch={true}
               className="text-xs bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-xl font-bold hover:bg-indigo-100 transition border border-indigo-100 shadow-xs"
             >
               + Create New
@@ -178,8 +180,6 @@ export default async function PayrollPage() {
 
         {/* Salary Statement Module Card */}
         <div className="glass-card glass-card-hover rounded-3xl border border-white/70 p-8 shadow-sm flex flex-col justify-between group relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
-
           <div className="relative z-10">
             <div className="w-14 h-14 bg-gradient-to-tr from-emerald-500 to-teal-600 text-white rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform">
               <FileSpreadsheet size={28} />
@@ -208,6 +208,7 @@ export default async function PayrollPage() {
           <div className="pt-6 border-t border-slate-200/60 flex items-center justify-between relative z-10">
             <Link
               href="/payroll/salary-statement"
+              prefetch={true}
               className="inline-flex items-center gap-2 text-emerald-600 font-bold text-sm hover:text-emerald-800 transition group-hover:translate-x-1"
             >
               <span>Generate Statement</span>

@@ -107,6 +107,8 @@ model Worker {
   @@index([designation])
   @@index([name])
   @@index([phone])
+  @@index([createdAt])
+  @@index([isDeleted, createdAt])
 }
 
 model Company {
@@ -132,6 +134,7 @@ model Department {
   workers    Worker[]
   applicants Applicant[]
   @@index([companyId])
+  @@index([name])
 }
 
 model Section {
@@ -142,6 +145,7 @@ model Section {
   subSections  SubSection[]
   workers      Worker[]
   @@index([departmentId])
+  @@index([name])
 }
 
 model SubSection {
@@ -154,6 +158,7 @@ model SubSection {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @default(now()) @updatedAt
   @@index([sectionId])
+  @@index([name])
 }
 
 model Attendance {
@@ -236,6 +241,11 @@ model Training {
   workers     Worker[]   @relation("TrainingParticipants")
   trainerId   String?
   trainer     Worker?    @relation("TrainingTrainer", fields: [trainerId], references: [id], onDelete: SetNull)
+
+  @@index([date])
+  @@index([status])
+  @@index([trainerId])
+  @@index([createdAt])
 }
 
 model Recruitment {
@@ -246,6 +256,9 @@ model Recruitment {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   applicants  Applicant[]
+
+  @@index([status])
+  @@index([createdAt])
 }
 
 model Applicant {
@@ -281,6 +294,9 @@ model Applicant {
   @@index([stage])
   @@index([status])
   @@index([companyId])
+  @@index([departmentId])
+  @@index([hiredAsWorkerId])
+  @@index([createdAt])
 }
 
 model LeaveRequest {
@@ -302,6 +318,8 @@ model LeaveRequest {
   @@index([workerId])
   @@index([status])
   @@index([startDate, endDate])
+  @@index([leaveType])
+  @@index([workerId, status])
 }
 
 model Holiday {
@@ -413,6 +431,7 @@ model WorkerSkill {
 
   @@index([workerId])
   @@index([skillCategory])
+  @@index([updatedAt])
 }
 
 model ComplianceCertification {
@@ -454,6 +473,9 @@ model Task {
   @@index([creatorId])
   @@index([status])
   @@index([assigneeId, status])
+  @@index([deadline])
+  @@index([createdAt])
+  @@index([assigneeId, deadline])
 }
 
 model AuditLog {
@@ -484,4 +506,5 @@ model Notification {
   @@index([isRead])
   @@index([userId, isRead])
   @@index([createdAt])
+  @@index([userId, createdAt])
 }
