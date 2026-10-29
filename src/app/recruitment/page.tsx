@@ -72,15 +72,24 @@ export default async function RecruitmentPage() {
     }
   }
 
-  // Fetch existing job circulars
-  const recruitmentsData = await prisma.recruitment.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: {
-      _count: {
-        select: { applicants: true }
+  // Fetch existing job circulars and ATS candidates
+  const [recruitmentsData, applicantsData] = await Promise.all([
+    prisma.recruitment.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        _count: {
+          select: { applicants: true }
+        }
       }
-    }
-  });
+    }),
+    prisma.applicant.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        company: { select: { id: true, name: true } },
+        department: { select: { id: true, name: true } }
+      }
+    })
+  ]);
 
   const recruitments: JobItem[] = recruitmentsData.map(r => ({
     id: r.id,
@@ -89,6 +98,26 @@ export default async function RecruitmentPage() {
     status: r.status,
     createdAt: r.createdAt.toISOString(),
     _count: r._count
+  }));
+
+  const candidates = applicantsData.map(a => ({
+    id: a.id,
+    name: a.name,
+    phone: a.phone,
+    email: a.email,
+    stage: a.stage,
+    status: a.status,
+    appliedRole: a.appliedRole,
+    experienceYears: a.experienceYears,
+    expectedSalary: a.expectedSalary,
+    testScore: a.testScore,
+    testNotes: a.testNotes,
+    interviewNotes: a.interviewNotes,
+    companyId: a.companyId,
+    company: a.company,
+    department: a.department,
+    hiredAsWorkerId: a.hiredAsWorkerId,
+    createdAt: a.createdAt.toISOString()
   }));
 
   const serializableCompanies: HierarchyCompany[] = companies.map(c => ({
@@ -125,6 +154,7 @@ export default async function RecruitmentPage() {
         initialItems={items}
         recruitments={recruitments}
         companies={serializableCompanies}
+        candidates={candidates}
         userRole={userRole}
       />
     </Suspense>

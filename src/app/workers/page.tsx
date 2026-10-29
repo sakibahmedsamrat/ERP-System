@@ -352,9 +352,14 @@ export default async function WorkersPage({
               {workers.map((worker: any) => (
                 <tr key={worker.id} className="hover:bg-blue-50/40 transition-colors">
                   <td className="p-3.5 font-mono font-bold text-slate-900">{worker.workerId}</td>
-                  <td className="p-3.5 font-medium text-slate-800 flex items-center gap-2">
-                    <User size={14} className="text-slate-400" />
-                    <span>{worker.name}</span>
+                  <td className="p-3.5 font-medium text-slate-800">
+                    <Link
+                      href={`/workers/${worker.id}`}
+                      className="flex items-center gap-2 hover:text-blue-600 font-bold transition-colors group"
+                    >
+                      <User size={14} className="text-slate-400 group-hover:text-blue-500" />
+                      <span className="group-hover:underline">{worker.name}</span>
+                    </Link>
                   </td>
                   <td className="p-3.5">
                     <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md border border-blue-100 text-[11px] font-semibold">
@@ -366,6 +371,12 @@ export default async function WorkersPage({
                   <td className="p-3.5 text-slate-600">{worker.subSection?.name || '-'}</td>
                   <td className="p-3.5 text-slate-600 font-medium">{worker.designation || '-'}</td>
                   <td className="p-3.5 text-right flex justify-end items-center gap-2">
+                    <Link 
+                      href={`/workers/${worker.id}`} 
+                      className="text-xs bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-2.5 py-1 rounded-lg border border-indigo-200 transition font-semibold"
+                    >
+                      360° Profile
+                    </Link>
                     <Link 
                       href={`/workers/${worker.id}/edit`} 
                       className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 px-2.5 py-1 rounded-lg border border-blue-100 transition font-semibold"

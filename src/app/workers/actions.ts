@@ -518,3 +518,247 @@ export async function bulkDeleteWorkers(workerDbIds: string[]) {
   }
 }
 
+
+
+export async function uploadWorkerDocument(formData: FormData) {
+  const workerId = formData.get('workerId') as string;
+  const title = formData.get('title') as string;
+  const category = (formData.get('category') as string) || 'OTHER';
+  const file = formData.get('file') as any;
+
+  if (!workerId || !title) {
+    return { success: false, error: 'Worker ID and Document Title are required.' };
+  }
+
+  let fileUrl = '';
+  let fileType = 'application/octet-stream';
+  let fileSize = '';
+
+  if (file && file.size > 0) {
+    fileType = file.type || 'image/jpeg';
+    fileSize = `${Math.round(file.size / 1024)} KB`;
+    const uploaded = await uploadFile(file);
+    if (uploaded) fileUrl = uploaded;
+  }
+
+  if (!fileUrl) {
+    const rawUrl = formData.get('fileUrl') as string;
+    if (rawUrl && rawUrl.trim() !== '') {
+      fileUrl = rawUrl.trim();
+    } else {
+      return { success: false, error: 'Please choose a file or provide a valid document URL.' };
+    }
+  }
+
+  try {
+    await prisma.workerDocument.create({
+      data: {
+        workerId,
+        title,
+        category,
+        fileUrl,
+        fileType,
+        fileSize,
+      }
+    });
+
+    safeRevalidatePath(`/workers/${workerId}`);
+    return { success: true };
+  } catch (err: any) {
+    console.error('Failed to upload worker document:', err);
+    return { success: false, error: err.message || 'Failed to save document.' };
+  }
+}
+
+export async function deleteWorkerDocument(id: string, workerId: string) {
+  try {
+    await prisma.workerDocument.delete({
+      where: { id }
+    });
+    safeRevalidatePath(`/workers/${workerId}`);
+    return { success: true };
+  } catch (err: any) {
+    console.error('Failed to delete document:', err);
+    return { success: false, error: err.message || 'Failed to delete document.' };
+  }
+}
+
+export async function addCareerHistory(formData: FormData) {
+  const workerId = formData.get('workerId') as string;
+  const changeType = (formData.get('changeType') as string) || 'PROMOTION';
+  const effectiveDateStr = formData.get('effectiveDate') as string;
+  const previousDesignation = (formData.get('previousDesignation') as string) || null;
+  const newDesignation = (formData.get('newDesignation') as string) || null;
+  const previousDepartment = (formData.get('previousDepartment') as string) || null;
+  const newDepartment = (formData.get('newDepartment') as string) || null;
+  const previousGrade = (formData.get('previousGrade') as string) || null;
+  const newGrade = (formData.get('newGrade') as string) || null;
+  const previousSalary = parseFloat((formData.get('previousSalary') as string) || '0') || null;
+  const newSalary = parseFloat((formData.get('newSalary') as string) || '0') || null;
+  const remarks = (formData.get('remarks') as string) || null;
+
+  if (!workerId || !effectiveDateStr) {
+    return { success: false, error: 'Worker ID and Effective Date are required.' };
+  }
+
+  const effectiveDate = new Date(effectiveDateStr);
+
+  try {
+    await prisma.careerHistory.create({
+      data: {
+        workerId,
+        changeType,
+        effectiveDate,
+        previousDesignation,
+        newDesignation,
+        previousDepartment,
+        newDepartment,
+        previousGrade,
+        newGrade,
+        previousSalary,
+        newSalary,
+        remarks,
+      }
+    });
+
+    // Optionally update worker designation/grade if provided
+    if (newDesignation || newGrade || (newSalary && newSalary > 0)) {
+      await prisma.worker.update({
+        where: { id: workerId },
+        data: {
+          ...(newDesignation ? { designation: newDesignation } : {}),
+          ...(newGrade ? { grade: newGrade } : {}),
+          ...(newSalary && newSalary > 0 ? { grossSalary: newSalary } : {}),
+        }
+      });
+    }
+
+    safeRevalidatePath(`/workers/${workerId}`);
+    safeRevalidatePath('/workers');
+    return { success: true };
+  } catch (err: any) {
+    console.error('Failed to add career history:', err);
+    return { success: false, error: err.message || 'Failed to add career event.' };
+  }
+}
+
+export async function deleteCareerHistory(id: string, workerId: string) {
+  try {
+    await prisma.careerHistory.delete({
+      where: { id }
+    });
+    safeRevalidatePath(`/workers/${workerId}`);
+    return { success: true };
+  } catch (err: any) {
+    console.error('Failed to delete career history:', err);
+    return { success: false, error: err.message || 'Failed to delete career record.' };
+  }
+}
+
+export async function updateNomineeAndEmergency(formData: FormData) {
+  const workerId = formData.get('workerId') as string;
+  const emergencyContactName = (formData.get('emergencyContactName') as string) || null;
+  const emergencyContactPhone = (formData.get('emergencyContactPhone') as string) || null;
+  const emergencyContactRelation = (formData.get('emergencyContactRelation') as string) || null;
+  const nomineeName = (formData.get('nomineeName') as string) || null;
+  const nomineeRelation = (formData.get('nomineeRelation') as string) || null;
+  const nomineeNid = (formData.get('nomineeNid') as string) || null;
+  const nomineePhone = (formData.get('nomineePhone') as string) || null;
+
+  if (!workerId) {
+    return { success: false, error: 'Worker ID is required.' };
+  }
+
+  try {
+    await prisma.worker.update({
+      where: { id: workerId },
+      data: {
+        emergencyContactName,
+        emergencyContactPhone,
+        emergencyContactRelation,
+        nomineeName,
+        nomineeRelation,
+        nomineeNid,
+        nomineePhone,
+      }
+    });
+
+    safeRevalidatePath(`/workers/${workerId}`);
+    return { success: true };
+  } catch (err: any) {
+    console.error('Failed to update nominee/emergency details:', err);
+    return { success: false, error: err.message || 'Failed to update details.' };
+  }
+}
+
+export async function addDisciplinaryRecord(formData: FormData) {
+  const workerId = formData.get('workerId') as string;
+  const incidentDateStr = formData.get('incidentDate') as string;
+  const actionType = (formData.get('actionType') as string) || 'WRITTEN_WARNING';
+  const subject = formData.get('subject') as string;
+  const description = formData.get('description') as string;
+  const actionTaken = (formData.get('actionTaken') as string) || null;
+  const status = (formData.get('status') as string) || 'OPEN';
+
+  if (!workerId || !incidentDateStr || !subject || !description) {
+    return { success: false, error: 'Worker, Incident Date, Subject, and Description are required.' };
+  }
+
+  const incidentDate = new Date(incidentDateStr);
+
+  try {
+    await prisma.disciplinaryRecord.create({
+      data: {
+        workerId,
+        incidentDate,
+        actionType,
+        subject,
+        description,
+        actionTaken,
+        status,
+      }
+    });
+
+    safeRevalidatePath(`/workers/${workerId}`);
+    return { success: true };
+  } catch (err: any) {
+    console.error('Failed to add disciplinary record:', err);
+    return { success: false, error: err.message || 'Failed to add record.' };
+  }
+}
+
+export async function updateDisciplinaryStatus(
+  id: string,
+  workerId: string,
+  status: string,
+  actionTaken?: string
+) {
+  try {
+    await prisma.disciplinaryRecord.update({
+      where: { id },
+      data: {
+        status,
+        ...(actionTaken !== undefined ? { actionTaken } : {})
+      }
+    });
+
+    safeRevalidatePath(`/workers/${workerId}`);
+    return { success: true };
+  } catch (err: any) {
+    console.error('Failed to update disciplinary record status:', err);
+    return { success: false, error: err.message || 'Failed to update status.' };
+  }
+}
+
+export async function deleteDisciplinaryRecord(id: string, workerId: string) {
+  try {
+    await prisma.disciplinaryRecord.delete({
+      where: { id }
+    });
+    safeRevalidatePath(`/workers/${workerId}`);
+    return { success: true };
+  } catch (err: any) {
+    console.error('Failed to delete disciplinary record:', err);
+    return { success: false, error: err.message || 'Failed to delete record.' };
+  }
+}

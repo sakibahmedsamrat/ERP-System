@@ -35,6 +35,7 @@ import {
 import { updateSubSectionManpower, getSubSectionWorkers } from './actions';
 import { formatDate } from '@/lib/formatDate';
 import ManpowerEntryClient from './manpower/ManpowerEntryClient';
+import ATSPipelineSection, { CandidateItem } from './ATSPipelineSection';
 
 export interface SubSectionManpowerItem {
   id: string;
@@ -83,6 +84,7 @@ interface Props {
   initialItems: SubSectionManpowerItem[];
   recruitments: JobItem[];
   companies: HierarchyCompany[];
+  candidates?: CandidateItem[];
   userRole?: string;
 }
 
@@ -140,6 +142,7 @@ export default function RecruitmentClient({
   initialItems,
   recruitments,
   companies,
+  candidates = [],
   userRole
 }: Props) {
   const router = useRouter();
@@ -149,17 +152,20 @@ export default function RecruitmentClient({
   // Primary state
   const [items, setItems] = useState<SubSectionManpowerItem[]>(initialItems);
   const [companiesState, setCompaniesState] = useState<HierarchyCompany[]>(companies);
+  const [candidatesState, setCandidatesState] = useState<CandidateItem[]>(candidates);
 
   // Sync if props change
   useEffect(() => {
     setItems(initialItems);
     setCompaniesState(companies);
-  }, [initialItems, companies]);
+    setCandidatesState(candidates);
+  }, [initialItems, companies, candidates]);
 
-  // Main Tabs: overview | entry | jobs
-  const [activeTab, setActiveTab] = useState<'overview' | 'entry' | 'jobs'>(() => {
+  // Main Tabs: overview | entry | jobs | pipeline
+  const [activeTab, setActiveTab] = useState<'overview' | 'entry' | 'jobs' | 'pipeline'>(() => {
     if (tabParam === 'jobs') return 'jobs';
     if (tabParam === 'entry') return 'entry';
+    if (tabParam === 'pipeline') return 'pipeline';
     return 'overview';
   });
 
@@ -169,12 +175,14 @@ export default function RecruitmentClient({
       setActiveTab('jobs');
     } else if (tabParam === 'entry') {
       setActiveTab('entry');
+    } else if (tabParam === 'pipeline') {
+      setActiveTab('pipeline');
     } else if (tabParam === 'overview' || !tabParam) {
       setActiveTab('overview');
     }
   }, [tabParam]);
 
-  const switchTab = (tab: 'overview' | 'entry' | 'jobs') => {
+  const switchTab = (tab: 'overview' | 'entry' | 'jobs' | 'pipeline') => {
     setActiveTab(tab);
     const targetUrl = tab === 'overview' ? '/recruitment' : `/recruitment?tab=${tab}`;
     router.replace(targetUrl, { scroll: false });
@@ -564,6 +572,21 @@ export default function RecruitmentClient({
           <span>Job Circulars</span>
           <span className="bg-slate-100 text-slate-700 text-[11px] px-2 py-0.5 rounded-full font-bold">
             {recruitments.length}
+          </span>
+        </button>
+
+        <button
+          onClick={() => switchTab('pipeline')}
+          className={`flex items-center gap-2 px-5 py-3 font-bold text-xs sm:text-sm border-b-2 transition-all ${
+            activeTab === 'pipeline'
+              ? 'border-blue-600 text-blue-600'
+              : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+          }`}
+        >
+          <Sparkles size={16} />
+          <span>ATS Candidate Pipeline</span>
+          <span className="bg-purple-100 text-purple-800 text-[11px] px-2 py-0.5 rounded-full font-bold">
+            {candidatesState.length}
           </span>
         </button>
       </div>
@@ -1414,6 +1437,14 @@ export default function RecruitmentClient({
             )}
           </div>
         </div>
+      )}
+
+      {/* TAB 4: ATS CANDIDATE PIPELINE */}
+      {activeTab === 'pipeline' && (
+        <ATSPipelineSection
+          candidates={candidatesState}
+          companies={companiesState}
+        />
       )}
 
       {/* Quick Edit Modal */}
