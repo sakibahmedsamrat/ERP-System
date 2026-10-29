@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { 
   User, 
   ArrowLeft, 
@@ -47,7 +48,35 @@ interface Props {
 }
 
 export default function Worker360Client({ worker }: Props) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'vault' | 'career' | 'nominee' | 'disciplinary'>('overview');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialTabParam = searchParams?.get('tab');
+
+  const [activeTab, setActiveTab] = useState<'overview' | 'vault' | 'career' | 'nominee' | 'disciplinary'>(() => {
+    if (initialTabParam === 'vault' || initialTabParam === 'career' || initialTabParam === 'nominee' || initialTabParam === 'disciplinary') {
+      return initialTabParam;
+    }
+    return 'overview';
+  });
+
+  const switchTab = (tab: 'overview' | 'vault' | 'career' | 'nominee' | 'disciplinary') => {
+    setActiveTab(tab);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', tab);
+      window.history.replaceState({}, '', url.toString());
+    }
+  };
+
+  const refreshPageWithCurrentTab = () => {
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', activeTab);
+      window.location.href = url.toString();
+    } else {
+      router.refresh();
+    }
+  };
 
   // Modals
   const [isDocModalOpen, setIsDocModalOpen] = useState(false);
@@ -86,7 +115,7 @@ export default function Worker360Client({ worker }: Props) {
     setDocLoading(false);
     if (res.success) {
       setIsDocModalOpen(false);
-      window.location.reload();
+      refreshPageWithCurrentTab();
     } else {
       alert(res.error || 'Failed to upload document');
     }
@@ -96,7 +125,7 @@ export default function Worker360Client({ worker }: Props) {
     if (!confirm('Are you sure you want to delete this document?')) return;
     const res = await deleteWorkerDocument(docId, worker.id);
     if (res.success) {
-      window.location.reload();
+      refreshPageWithCurrentTab();
     } else {
       alert(res.error || 'Failed to delete document');
     }
@@ -111,7 +140,7 @@ export default function Worker360Client({ worker }: Props) {
     setCareerLoading(false);
     if (res.success) {
       setIsCareerModalOpen(false);
-      window.location.reload();
+      refreshPageWithCurrentTab();
     } else {
       alert(res.error || 'Failed to add career event');
     }
@@ -121,7 +150,7 @@ export default function Worker360Client({ worker }: Props) {
     if (!confirm('Are you sure you want to remove this career milestone?')) return;
     const res = await deleteCareerHistory(historyId, worker.id);
     if (res.success) {
-      window.location.reload();
+      refreshPageWithCurrentTab();
     } else {
       alert(res.error || 'Failed to delete record');
     }
@@ -136,7 +165,7 @@ export default function Worker360Client({ worker }: Props) {
     setNomineeLoading(false);
     if (res.success) {
       setIsNomineeModalOpen(false);
-      window.location.reload();
+      refreshPageWithCurrentTab();
     } else {
       alert(res.error || 'Failed to update details');
     }
@@ -151,7 +180,7 @@ export default function Worker360Client({ worker }: Props) {
     setDiscLoading(false);
     if (res.success) {
       setIsDiscModalOpen(false);
-      window.location.reload();
+      refreshPageWithCurrentTab();
     } else {
       alert(res.error || 'Failed to record disciplinary incident');
     }
@@ -161,7 +190,7 @@ export default function Worker360Client({ worker }: Props) {
     const actionTaken = prompt('Enter action taken or resolution notes (optional):') || undefined;
     const res = await updateDisciplinaryStatus(recordId, worker.id, status, actionTaken);
     if (res.success) {
-      window.location.reload();
+      refreshPageWithCurrentTab();
     } else {
       alert(res.error || 'Failed to update record');
     }
@@ -171,7 +200,7 @@ export default function Worker360Client({ worker }: Props) {
     if (!confirm('Are you sure you want to delete this disciplinary record?')) return;
     const res = await deleteDisciplinaryRecord(recordId, worker.id);
     if (res.success) {
-      window.location.reload();
+      refreshPageWithCurrentTab();
     } else {
       alert(res.error || 'Failed to delete record');
     }
@@ -282,7 +311,7 @@ export default function Worker360Client({ worker }: Props) {
       {/* Tabs */}
       <div className="flex flex-wrap items-center gap-2 p-1.5 glass-card bg-white/70 backdrop-blur-xl rounded-2xl border border-white/60 shadow-glass">
         <button
-          onClick={() => setActiveTab('overview')}
+          onClick={() => switchTab('overview')}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
             activeTab === 'overview'
               ? 'bg-white text-blue-600 shadow-md shadow-blue-500/20 translate-y-[-1px]'
@@ -293,7 +322,7 @@ export default function Worker360Client({ worker }: Props) {
         </button>
 
         <button
-          onClick={() => setActiveTab('vault')}
+          onClick={() => switchTab('vault')}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
             activeTab === 'vault'
               ? 'bg-white text-blue-600 shadow-md shadow-blue-500/20 translate-y-[-1px]'
@@ -304,7 +333,7 @@ export default function Worker360Client({ worker }: Props) {
         </button>
 
         <button
-          onClick={() => setActiveTab('career')}
+          onClick={() => switchTab('career')}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
             activeTab === 'career'
               ? 'bg-white text-blue-600 shadow-md shadow-blue-500/20 translate-y-[-1px]'
@@ -315,7 +344,7 @@ export default function Worker360Client({ worker }: Props) {
         </button>
 
         <button
-          onClick={() => setActiveTab('nominee')}
+          onClick={() => switchTab('nominee')}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
             activeTab === 'nominee'
               ? 'bg-white text-blue-600 shadow-md shadow-blue-500/20 translate-y-[-1px]'
@@ -326,7 +355,7 @@ export default function Worker360Client({ worker }: Props) {
         </button>
 
         <button
-          onClick={() => setActiveTab('disciplinary')}
+          onClick={() => switchTab('disciplinary')}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
             activeTab === 'disciplinary'
               ? 'bg-white text-blue-600 shadow-md shadow-blue-500/20 translate-y-[-1px]'
@@ -838,7 +867,7 @@ export default function Worker360Client({ worker }: Props) {
                   alt={previewDoc.title}
                   className="max-h-[60vh] max-w-full object-contain rounded-xl shadow-xs"
                 />
-              ) : previewDoc.fileUrl?.startsWith('data:application/pdf') || previewDoc.fileUrl?.endsWith('.pdf') ? (
+              ) : previewDoc.fileUrl?.startsWith('data:application/pdf') || /\.pdf($|\?)/i.test(previewDoc.fileUrl || '') ? (
                 <iframe
                   src={previewDoc.fileUrl}
                   title={previewDoc.title}

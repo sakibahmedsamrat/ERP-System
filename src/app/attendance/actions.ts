@@ -162,7 +162,7 @@ export async function updateLeaveStatus(
           }
         });
 
-        currentDate.setDate(currentDate.getDate() + 1);
+        currentDate.setUTCDate(currentDate.getUTCDate() + 1);
       }
     }
 

@@ -197,6 +197,39 @@ export default function A4BatchPrintSection({ workers, companies }: Props) {
         </div>
       ) : (
         <div className="space-y-8">
+          <style dangerouslySetInnerHTML={{ __html: `
+            @media print {
+              @page {
+                size: 210mm 297mm;
+                margin: 0;
+              }
+              html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #ffffff !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+              .print\\:hidden {
+                display: none !important;
+              }
+              .a4-page {
+                width: 210mm !important;
+                height: 297mm !important;
+                max-height: 297mm !important;
+                margin: 0 auto !important;
+                padding: 12mm 15mm !important;
+                box-shadow: none !important;
+                border: none !important;
+                border-radius: 0 !important;
+                page-break-after: always !important;
+                break-after: page !important;
+                overflow: hidden !important;
+                background: #ffffff !important;
+                box-sizing: border-box !important;
+              }
+            }
+          `}} />
           {pages.map((pageWorkers, pageIdx) => (
             <div
               key={pageIdx}

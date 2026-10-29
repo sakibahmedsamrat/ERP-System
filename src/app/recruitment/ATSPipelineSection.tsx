@@ -81,6 +81,14 @@ export default function ATSPipelineSection({ candidates, companies }: Props) {
     return true;
   });
 
+  const reloadPipelineTab = () => {
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', 'pipeline');
+      window.location.href = url.toString();
+    }
+  };
+
   const handleAddSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setAddLoading(true);
@@ -89,7 +97,7 @@ export default function ATSPipelineSection({ candidates, companies }: Props) {
     setAddLoading(false);
     if (res.success) {
       setIsAddModalOpen(false);
-      window.location.reload();
+      reloadPipelineTab();
     } else {
       alert(res.error || 'Failed to add candidate');
     }
@@ -109,7 +117,7 @@ export default function ATSPipelineSection({ candidates, companies }: Props) {
 
     const res = await updateCandidateStage(candidate.id, nextStage);
     if (res.success) {
-      window.location.reload();
+      reloadPipelineTab();
     } else {
       alert(res.error || 'Failed to advance stage');
     }
@@ -124,7 +132,7 @@ export default function ATSPipelineSection({ candidates, companies }: Props) {
     });
     setScoreModalCandidate(null);
     if (res.success) {
-      window.location.reload();
+      reloadPipelineTab();
     } else {
       alert(res.error || 'Failed to save test score');
     }
@@ -134,7 +142,7 @@ export default function ATSPipelineSection({ candidates, companies }: Props) {
     if (!confirm('Mark this candidate as Rejected?')) return;
     const res = await updateCandidateStage(candidateId, 'REJECTED');
     if (res.success) {
-      window.location.reload();
+      reloadPipelineTab();
     } else {
       alert(res.error || 'Failed to reject candidate');
     }
@@ -149,7 +157,7 @@ export default function ATSPipelineSection({ candidates, companies }: Props) {
 
     if (res.success) {
       alert(`Success! ${candidate.name} onboarded with Employee ID: ${res.workerId}`);
-      window.location.reload();
+      reloadPipelineTab();
     } else {
       alert(res.error || 'Failed to onboard candidate');
     }

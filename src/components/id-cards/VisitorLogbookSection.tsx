@@ -111,6 +111,14 @@ export default function VisitorLogbookSection({ visitorLogs, workers }: Props) {
     return true;
   });
 
+  const reloadVisitorTab = () => {
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', 'visitor');
+      window.location.href = url.toString();
+    }
+  };
+
   const handleCheckIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setCheckInLoading(true);
@@ -120,7 +128,7 @@ export default function VisitorLogbookSection({ visitorLogs, workers }: Props) {
 
     if (res.success) {
       setIsCheckInModalOpen(false);
-      window.location.reload();
+      reloadVisitorTab();
     } else {
       alert(res.error || 'Failed to check in visitor');
     }
@@ -130,7 +138,7 @@ export default function VisitorLogbookSection({ visitorLogs, workers }: Props) {
     if (!confirm('Mark visitor as checked out and left premises?')) return;
     const res = await checkOutVisitor(id);
     if (res.success) {
-      window.location.reload();
+      reloadVisitorTab();
     } else {
       alert(res.error || 'Failed to check out visitor');
     }
@@ -140,7 +148,7 @@ export default function VisitorLogbookSection({ visitorLogs, workers }: Props) {
     if (!confirm('Delete this visitor log record?')) return;
     const res = await deleteVisitorLog(id);
     if (res.success) {
-      window.location.reload();
+      reloadVisitorTab();
     } else {
       alert(res.error || 'Failed to delete record');
     }

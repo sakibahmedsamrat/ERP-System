@@ -12,7 +12,7 @@ import {
   Luggage,
   Sparkles
 } from 'lucide-react';
-import { formatDate } from '@/lib/formatDate';
+import { formatDate, formatDateTime } from '@/lib/formatDate';
 
 export const dynamic = 'force-dynamic';
 
@@ -246,7 +246,7 @@ export default async function GateVerificationPage({
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-slate-400">Check-in Time:</span>
-                <span className="font-semibold text-slate-200">{formatDate(visitor.checkInTime)}</span>
+                <span className="font-semibold text-slate-200">{formatDateTime(visitor.checkInTime)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-slate-400">Allowed Duration:</span>

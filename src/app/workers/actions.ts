@@ -30,12 +30,11 @@ async function uploadFile(file: any): Promise<string | null> {
       const filename = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
       const path = join(process.cwd(), 'public/uploads', filename);
       await writeFile(path, buffer);
+      return `/uploads/${filename}`;
     } catch (diskErr) {
-      // Ignore disk write errors in serverless environments
+      // Fallback to Data URL for environments without a writable disk
+      return `data:${mime};base64,${buffer.toString('base64')}`;
     }
-
-    // Return Data URL for 100% reliable image loading without 404s or CORS blocks
-    return `data:${mime};base64,${buffer.toString('base64')}`;
   } catch (err) {
     console.error("File upload error:", err);
     return null;

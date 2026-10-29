@@ -24,6 +24,15 @@ export default function IdCardsClient({
 }) {
   const [activeTab, setActiveTab] = useState<'employee' | 'visitor' | 'batch'>(initialTab);
 
+  const switchTab = (tab: 'employee' | 'visitor' | 'batch') => {
+    setActiveTab(tab);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', tab);
+      window.history.replaceState({}, '', url.toString());
+    }
+  };
+
   return (
     <div className="p-2 sm:p-4 md:p-6 w-full max-w-full mx-auto space-y-4">
       {/* Page Header */}
@@ -49,7 +58,7 @@ export default function IdCardsClient({
         {/* Tab Switcher Pills */}
         <div className="flex items-center p-1.5 glass-card bg-white/70 backdrop-blur-xl rounded-2xl border border-white/60 shadow-glass">
           <button
-            onClick={() => setActiveTab('employee')}
+            onClick={() => switchTab('employee')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 ${
               activeTab === 'employee'
                 ? 'bg-white text-blue-600 shadow-md shadow-blue-500/20 translate-y-[-1px]'
@@ -61,7 +70,7 @@ export default function IdCardsClient({
           </button>
 
           <button
-            onClick={() => setActiveTab('visitor')}
+            onClick={() => switchTab('visitor')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 ${
               activeTab === 'visitor'
                 ? 'bg-white text-indigo-600 shadow-md shadow-indigo-500/20 translate-y-[-1px]'
@@ -73,7 +82,7 @@ export default function IdCardsClient({
           </button>
 
           <button
-            onClick={() => setActiveTab('batch')}
+            onClick={() => switchTab('batch')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 ${
               activeTab === 'batch'
                 ? 'bg-white text-emerald-600 shadow-md shadow-emerald-500/20 translate-y-[-1px]'

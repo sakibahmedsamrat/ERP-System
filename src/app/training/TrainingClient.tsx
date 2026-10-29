@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { 
   GraduationCap, 
   Sparkles, 
@@ -100,7 +101,34 @@ export default function TrainingClient({
   complianceCerts,
   workers,
 }: Props) {
-  const [activeTab, setActiveTab] = useState<'programs' | 'matrix'>('programs');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialTabParam = searchParams?.get('tab');
+
+  const [activeTab, setActiveTab] = useState<'programs' | 'matrix'>(() => {
+    if (initialTabParam === 'matrix') return 'matrix';
+    return 'programs';
+  });
+
+  const switchTab = (tab: 'programs' | 'matrix') => {
+    setActiveTab(tab);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', tab);
+      window.history.replaceState({}, '', url.toString());
+    }
+  };
+
+  const refreshPageWithCurrentTab = (targetTab?: 'programs' | 'matrix') => {
+    const tabToKeep = targetTab || activeTab;
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', tabToKeep);
+      window.location.href = url.toString();
+    } else {
+      router.refresh();
+    }
+  };
 
   // Modals
   const [isSkillModalOpen, setIsSkillModalOpen] = useState(false);
@@ -148,7 +176,7 @@ export default function TrainingClient({
     setSkillLoading(false);
     if (res.success) {
       setIsSkillModalOpen(false);
-      window.location.reload();
+      refreshPageWithCurrentTab('matrix');
     } else {
       alert(res.error || 'Failed to add skill');
     }
@@ -158,7 +186,7 @@ export default function TrainingClient({
     if (!confirm('Are you sure you want to remove this skill record?')) return;
     const res = await deleteWorkerSkill(id);
     if (res.success) {
-      window.location.reload();
+      refreshPageWithCurrentTab('matrix');
     } else {
       alert(res.error || 'Failed to delete skill');
     }
@@ -172,7 +200,7 @@ export default function TrainingClient({
     setCertLoading(false);
     if (res.success) {
       setIsCertModalOpen(false);
-      window.location.reload();
+      refreshPageWithCurrentTab('matrix');
     } else {
       alert(res.error || 'Failed to add certification');
     }
@@ -182,7 +210,7 @@ export default function TrainingClient({
     if (!confirm('Are you sure you want to delete this compliance certificate?')) return;
     const res = await deleteComplianceCertification(id);
     if (res.success) {
-      window.location.reload();
+      refreshPageWithCurrentTab('matrix');
     } else {
       alert(res.error || 'Failed to delete certificate');
     }
@@ -234,7 +262,7 @@ export default function TrainingClient({
       {/* Tabs Switcher */}
       <div className="flex items-center gap-2 p-1.5 glass-card bg-white/70 backdrop-blur-xl rounded-2xl border border-white/60 shadow-glass w-fit">
         <button
-          onClick={() => setActiveTab('programs')}
+          onClick={() => switchTab('programs')}
           className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 ${
             activeTab === 'programs'
               ? 'bg-white text-blue-600 shadow-md shadow-blue-500/20 translate-y-[-1px]'
@@ -246,7 +274,7 @@ export default function TrainingClient({
         </button>
 
         <button
-          onClick={() => setActiveTab('matrix')}
+          onClick={() => switchTab('matrix')}
           className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 ${
             activeTab === 'matrix'
               ? 'bg-white text-blue-600 shadow-md shadow-blue-500/20 translate-y-[-1px]'

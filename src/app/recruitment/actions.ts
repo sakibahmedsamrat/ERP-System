@@ -320,14 +320,19 @@ export async function onboardCandidate(
       companyId = defaultCompany.id;
     }
 
-    // Generate unique worker ID (e.g. EMP-2401)
+    // Generate unique worker ID safely without infinite loop risk
     let workerId = '';
     let isUnique = false;
-    while (!isUnique) {
-      const randomDigits = Math.floor(1000 + Math.random() * 9000);
+    let attempts = 0;
+    while (!isUnique && attempts < 50) {
+      attempts++;
+      const randomDigits = Math.floor(10000 + Math.random() * 90000);
       workerId = `EMP-${randomDigits}`;
       const existing = await prisma.worker.findUnique({ where: { workerId } });
       if (!existing) isUnique = true;
+    }
+    if (!isUnique) {
+      workerId = `EMP-${Date.now().toString().slice(-6)}`;
     }
 
     const gross = targetSalary || applicant.expectedSalary || 12500;

@@ -26,16 +26,21 @@ export async function checkInVisitor(formData: FormData) {
     return { success: false, error: 'Visitor Name, Phone Number, and Purpose are required.' };
   }
 
-  // Generate unique pass number
+  // Generate unique pass number safely without infinite loop risk
   let passNumber = '';
   let exists = true;
-  while (exists) {
-    const randomDigits = Math.floor(1000 + Math.random() * 9000);
+  let attempts = 0;
+  while (exists && attempts < 50) {
+    attempts++;
+    const randomDigits = Math.floor(10000 + Math.random() * 90000);
     passNumber = `VIS-${randomDigits}`;
     const found = await prisma.visitorLog.findUnique({
       where: { passNumber }
     });
     if (!found) exists = false;
+  }
+  if (exists) {
+    passNumber = `VIS-${Date.now().toString().slice(-6)}`;
   }
 
   try {

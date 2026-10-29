@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { 
   ClipboardCheck, 
   Calendar, 
@@ -105,7 +106,37 @@ export default function AttendanceClient({
   companies,
   statutoryLedger,
 }: Props) {
-  const [activeTab, setActiveTab] = useState<'daily' | 'leaves' | 'holidays'>('daily');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialTabParam = searchParams?.get('tab');
+
+  const [activeTab, setActiveTab] = useState<'daily' | 'leaves' | 'holidays'>(() => {
+    if (initialTabParam === 'leaves' || initialTabParam === 'holidays') {
+      return initialTabParam;
+    }
+    return 'daily';
+  });
+
+  const switchTab = (tab: 'daily' | 'leaves' | 'holidays') => {
+    setActiveTab(tab);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', tab);
+      window.history.replaceState({}, '', url.toString());
+    }
+  };
+
+  const refreshPageWithCurrentTab = (targetTab?: 'daily' | 'leaves' | 'holidays') => {
+    const tabToKeep = targetTab || activeTab;
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', tabToKeep);
+      window.location.href = url.toString();
+    } else {
+      router.refresh();
+    }
+  };
+
   const [filterDate, setFilterDate] = useState(initialDate);
 
   // Leave Modal
@@ -145,7 +176,7 @@ export default function AttendanceClient({
       setIsLeaveModalOpen(false);
       setSelectedWorkerId('');
       setLeaveWorkerSearch('');
-      window.location.reload();
+      refreshPageWithCurrentTab('leaves');
     } else {
       alert(res.error || 'Failed to submit leave request');
     }
@@ -164,7 +195,7 @@ export default function AttendanceClient({
     setProcessingLeaveId(null);
 
     if (res.success) {
-      window.location.reload();
+      refreshPageWithCurrentTab('leaves');
     } else {
       alert(res.error || 'Failed to update leave request');
     }
@@ -179,7 +210,7 @@ export default function AttendanceClient({
 
     if (res.success) {
       setIsHolidayModalOpen(false);
-      window.location.reload();
+      refreshPageWithCurrentTab('holidays');
     } else {
       alert(res.error || 'Failed to add holiday');
     }
@@ -189,7 +220,7 @@ export default function AttendanceClient({
     if (!confirm('Are you sure you want to remove this factory holiday?')) return;
     const res = await deleteHoliday(id);
     if (res.success) {
-      window.location.reload();
+      refreshPageWithCurrentTab('holidays');
     } else {
       alert(res.error || 'Failed to delete holiday');
     }
@@ -242,7 +273,7 @@ export default function AttendanceClient({
       {/* Modern Navigation Tabs */}
       <div className="flex items-center gap-2 p-1.5 glass-card bg-white/70 backdrop-blur-xl rounded-2xl border border-white/60 shadow-glass w-fit">
         <button
-          onClick={() => setActiveTab('daily')}
+          onClick={() => switchTab('daily')}
           className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 ${
             activeTab === 'daily'
               ? 'bg-white text-blue-600 shadow-md shadow-blue-500/20 translate-y-[-1px]'
@@ -254,7 +285,7 @@ export default function AttendanceClient({
         </button>
 
         <button
-          onClick={() => setActiveTab('leaves')}
+          onClick={() => switchTab('leaves')}
           className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 ${
             activeTab === 'leaves'
               ? 'bg-white text-blue-600 shadow-md shadow-blue-500/20 translate-y-[-1px]'
@@ -271,7 +302,7 @@ export default function AttendanceClient({
         </button>
 
         <button
-          onClick={() => setActiveTab('holidays')}
+          onClick={() => switchTab('holidays')}
           className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 ${
             activeTab === 'holidays'
               ? 'bg-white text-blue-600 shadow-md shadow-blue-500/20 translate-y-[-1px]'
