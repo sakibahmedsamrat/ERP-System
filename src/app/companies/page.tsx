@@ -44,12 +44,14 @@ export default async function CompaniesPage() {
             <>
               <Link 
                 href="/companies/import" 
+                prefetch={true}
                 className="bg-purple-600 hover:bg-purple-700 text-white px-3.5 py-2.5 rounded-xl flex items-center gap-2 transition text-xs font-bold shadow-sm shadow-purple-600/20"
               >
                 <Upload size={16} /> Import Structure
               </Link>
               <Link 
                 href="/companies/new" 
+                prefetch={true}
                 className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 transition text-xs font-bold shadow-md shadow-blue-600/20"
               >
                 <Plus size={16} /> Add Company
@@ -83,6 +85,7 @@ export default async function CompaniesPage() {
                   <div className="border-l border-slate-200/80 pl-4 flex items-center gap-2">
                     <Link 
                       href={`/companies/${company.id}/edit`}
+                      prefetch={true}
                       className="text-blue-600 hover:text-blue-800 transition p-1.5 rounded-lg hover:bg-white"
                       title="Edit Company"
                     >

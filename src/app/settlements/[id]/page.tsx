@@ -38,12 +38,13 @@ export default async function SettlementPrintPage({ params }: { params: { id: st
         }
       `}} />
       <div className="flex justify-between items-center mb-6 print:hidden">
-        <Link href="/settlements" className="text-blue-600 hover:underline">
+        <Link href="/settlements" prefetch={true} className="text-blue-600 hover:underline">
           &larr; Back to Settlements
         </Link>
         <div className="flex items-center gap-3">
           <Link
             href={`/settlements/${settlement.id}/edit`}
+            prefetch={true}
             className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-bold text-sm transition"
           >
             Edit Form

@@ -72,11 +72,12 @@ export async function markTaskDone(taskId: string): Promise<void> {
   const task = await prisma.task.update({
     where: { id: taskId },
     data: { status: 'DONE' },
-    include: { assignee: true }
+    include: { assignee: { select: { id: true, name: true } } }
   });
 
   const admins = await prisma.user.findMany({
-    where: { role: { in: ['SUPER_ADMIN', 'ADMIN'] } }
+    where: { role: { in: ['SUPER_ADMIN', 'ADMIN'] } },
+    select: { id: true }
   });
 
   const userName = task.assignee?.name || session.user.name || 'A user';

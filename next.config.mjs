@@ -4,6 +4,13 @@ const nextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   swcMinify: true,
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
+  },
+  images: {
+    formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 86400,
+  },
   experimental: {
     optimizePackageImports: ['lucide-react', 'qrcode', 'jsbarcode', 'papaparse'],
     staleTimes: {
@@ -24,6 +31,15 @@ const nextConfig = {
       },
       {
         source: '/id-card/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=86400, stale-while-revalidate=604800',
+          },
+        ],
+      },
+      {
+        source: '/:all*(svg|jpg|png|webp|ico)',
         headers: [
           {
             key: 'Cache-Control',

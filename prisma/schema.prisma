@@ -123,6 +123,8 @@ model Company {
   applicants  Applicant[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+
+  @@index([createdAt])
 }
 
 model Department {
@@ -320,6 +322,7 @@ model LeaveRequest {
   @@index([startDate, endDate])
   @@index([leaveType])
   @@index([workerId, status])
+  @@index([createdAt])
 }
 
 model Holiday {
@@ -351,6 +354,8 @@ model WorkerDocument {
 
   @@index([workerId])
   @@index([category])
+  @@index([uploadedAt])
+  @@index([workerId, uploadedAt])
 }
 
 model CareerHistory {
@@ -372,6 +377,7 @@ model CareerHistory {
 
   @@index([workerId])
   @@index([effectiveDate])
+  @@index([workerId, effectiveDate])
 }
 
 model DisciplinaryRecord {
@@ -389,6 +395,8 @@ model DisciplinaryRecord {
 
   @@index([workerId])
   @@index([status])
+  @@index([incidentDate])
+  @@index([workerId, incidentDate])
 }
 
 model VisitorLog {

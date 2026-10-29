@@ -158,6 +158,7 @@ export default async function WorkersPage({
           {hasModule('CONFIRMATIONS') && (
             <Link 
               href="/confirmations" 
+              prefetch={true}
               className="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-xl flex items-center gap-2 transition text-xs font-bold shadow-sm shadow-indigo-600/20"
               title="Employee Confirmation"
             >
@@ -167,6 +168,7 @@ export default async function WorkersPage({
           {hasModule('IDCARD') && (
             <Link 
               href="/id-cards" 
+              prefetch={true}
               className="bg-teal-600 hover:bg-teal-700 text-white px-3.5 py-2 rounded-xl flex items-center gap-2 transition text-xs font-bold shadow-sm shadow-teal-600/20"
               title="ID Card"
             >
@@ -183,6 +185,7 @@ export default async function WorkersPage({
               </Link>
               <Link 
                 href="/workers/import" 
+                prefetch={true}
                 className="bg-purple-600 hover:bg-purple-700 text-white px-3.5 py-2 rounded-xl flex items-center gap-2 transition text-xs font-bold shadow-sm shadow-purple-600/20"
               >
                 <Upload size={15} /> Import CSV
@@ -193,6 +196,7 @@ export default async function WorkersPage({
           {role === 'SUPER_ADMIN' && (
             <Link 
               href="/workers/recycle-bin" 
+              prefetch={true}
               className="bg-rose-600 hover:bg-rose-700 text-white px-3.5 py-2 rounded-xl flex items-center gap-2 transition text-xs font-bold shadow-sm shadow-rose-600/20"
               title="Employee Recycle Bin"
             >
@@ -207,6 +211,7 @@ export default async function WorkersPage({
           {hasModule('WORKERS') && (
             <Link 
               href="/workers/new" 
+              prefetch={true}
               className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2 rounded-xl flex items-center gap-2 transition text-xs font-bold shadow-md shadow-blue-600/20"
             >
               <Plus size={16} /> Add Employee
@@ -378,6 +383,7 @@ export default async function WorkersPage({
                   <td className="p-3.5 font-medium text-slate-800">
                     <Link
                       href={`/workers/${worker.id}`}
+                      prefetch={true}
                       className="flex items-center gap-2 hover:text-blue-600 font-bold transition-colors group"
                     >
                       <User size={14} className="text-slate-400 group-hover:text-blue-500" />
@@ -396,12 +402,14 @@ export default async function WorkersPage({
                   <td className="p-3.5 text-right flex justify-end items-center gap-2">
                     <Link 
                       href={`/workers/${worker.id}`} 
+                      prefetch={true}
                       className="text-xs bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-2.5 py-1 rounded-lg border border-indigo-200 transition font-semibold"
                     >
                       360° Profile
                     </Link>
                     <Link 
                       href={`/workers/${worker.id}/edit`} 
+                      prefetch={true}
                       className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 px-2.5 py-1 rounded-lg border border-blue-100 transition font-semibold"
                     >
                       Edit

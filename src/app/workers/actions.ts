@@ -2,7 +2,7 @@
 
 
 import prisma from '@/lib/prisma';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { logAction } from '@/lib/audit';
 import { getSession } from '@/lib/auth';
@@ -12,6 +12,8 @@ import { join } from 'path';
 function safeRevalidatePath(path: string) {
   try {
     revalidatePath(path);
+    revalidateTag('workers');
+    revalidateTag('filter-options');
   } catch {
     // Gracefully handle calls outside active Next.js request context (e.g. tests)
   }

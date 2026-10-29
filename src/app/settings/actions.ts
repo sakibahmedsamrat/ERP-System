@@ -49,7 +49,12 @@ export async function updateProfileImage(base64: string) {
     data: { profileImage: base64 }
   });
 
-  // Revalidate layout to pick up new image
-  const { revalidatePath } = await import('next/cache');
+  // Revalidate layout and cached user profile to pick up new image immediately
+  const { revalidatePath, revalidateTag } = await import('next/cache');
+  try {
+    revalidateTag('user-profile');
+  } catch {
+    // Graceful fallback if called outside Next.js request lifecycle
+  }
   revalidatePath('/', 'layout');
 }

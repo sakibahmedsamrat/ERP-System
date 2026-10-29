@@ -18,7 +18,15 @@ const config: Config = {
         'glass-glow': '0 0 25px rgba(59, 130, 246, 0.18)',
       },
       backdropBlur: {
+        'none': '0',
         'xs': '2px',
+        'sm': '4px',
+        'DEFAULT': '6px',
+        'md': '6px',
+        'lg': '8px',
+        'xl': '10px',
+        '2xl': '12px',
+        '3xl': '16px',
       }
     },
   },

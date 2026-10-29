@@ -357,6 +357,7 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
           </button>
           <Link
             href="/settlements/new"
+            prefetch={true}
             className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 font-bold text-xs sm:text-sm transition shadow-md shadow-blue-600/20"
           >
             <Plus size={17} /> New Settlement
@@ -381,6 +382,7 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
           <div className="flex items-center gap-2">
             <Link
               href={`/settlements/${resignationSuccess.settlementId}/edit`}
+              prefetch={true}
               className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-sm transition"
             >
               <FileText size={15} /> Open Settlement Form <ArrowRight size={14} />
@@ -893,6 +895,7 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
                         {isPending ? (
                           <Link
                             href={`/settlements/${settlement.id}/edit`}
+                            prefetch={true}
                             className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm transition"
                             title="Open settlement form to finalize calculation"
                           >
@@ -901,6 +904,7 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
                         ) : (
                           <Link
                             href={`/settlements/${settlement.id}/edit`}
+                            prefetch={true}
                             className="text-xs font-bold text-gray-700 hover:text-blue-600 bg-gray-100 hover:bg-gray-200 px-2.5 py-1.5 rounded-lg transition"
                           >
                             Edit
@@ -909,6 +913,7 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
 
                         <Link
                           href={`/settlements/${settlement.id}`}
+                          prefetch={true}
                           className="text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1.5 rounded-lg transition flex items-center gap-1"
                         >
                           <Printer size={13} /> Print

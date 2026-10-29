@@ -39,6 +39,7 @@ export default async function UsersPage() {
         </div>
         <Link 
           href="/users/new" 
+          prefetch={true}
           className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 font-bold text-xs sm:text-sm transition shadow-md shadow-blue-600/20 w-fit"
         >
           <Plus size={18} /> Add New User
@@ -84,6 +85,7 @@ export default async function UsersPage() {
                       )}
                       <Link 
                         href={`/users/${u.id}/edit`}
+                        prefetch={true}
                         className="text-blue-600 hover:text-blue-800 transition p-1.5 rounded-lg hover:bg-white"
                         title="Edit User"
                       >

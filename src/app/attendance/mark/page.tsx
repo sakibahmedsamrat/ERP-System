@@ -8,7 +8,10 @@ export const metadata = {
 };
 
 export default async function MarkAttendancePage({ searchParams }: { searchParams: { companyId?: string } }) {
-  const companies = await prisma.company.findMany({ orderBy: { name: 'asc' } });
+  const companies = await prisma.company.findMany({
+    select: { id: true, name: true },
+    orderBy: { name: 'asc' }
+  });
   
   const selectedCompanyId = searchParams.companyId || '';
   
@@ -47,6 +50,7 @@ export default async function MarkAttendancePage({ searchParams }: { searchParam
         </div>
         <Link 
           href="/attendance" 
+          prefetch={true}
           className="inline-flex items-center gap-2 px-4 py-2 bg-white/80 hover:bg-white text-slate-700 hover:text-slate-900 rounded-xl border border-slate-200/80 transition text-xs font-bold shadow-xs w-fit"
         >
           <ArrowLeft size={16} /> Back to Log

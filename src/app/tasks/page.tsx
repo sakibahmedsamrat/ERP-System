@@ -22,7 +22,16 @@ export default async function TasksPage() {
   const tasks = await prisma.task.findMany({
     where: whereClause,
     orderBy: { createdAt: 'desc' },
-    include: { assignee: true }
+    include: {
+      assignee: {
+        select: {
+          id: true,
+          name: true,
+          userId: true,
+          role: true
+        }
+      }
+    }
   });
 
   return (
@@ -41,6 +50,7 @@ export default async function TasksPage() {
         {user && (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN') && (
           <Link 
             href="/tasks/new" 
+            prefetch={true}
             className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 font-bold text-xs sm:text-sm transition shadow-md shadow-blue-600/20 w-fit"
           >
             <Plus size={18} /> Assign Task
