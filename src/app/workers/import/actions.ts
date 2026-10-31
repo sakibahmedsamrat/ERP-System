@@ -65,12 +65,12 @@ export async function bulkImportWorkers(workers: any[]) {
         });
         if (normMatch) return w[normMatch];
 
-        // 3. Prefix match for headers annotated with format info, e.g. "Join Date (DD/MM/YY)"
+        // 3. Prefix match for headers annotated with format info, e.g. "Join Date (DD/MM/YY)" or "DOJ (DD/MM/YY)"
         const prefixMatch = objKeys.find(k => {
           const normK = k.toLowerCase().replace(/[^a-z0-9]/g, '');
           return keys.some(key => {
             const normKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
-            return normKey.length >= 4 && normK.startsWith(normKey);
+            return normKey.length >= 3 && normK.startsWith(normKey);
           });
         });
         return prefixMatch ? w[prefixMatch] : undefined;
@@ -158,6 +158,9 @@ export async function bulkImportWorkers(workers: any[]) {
         'date of joining',
         'joining',
         'doj',
+        'appointment date',
+        'date of appointment',
+        'entry date',
       ]);
       if (rawDate) {
         const d = parseFlexibleDate(rawDate);

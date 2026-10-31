@@ -1,12 +1,15 @@
 export function parseFlexibleDate(
-  dateStr: string | Date | null | undefined,
+  dateStr: string | number | Date | null | undefined,
   options?: { isBirthDate?: boolean; pivotYear?: number }
 ): Date | null {
-  if (!dateStr) return null;
+  if (dateStr === null || dateStr === undefined) return null;
   if (dateStr instanceof Date) return isNaN(dateStr.getTime()) ? null : dateStr;
   
-  const trimmed = String(dateStr).trim();
-  if (!trimmed) return null;
+  const rawStr = String(dateStr).trim();
+  if (!rawStr) return null;
+
+  // Clean spaces around date separators (e.g. "15 / 08 / 24" -> "15/08/24")
+  const trimmed = rawStr.replace(/\s*([-\/.])\s*/g, (_, p) => p);
 
   // Standard ISO timestamp with time/zone component (e.g. 2026-10-14T18:00:00.000Z)
   if (trimmed.includes('T') || trimmed.endsWith('Z')) {
@@ -106,18 +109,35 @@ export function parseFlexibleDate(
     return null;
   }
 
-  // 3. Optional Excel numeric serial date fallback (e.g. 45519)
-  if (/^\d{5}$/.test(datePart)) {
-    const serial = parseInt(datePart, 10);
+  // 3. Optional Excel numeric serial date fallback (e.g. 45519 or 45519.5)
+  if (/^\d{5}(\.\d+)?$/.test(datePart)) {
+    const serial = parseFloat(datePart);
     if (serial >= 10000 && serial <= 99999) {
-      const utcMs = (serial - 25569) * 86400 * 1000;
-      const d = new Date(utcMs);
+      const wholeDays = Math.floor(serial);
+      const dayFraction = serial - wholeDays;
+      const totalSeconds = Math.round(dayFraction * 86400);
+      const utcMs = (wholeDays - 25569) * 86400 * 1000;
+      const utcDate = new Date(utcMs);
+      const d = new Date(
+        utcDate.getUTCFullYear(),
+        utcDate.getUTCMonth(),
+        utcDate.getUTCDate(),
+        Math.floor(totalSeconds / 3600),
+        Math.floor((totalSeconds % 3600) / 60),
+        totalSeconds % 60
+      );
       if (!isNaN(d.getTime())) return d;
     }
   }
 
+  // Reject standalone 1-4 digit numbers (e.g. year-only '2024' or random numbers '123')
+  if (/^\d{1,4}$/.test(trimmed)) return null;
+
   const d = new Date(trimmed);
-  return isNaN(d.getTime()) ? null : d;
+  if (isNaN(d.getTime())) return null;
+  const year = d.getFullYear();
+  if (year < 1900 || year > 2100) return null;
+  return d;
 }
 
 export function formatDateToInput(dateInput: string | Date | null | undefined): string {

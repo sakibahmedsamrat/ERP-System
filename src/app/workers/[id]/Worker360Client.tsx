@@ -31,7 +31,7 @@ import {
   ExternalLink,
   X
 } from 'lucide-react';
-import { formatDate } from '@/lib/formatDate';
+import { formatDate, parseFlexibleDate } from '@/lib/formatDate';
 import { 
   uploadWorkerDocument, 
   deleteWorkerDocument, 
@@ -95,7 +95,8 @@ export default function Worker360Client({ worker }: Props) {
   // Tenure calculation
   const getTenure = (joinDateStr: string) => {
     if (!joinDateStr) return 'N/A';
-    const join = new Date(joinDateStr);
+    const join = parseFlexibleDate(joinDateStr);
+    if (!join) return 'N/A';
     const now = new Date();
     const diffDays = Math.floor((now.getTime() - join.getTime()) / (1000 * 60 * 60 * 24));
     const years = Math.floor(diffDays / 365);
