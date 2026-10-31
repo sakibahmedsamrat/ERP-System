@@ -87,7 +87,7 @@ export async function GET() {
     csvRows.push(row.map(escapeCsv).join(','));
   }
 
-  // Prepend UTF-8 BOM so Excel opens Bangla text correctly
+  // Prepend UTF-8 BOM so Excel opens UTF-8 encoded text correctly
   const csvContent = '\uFEFF' + csvRows.join('\r\n');
 
   return new NextResponse(csvContent, {

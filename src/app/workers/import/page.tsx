@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Papa from 'papaparse';
 import { bulkImportWorkers } from './actions';
 import { useRouter } from 'next/navigation';
-import { Download, FileSpreadsheet, ArrowLeft, Upload, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
+import { Download, FileSpreadsheet, ArrowLeft, Upload, CheckCircle2, AlertCircle, Sparkles, Calendar, Info } from 'lucide-react';
 
 export default function ImportWorkersPage() {
   const [file, setFile] = useState<File | null>(null);
@@ -111,14 +111,40 @@ export default function ImportWorkersPage() {
             <div className="flex flex-wrap gap-1.5 text-xs text-slate-700">
               {[
                 'Worker ID', 'Name', 'Designation', 'Department', 'Section',
-                'Sub Section', 'Grade', 'Join Date', 'Gross Salary', 'Phone',
-                'NID', 'Date of Birth', 'Gender', 'Blood Group', 'Father Name',
+                'Sub Section', 'Grade', 'Join Date (DD/MM/YY)', 'Gross Salary', 'Phone',
+                'NID', 'Date of Birth (DD/MM/YY)', 'Gender', 'Blood Group', 'Father Name',
                 'Mother Name', 'Address', 'Company'
               ].map(header => (
                 <span key={header} className="bg-white/80 backdrop-blur-xs border border-slate-200/80 px-2.5 py-1 rounded-lg font-mono text-[11px] text-slate-800 shadow-xs">
                   {header}
                 </span>
               ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Date Format Guidance Card */}
+        <div className="glass-card rounded-3xl p-5 sm:p-6 shadow-sm border border-blue-100 bg-gradient-to-r from-blue-50/70 via-indigo-50/50 to-blue-50/70">
+          <div className="flex items-start gap-3.5">
+            <div className="p-2.5 bg-blue-600 text-white rounded-xl shadow-md shadow-blue-600/20 shrink-0 mt-0.5">
+              <Calendar size={20} />
+            </div>
+            <div className="space-y-1.5 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-sm font-bold text-slate-900">Standard Date Format: DD/MM/YY or DD/MM/YYYY</h3>
+                <span className="text-[10px] font-bold tracking-wide uppercase bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full border border-blue-200">
+                  Recommended
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Dates such as <strong className="text-slate-800">Join Date</strong> and <strong className="text-slate-800">Date of Birth</strong> should be formatted as <code className="bg-white px-1.5 py-0.5 rounded border border-slate-200 text-blue-700 font-mono font-semibold text-[11px]">DD/MM/YY</code> (e.g. <span className="font-semibold text-slate-800">15/08/24</span>) or <code className="bg-white px-1.5 py-0.5 rounded border border-slate-200 text-blue-700 font-mono font-semibold text-[11px]">DD/MM/YYYY</code> (e.g. <span className="font-semibold text-slate-800">15/08/2024</span>). Common separators like slash (<code className="bg-white px-1 rounded text-slate-700">/</code>) and dash (<code className="bg-white px-1 rounded text-slate-700">-</code>) are fully supported.
+              </p>
+              <div className="flex items-start gap-2 pt-1 text-[11px] text-slate-500">
+                <Info size={14} className="shrink-0 text-blue-500 mt-0.5" />
+                <span>
+                  Two-digit years are intelligently mapped (e.g. <span className="font-medium text-slate-700">24 &rarr; 2024</span>, birth year <span className="font-medium text-slate-700">95 &rarr; 1995</span>). Standard ISO dates (<code className="bg-white px-1 rounded text-slate-700 font-mono">YYYY-MM-DD</code>) are also accepted as fallback.
+                </span>
+              </div>
             </div>
           </div>
         </div>

@@ -8,6 +8,7 @@ import { logAction } from '@/lib/audit';
 import { getSession } from '@/lib/auth';
 import { writeFile } from 'fs/promises';
 import { join } from 'path';
+import { parseFlexibleDate } from '@/lib/formatDate';
 
 function safeRevalidatePath(path: string) {
   try {
@@ -71,7 +72,7 @@ export async function createWorker(formData: FormData): Promise<void> {
     return;
   }
 
-  const joinDate = joinDateStr ? new Date(joinDateStr) : new Date();
+  const joinDate = (joinDateStr && parseFlexibleDate(joinDateStr)) || new Date();
   const getFloat = (field: string) => {
     const val = formData.get(field) as string;
     return val ? parseFloat(val) : 0;
@@ -263,7 +264,10 @@ export async function updateWorker(id: string, formData: FormData): Promise<void
   if (signatureUrl) updateData.signatureUrl = signatureUrl;
 
   if (joinDateStr) {
-    updateData.joinDate = new Date(joinDateStr);
+    const parsedJoin = parseFlexibleDate(joinDateStr);
+    if (parsedJoin) {
+      updateData.joinDate = parsedJoin;
+    }
   }
 
   if (!workerId || !name || !companyId) {

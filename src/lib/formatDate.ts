@@ -1,4 +1,7 @@
-export function parseFlexibleDate(dateStr: string | Date | null | undefined): Date | null {
+export function parseFlexibleDate(
+  dateStr: string | Date | null | undefined,
+  options?: { isBirthDate?: boolean; pivotYear?: number }
+): Date | null {
   if (!dateStr) return null;
   if (dateStr instanceof Date) return isNaN(dateStr.getTime()) ? null : dateStr;
   
@@ -11,24 +14,104 @@ export function parseFlexibleDate(dateStr: string | Date | null | undefined): Da
     return isNaN(d.getTime()) ? null : d;
   }
 
-  // Standard ISO date-only format (YYYY-MM-DD)
-  if (/^\d{4}[-/.]\d{1,2}[-/.]\d{1,2}/.test(trimmed)) {
-    const parts = trimmed.split(/[-/.]/);
-    const year = parseInt(parts[0], 10);
-    const month = parseInt(parts[1], 10) - 1;
-    const day = parseInt(parts[2], 10);
-    const d = new Date(year, month, day);
-    if (!isNaN(d.getTime())) return d;
+  // Extract optional time component if string contains spaces (e.g. "15/08/24 14:30:00")
+  let hours = 0;
+  let minutes = 0;
+  let seconds = 0;
+  let datePart = trimmed;
+
+  if (trimmed.includes(' ')) {
+    const spaceParts = trimmed.split(/\s+/);
+    datePart = spaceParts[0];
+    const timePart = spaceParts.slice(1).join(' ');
+    const timeMatch = timePart.match(/^(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?/);
+    if (timeMatch) {
+      hours = parseInt(timeMatch[1], 10) || 0;
+      minutes = parseInt(timeMatch[2], 10) || 0;
+      seconds = parseInt(timeMatch[3], 10) || 0;
+      if (/pm/i.test(timePart) && hours < 12) hours += 12;
+      if (/am/i.test(timePart) && hours === 12) hours = 0;
+    }
   }
 
-  // DD-MM-YYYY or DD/MM/YYYY or DD.MM.YYYY
-  const parts = trimmed.split(/[-/.]/);
-  if (parts.length === 3) {
-    if (parts[2].length === 4) {
-      const day = parseInt(parts[0], 10);
-      const month = parseInt(parts[1], 10) - 1;
-      const year = parseInt(parts[2], 10);
-      const d = new Date(year, month, day);
+  const resolveYear = (rawYear: number): number => {
+    if (rawYear >= 100) return rawYear;
+    const currentYear = new Date().getFullYear();
+    const pivot = options?.pivotYear ?? 50;
+
+    if (options?.isBirthDate) {
+      // For birth dates:
+      // A 2-digit year (e.g. 24 -> 2024, 04 -> 2004) cannot be in the future.
+      // If 2000 + rawYear <= currentYear and rawYear < pivot, it's 2000s; otherwise 1900s (e.g. 95 -> 1995).
+      if (2000 + rawYear <= currentYear && rawYear < pivot) {
+        return 2000 + rawYear;
+      }
+      return 1900 + rawYear;
+    }
+
+    // Standard pivot for general dates (e.g. Joining Date):
+    // 00-49 -> 2000-2049 (e.g. 24 -> 2024, 00 -> 2000)
+    // 50-99 -> 1950-1999 (e.g. 95 -> 1995, 75 -> 1975)
+    return rawYear < pivot ? 2000 + rawYear : 1900 + rawYear;
+  };
+
+  // 1. Standard ISO date-only format (YYYY-MM-DD, YYYY/MM/DD, YYYY.MM.DD)
+  const isoMatch = datePart.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/);
+  if (isoMatch) {
+    const year = parseInt(isoMatch[1], 10);
+    const month = parseInt(isoMatch[2], 10);
+    const day = parseInt(isoMatch[3], 10);
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      const d = new Date(year, month - 1, day, hours, minutes, seconds);
+      d.setFullYear(year);
+      if (
+        !isNaN(d.getTime()) &&
+        d.getFullYear() === year &&
+        d.getMonth() === month - 1 &&
+        d.getDate() === day
+      ) {
+        return d;
+      }
+    }
+    return null;
+  }
+
+  // 2. Day-first formats (DD/MM/YY, DD/MM/YYYY, DD-MM-YY, DD-MM-YYYY, DD.MM.YY, DD.MM.YYYY)
+  const dmyMatch = datePart.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2}|\d{4})$/);
+  if (dmyMatch) {
+    let day = parseInt(dmyMatch[1], 10);
+    let month = parseInt(dmyMatch[2], 10);
+    const rawYear = parseInt(dmyMatch[3], 10);
+    const year = resolveYear(rawYear);
+
+    // Fallback swap: If month > 12 but day <= 12, the input was likely MM/DD/YY(YY)
+    if (month > 12 && day <= 12) {
+      const temp = day;
+      day = month;
+      month = temp;
+    }
+
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      const d = new Date(year, month - 1, day, hours, minutes, seconds);
+      d.setFullYear(year);
+      if (
+        !isNaN(d.getTime()) &&
+        d.getFullYear() === year &&
+        d.getMonth() === month - 1 &&
+        d.getDate() === day
+      ) {
+        return d;
+      }
+    }
+    return null;
+  }
+
+  // 3. Optional Excel numeric serial date fallback (e.g. 45519)
+  if (/^\d{5}$/.test(datePart)) {
+    const serial = parseInt(datePart, 10);
+    if (serial >= 10000 && serial <= 99999) {
+      const utcMs = (serial - 25569) * 86400 * 1000;
+      const d = new Date(utcMs);
       if (!isNaN(d.getTime())) return d;
     }
   }

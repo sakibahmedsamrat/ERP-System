@@ -50,8 +50,30 @@ export async function bulkImportWorkers(workers: any[]) {
 
     for (const w of workers) {
       const getVal = (keys: string[]) => {
-        const foundKey = Object.keys(w).find(k => keys.some(key => k.toLowerCase().trim() === key.toLowerCase()));
-        return foundKey ? w[foundKey] : undefined;
+        const objKeys = Object.keys(w);
+        // 1. Exact string match (case-insensitive)
+        const exactMatch = objKeys.find(k => {
+          const lowerK = k.toLowerCase().trim();
+          return keys.some(key => lowerK === key.toLowerCase().trim());
+        });
+        if (exactMatch) return w[exactMatch];
+
+        // 2. Normalized alphanumeric match (ignoring punctuation and spaces)
+        const normMatch = objKeys.find(k => {
+          const normK = k.toLowerCase().replace(/[^a-z0-9]/g, '');
+          return keys.some(key => normK === key.toLowerCase().replace(/[^a-z0-9]/g, ''));
+        });
+        if (normMatch) return w[normMatch];
+
+        // 3. Prefix match for headers annotated with format info, e.g. "Join Date (DD/MM/YY)"
+        const prefixMatch = objKeys.find(k => {
+          const normK = k.toLowerCase().replace(/[^a-z0-9]/g, '');
+          return keys.some(key => {
+            const normKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+            return normKey.length >= 4 && normK.startsWith(normKey);
+          });
+        });
+        return prefixMatch ? w[prefixMatch] : undefined;
       };
 
       const rawWorkerId = String(getVal(['workerid', 'staff id', 'id', 'worker id', 'employee id']) ?? '').trim();
@@ -128,10 +150,31 @@ export async function bulkImportWorkers(workers: any[]) {
       }
 
       let jDate = new Date();
-      const rawDate = getVal(['joindate', 'join date', 'date of join']);
+      const rawDate = getVal([
+        'joindate',
+        'join date',
+        'date of join',
+        'joining date',
+        'date of joining',
+        'joining',
+        'doj',
+      ]);
       if (rawDate) {
-         const d = parseFlexibleDate(rawDate);
-         if (d) jDate = d;
+        const d = parseFlexibleDate(rawDate);
+        if (d) jDate = d;
+      }
+
+      // Handle optional Date of Birth field if included in the import payload
+      const rawDob = getVal([
+        'date of birth',
+        'dateofbirth',
+        'birth date',
+        'birthdate',
+        'dob',
+      ]);
+      if (rawDob) {
+        // Accurately parse birth dates using smart century pivot (e.g. 95 -> 1995, 24 -> 2024)
+        parseFlexibleDate(rawDob, { isBirthDate: true });
       }
 
       const rawGross = parseFloat(getVal(['grosssalary', 'gross salary', 'gross']) || '0');
