@@ -32,6 +32,10 @@ const state = {
   photoDataUrl: null,
   rawPhotoImg: null,
   rawPhotoDataUrl: null,
+  rawPhotoCanvas: null,
+  cutoutCanvas: null,
+  cutoutDataUrl: null,
+  isCutout: false,
   photoScale: 1.0,
   photoOffsetX: 0,
   photoOffsetY: 0,
@@ -130,6 +134,8 @@ function scheduleSaveState() {
         faceGlow: state.faceGlow !== false,
         photoDataUrl: state.photoDataUrl,
         rawPhotoDataUrl: state.rawPhotoDataUrl || state.photoDataUrl,
+        cutoutDataUrl: state.cutoutDataUrl,
+        isCutout: state.isCutout === true,
         signatureDataUrl: state.signatureDataUrl,
         activeTab: activeTabBtn ? activeTabBtn.dataset.tab : 'tabFront',
         autoRemoveBg: state.autoRemoveBg !== false
@@ -179,6 +185,8 @@ function loadSavedState() {
     if (parsed.photoOffsetY !== undefined) state.photoOffsetY = parsed.photoOffsetY;
     if (parsed.photoDataUrl) state.photoDataUrl = parsed.photoDataUrl;
     if (parsed.rawPhotoDataUrl) state.rawPhotoDataUrl = parsed.rawPhotoDataUrl;
+    if (parsed.cutoutDataUrl) state.cutoutDataUrl = parsed.cutoutDataUrl;
+    if (parsed.isCutout !== undefined) state.isCutout = parsed.isCutout;
     if (parsed.signatureDataUrl) state.signatureDataUrl = parsed.signatureDataUrl;
 
     syncInputsFromState();
@@ -247,14 +255,19 @@ function setAutoRemoveBgVisibility(show, showNotification = false) {
   }
 
   // If toggled and a photo is loaded, reprocess or revert cleanly
-  if (prevVal !== state.autoRemoveBg && state.rawPhotoImg) {
+  if (prevVal !== state.autoRemoveBg) {
     if (state.autoRemoveBg) {
-      processPhotoSource(state.rawPhotoImg, { notify: showNotification });
+      if (state.cutoutCanvas) {
+        state.isCutout = true;
+        updateActiveEnhancedPhoto();
+        if (showNotification) showToast('Background removed & studio face glow active!');
+      } else if (state.rawPhotoImg) {
+        processPhotoSource(state.rawPhotoImg, { notify: showNotification });
+      }
     } else {
-      state.photoImg = state.rawPhotoImg;
-      state.photoDataUrl = state.rawPhotoDataUrl;
-      scheduleRenderFront();
-      updatePhotoUploaderUI();
+      state.isCutout = false;
+      updateActiveEnhancedPhoto();
+      if (showNotification) showToast('Original photo background restored');
     }
   }
 
@@ -284,7 +297,7 @@ function setFaceGlowVisibility(show, showNotification = false) {
     }
   }
 
-  scheduleRenderFront();
+  updateActiveEnhancedPhoto();
   scheduleSaveState();
   if (showNotification) {
     showToast(state.faceGlow ? 'Studio Face Glow is ON' : 'Studio Face Glow is OFF');
@@ -539,14 +552,8 @@ function loadAssets() {
       if (typeof syncInputsFromState === 'function') syncInputsFromState();
 
       // Restore photo
-      if (hasSaved && state.photoDataUrl) {
-        const img = new Image();
-        img.onload = () => {
-          state.photoImg = img;
-          updatePhotoUploaderUI();
-          scheduleRenderFront();
-        };
-        img.src = state.photoDataUrl;
+      if (hasSaved && (state.photoDataUrl || state.rawPhotoDataUrl)) {
+        restoreSavedPhotos();
       } else {
         initDefaultPhoto();
       }
@@ -710,12 +717,15 @@ function initEventListeners() {
   });
 
   const glowSlider = document.getElementById('photoGlow');
+  let glowDebounce = null;
   if (glowSlider) {
     glowSlider.addEventListener('input', (e) => {
       state.photoGlow = parseFloat(e.target.value);
       updateSliderBadges();
-      scheduleRenderFront();
-      scheduleSaveState();
+      clearTimeout(glowDebounce);
+      glowDebounce = setTimeout(() => {
+        updateActiveEnhancedPhoto();
+      }, 35);
     });
   }
 
@@ -729,8 +739,7 @@ function initEventListeners() {
     panYSlider.value = 0;
     if (glowSlider) glowSlider.value = 1.0;
     updateSliderBadges();
-    scheduleRenderFront();
-    scheduleSaveState();
+    updateActiveEnhancedPhoto();
     showToast('Photo position & glow reset');
   });
 
@@ -1012,9 +1021,9 @@ function segmentPersonMediaPipe(sourceImg) {
     const timeout = setTimeout(() => {
       if (!isResolved) {
         isResolved = true;
-        reject(new Error('MediaPipe segmentation timeout (7s)'));
+        reject(new Error('MediaPipe segmentation timeout (6s)'));
       }
-    }, 7000);
+    }, 6000);
 
     segmenter.onResults((results) => {
       if (isResolved) return;
@@ -1050,57 +1059,310 @@ function segmentPersonMediaPipe(sourceImg) {
   });
 }
 
-// Intelligent Studio Lighting & Subtle Face Glow Enhancement (Pixel & Canvas levels)
-function applyStudioPortraitEnhancement(sourceCanvas, glowFactor = 1.0) {
-  if (glowFactor <= 0) return sourceCanvas;
+// Intelligent Solid / Studio Backdrop Background Removal Fallback
+// Operates cleanly offline on studio passport photos, white walls, and solid backdrops
+function removeSolidStudioBackground(sourceImg) {
+  const canvas = document.createElement('canvas');
+  const w = sourceImg.naturalWidth || sourceImg.width;
+  const h = sourceImg.naturalHeight || sourceImg.height;
+  if (!w || !h) return null;
+
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(sourceImg, 0, 0, w, h);
+
+  let imgData;
   try {
-    const ctx = sourceCanvas.getContext('2d', { willReadFrequently: true });
-    const w = sourceCanvas.width;
-    const h = sourceCanvas.height;
-    const imgData = ctx.getImageData(0, 0, w, h);
-    const data = imgData.data;
+    imgData = ctx.getImageData(0, 0, w, h);
+  } catch (e) {
+    return null;
+  }
+  const data = imgData.data;
 
-    // Subtle, natural studio lighting tuning
-    // Gently lifts underexposed camera phone shadows and warms skin tone
-    const brightnessBoost = 8 * glowFactor;
-    const contrastFactor = 1.0 + (0.03 * glowFactor);
-    const warmBoost = 3 * glowFactor;
+  // 1. Check if already transparent (>6% transparent pixels)
+  let transparentCount = 0;
+  const sampleStep = Math.max(1, Math.floor((w * h) / 1000));
+  for (let i = 3; i < data.length; i += 4 * sampleStep) {
+    if (data[i] < 30) transparentCount++;
+  }
+  if ((transparentCount / (data.length / (4 * sampleStep))) > 0.06) {
+    return canvas;
+  }
 
-    for (let i = 0; i < data.length; i += 4) {
-      const a = data[i + 3];
-      if (a < 10) continue; // Skip transparent pixels
+  // 2. Sample background color along top edge and upper outer margins
+  let bgR = 0, bgG = 0, bgB = 0, sampleCount = 0;
+  const sampleMarginY = Math.max(3, Math.floor(h * 0.09));
+  const sampleMarginX = Math.max(3, Math.floor(w * 0.14));
 
-      let r = data[i];
-      let g = data[i + 1];
-      let b = data[i + 2];
+  for (let y = 0; y < sampleMarginY; y += 2) {
+    for (let x = 0; x < w; x += 3) {
+      const idx = (y * w + x) * 4;
+      bgR += data[idx];
+      bgG += data[idx + 1];
+      bgB += data[idx + 2];
+      sampleCount++;
+    }
+  }
+  for (let y = sampleMarginY; y < Math.floor(h * 0.40); y += 3) {
+    for (let x = 0; x < sampleMarginX; x += 3) {
+      const idx = (y * w + x) * 4;
+      bgR += data[idx];
+      bgG += data[idx + 1];
+      bgB += data[idx + 2];
+      sampleCount++;
+    }
+    for (let x = w - sampleMarginX; x < w; x += 3) {
+      const idx = (y * w + x) * 4;
+      bgR += data[idx];
+      bgG += data[idx + 1];
+      bgB += data[idx + 2];
+      sampleCount++;
+    }
+  }
 
-      // 1. Contrast centering around 128
-      r = (r - 128) * contrastFactor + 128;
-      g = (g - 128) * contrastFactor + 128;
-      b = (b - 128) * contrastFactor + 128;
+  if (sampleCount === 0) return null;
+  bgR /= sampleCount;
+  bgG /= sampleCount;
+  bgB /= sampleCount;
 
-      // 2. Gentle shadow lift and warm skin tone
-      r += brightnessBoost + warmBoost;
-      g += brightnessBoost + (warmBoost * 0.4);
-      b += brightnessBoost - (warmBoost * 0.2);
+  const bgLum = 0.299 * bgR + 0.587 * bgG + 0.114 * bgB;
+  const isLightBg = bgLum > 140;
 
-      // 3. Subtle skin vibrance (increase saturation gracefully)
-      const gray = 0.299 * r + 0.587 * g + 0.114 * b;
-      const vibrance = 1.0 + (0.05 * glowFactor);
-      r = gray + (r - gray) * vibrance;
-      g = gray + (g - gray) * vibrance;
-      b = gray + (b - gray) * vibrance;
+  // Check background variance
+  let variance = 0;
+  for (let y = 0; y < sampleMarginY; y += 4) {
+    for (let x = 0; x < w; x += 6) {
+      const idx = (y * w + x) * 4;
+      const dr = data[idx] - bgR;
+      const dg = data[idx + 1] - bgG;
+      const db = data[idx + 2] - bgB;
+      variance += Math.sqrt(dr * dr + dg * dg + db * db);
+    }
+  }
+  const avgVar = variance / (sampleCount / 4 || 1);
 
-      data[i] = Math.min(255, Math.max(0, Math.round(r)));
-      data[i + 1] = Math.min(255, Math.max(0, Math.round(g)));
-      data[i + 2] = Math.min(255, Math.max(0, Math.round(b)));
+  if (avgVar > 65 && bgLum < 210) {
+    // Backdrop is not sufficiently uniform to segment without ML
+    return null;
+  }
+
+  const threshold = Math.max(32, Math.min(68, 40 + (bgLum > 200 ? 14 : 0)));
+  const ramp = 22;
+
+  // Protect central face area
+  const centerX = w / 2;
+  const centerY = h * 0.44;
+  const protectRadiusX = w * 0.23;
+  const protectRadiusY = h * 0.28;
+
+  let removedPixels = 0;
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const idx = (y * w + x) * 4;
+      const r = data[idx];
+      const g = data[idx + 1];
+      const b = data[idx + 2];
+
+      const dx = (x - centerX) / protectRadiusX;
+      const dy = (y - centerY) / protectRadiusY;
+      const distFromCenter = dx * dx + dy * dy;
+
+      if (distFromCenter < 1.0 && isLightBg && (0.299 * r + 0.587 * g + 0.114 * b) < 235) {
+        continue;
+      }
+
+      const cDist = Math.sqrt((r - bgR) ** 2 + (g - bgG) ** 2 + (b - bgB) ** 2);
+      const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+
+      if (cDist < threshold || (isLightBg && lum > 242)) {
+        data[idx + 3] = 0;
+        removedPixels++;
+      } else if (cDist < (threshold + ramp)) {
+        const factor = (cDist - threshold) / ramp;
+        data[idx + 3] = Math.min(data[idx + 3], Math.round(factor * 255));
+        removedPixels++;
+      }
+    }
+  }
+
+  if (removedPixels < (w * h * 0.05)) {
+    return null;
+  }
+
+  ctx.putImageData(imgData, 0, 0);
+  return canvas;
+}
+
+// Intelligent Studio Lighting & Subtle Face Glow Enhancement (Non-Destructive)
+// Lifts underexposed camera phone facial shadows and adds warm radiant skin vitality
+function applyStudioPortraitEnhancement(sourceCanvas, glowFactor = 1.0) {
+  if (!sourceCanvas) return null;
+  const w = sourceCanvas.width;
+  const h = sourceCanvas.height;
+  if (!w || !h) return sourceCanvas;
+
+  const outputCanvas = document.createElement('canvas');
+  outputCanvas.width = w;
+  outputCanvas.height = h;
+  const ctx = outputCanvas.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(sourceCanvas, 0, 0);
+
+  if (glowFactor <= 0) return outputCanvas;
+
+  let imgData;
+  try {
+    imgData = ctx.getImageData(0, 0, w, h);
+  } catch (e) {
+    console.warn('Canvas pixel enhancement skipped (CORS/context):', e);
+    return outputCanvas;
+  }
+  const data = imgData.data;
+
+  // Studio lighting tuning parameters
+  const contrastFactor = 1.0 + (0.04 * glowFactor);
+  const vibranceFactor = 1.0 + (0.06 * glowFactor);
+
+  for (let i = 0; i < data.length; i += 4) {
+    const a = data[i + 3];
+    if (a < 10) continue;
+
+    let r = data[i];
+    let g = data[i + 1];
+    let b = data[i + 2];
+
+    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+
+    // 1. Natural studio shadow & midtone lift (smooth gamma curve)
+    // Dark facial shadows (lum < 150) are lifted, highlights (> 220) protected from clipping
+    const shadowWeight = Math.max(0, (220 - lum) / 220);
+    const lift = Math.round(20 * glowFactor * shadowWeight);
+
+    r += lift;
+    g += lift;
+    b += lift;
+
+    // 2. Warm golden skin radiance
+    const isSkin = (r > g) && (g > b) && ((r - b) > 12) && (lum > 35) && (lum < 225);
+    if (isSkin) {
+      r += Math.round(7 * glowFactor * shadowWeight);
+      g += Math.round(3.5 * glowFactor * shadowWeight);
+      b += Math.round(0.5 * glowFactor * shadowWeight);
+    } else {
+      r += Math.round(2 * glowFactor * shadowWeight);
+      g += Math.round(1 * glowFactor * shadowWeight);
     }
 
-    ctx.putImageData(imgData, 0, 0);
-  } catch (e) {
-    console.warn('Canvas pixel enhancement skipped:', e);
+    // 3. Gentle contrast centering around 128
+    r = (r - 128) * contrastFactor + 128;
+    g = (g - 128) * contrastFactor + 128;
+    b = (b - 128) * contrastFactor + 128;
+
+    // 4. Subtle vibrance & saturation
+    const currentLum = 0.299 * r + 0.587 * g + 0.114 * b;
+    r = currentLum + (r - currentLum) * vibranceFactor;
+    g = currentLum + (g - currentLum) * vibranceFactor;
+    b = currentLum + (b - currentLum) * vibranceFactor;
+
+    data[i] = Math.min(255, Math.max(0, Math.round(r)));
+    data[i + 1] = Math.min(255, Math.max(0, Math.round(g)));
+    data[i + 2] = Math.min(255, Math.max(0, Math.round(b)));
   }
-  return sourceCanvas;
+
+  ctx.putImageData(imgData, 0, 0);
+  return outputCanvas;
+}
+
+// Dynamically generate enhanced photo image from base canvas and current glow settings
+function updateActiveEnhancedPhoto() {
+  const baseCanvas = (state.autoRemoveBg && state.cutoutCanvas)
+    ? state.cutoutCanvas
+    : state.rawPhotoCanvas;
+
+  if (!baseCanvas) {
+    if (state.photoImg) scheduleRenderFront();
+    return;
+  }
+
+  state.isCutout = Boolean(state.autoRemoveBg && state.cutoutCanvas);
+  const glowLevel = (state.faceGlow !== false) ? (state.photoGlow ?? 1.0) : 0.0;
+  const enhancedCanvas = applyStudioPortraitEnhancement(baseCanvas, glowLevel);
+
+  try {
+    const finalDataUrl = enhancedCanvas.toDataURL('image/png');
+    const finalImg = new Image();
+    finalImg.onload = () => {
+      state.photoImg = finalImg;
+      state.photoDataUrl = finalDataUrl;
+      updatePhotoUploaderUI();
+      scheduleRenderFront();
+      scheduleSaveState();
+    };
+    finalImg.src = finalDataUrl;
+  } catch (e) {
+    console.warn('Canvas toDataURL failed in updateActiveEnhancedPhoto:', e);
+    scheduleRenderFront();
+  }
+}
+
+// Restore saved photo canvas objects cleanly after page reload
+function restoreSavedPhotos() {
+  const initPhotoCanvas = (img, callback) => {
+    const c = document.createElement('canvas');
+    c.width = img.naturalWidth || img.width;
+    c.height = img.naturalHeight || img.height;
+    c.getContext('2d').drawImage(img, 0, 0);
+    callback(c);
+  };
+
+  const loadRaw = (cb) => {
+    if (state.rawPhotoDataUrl) {
+      const rImg = new Image();
+      rImg.onload = () => {
+        state.rawPhotoImg = rImg;
+        initPhotoCanvas(rImg, (c) => {
+          state.rawPhotoCanvas = c;
+          cb();
+        });
+      };
+      rImg.src = state.rawPhotoDataUrl;
+    } else {
+      cb();
+    }
+  };
+
+  const loadCutout = (cb) => {
+    if (state.cutoutDataUrl) {
+      const cImg = new Image();
+      cImg.onload = () => {
+        initPhotoCanvas(cImg, (c) => {
+          state.cutoutCanvas = c;
+          state.isCutout = true;
+          cb();
+        });
+      };
+      cImg.src = state.cutoutDataUrl;
+    } else {
+      cb();
+    }
+  };
+
+  loadRaw(() => {
+    loadCutout(() => {
+      if (state.photoDataUrl) {
+        const pImg = new Image();
+        pImg.onload = () => {
+          state.photoImg = pImg;
+          updatePhotoUploaderUI();
+          scheduleRenderFront();
+        };
+        pImg.src = state.photoDataUrl;
+      } else {
+        updateActiveEnhancedPhoto();
+      }
+    });
+  });
 }
 
 // Unified Photo Processing Pipeline (Handles File, URL, Image, BG Removal & Face Glow)
@@ -1111,9 +1373,16 @@ function processPhotoSource(source, options = {}) {
     state.rawPhotoImg = img;
     state.rawPhotoDataUrl = originalDataUrl;
 
-    const finalizePhotoState = (finalImg, finalDataUrl, msg) => {
+    const rawCanvas = document.createElement('canvas');
+    rawCanvas.width = img.naturalWidth || img.width;
+    rawCanvas.height = img.naturalHeight || img.height;
+    rawCanvas.getContext('2d').drawImage(img, 0, 0);
+    state.rawPhotoCanvas = rawCanvas;
+
+    const finalizePhotoState = (finalImg, finalDataUrl, isCutoutVal, msg) => {
       state.photoImg = finalImg;
       state.photoDataUrl = finalDataUrl;
+      state.isCutout = isCutoutVal;
       state.photoScale = 1.0;
       state.photoOffsetX = 0;
       state.photoOffsetY = 0;
@@ -1131,41 +1400,80 @@ function processPhotoSource(source, options = {}) {
     };
 
     if (!state.autoRemoveBg) {
-      // Auto BG removal is OFF -> use raw photo directly (studio glow renders on card canvas)
-      finalizePhotoState(img, originalDataUrl, 'Photo loaded successfully!');
+      // Auto BG removal is OFF -> use raw photo with studio glow
+      state.isCutout = false;
+      state.cutoutCanvas = null;
+      state.cutoutDataUrl = null;
+      const glowLevel = (state.faceGlow !== false) ? (state.photoGlow ?? 1.0) : 0.0;
+      const enhanced = applyStudioPortraitEnhancement(rawCanvas, glowLevel);
+      const enhancedDataUrl = enhanced.toDataURL('image/png');
+      const enhancedImg = new Image();
+      enhancedImg.onload = () => {
+        finalizePhotoState(enhancedImg, enhancedDataUrl, false, 'Photo loaded with studio face glow!');
+      };
+      enhancedImg.src = enhancedDataUrl;
       return;
     }
 
-    if (notify) showToast('Removing background & applying face glow...');
+    if (notify) showToast('Removing background & applying studio face glow...');
 
+    // Attempt 1: MediaPipe AI Segmentation
     try {
       const cutoutCanvas = await segmentPersonMediaPipe(img);
-      const enhancedCanvas = applyStudioPortraitEnhancement(cutoutCanvas, state.faceGlow ? (state.photoGlow ?? 1.0) : 0);
+      state.cutoutCanvas = cutoutCanvas;
+      state.cutoutDataUrl = cutoutCanvas.toDataURL('image/png');
+      state.isCutout = true;
+
+      const glowLevel = (state.faceGlow !== false) ? (state.photoGlow ?? 1.0) : 0.0;
+      const enhancedCanvas = applyStudioPortraitEnhancement(cutoutCanvas, glowLevel);
       const cleanDataUrl = enhancedCanvas.toDataURL('image/png');
       const cleanImg = new Image();
       cleanImg.onload = () => {
-        finalizePhotoState(cleanImg, cleanDataUrl, 'Background removed & face glow applied!');
+        finalizePhotoState(cleanImg, cleanDataUrl, true, 'Background removed & studio face glow applied!');
       };
       cleanImg.src = cleanDataUrl;
+      return;
     } catch (err) {
-      console.warn('MediaPipe background removal skipped/failed:', err);
-      // Fallback: create canvas and apply studio enhancement
-      try {
-        const fallbackCanvas = document.createElement('canvas');
-        fallbackCanvas.width = img.naturalWidth || img.width;
-        fallbackCanvas.height = img.naturalHeight || img.height;
-        const fbCtx = fallbackCanvas.getContext('2d');
-        fbCtx.drawImage(img, 0, 0);
-        const enhancedCanvas = applyStudioPortraitEnhancement(fallbackCanvas, state.faceGlow ? (state.photoGlow ?? 1.0) : 0);
-        const fbDataUrl = enhancedCanvas.toDataURL('image/png');
-        const fbImg = new Image();
-        fbImg.onload = () => {
-          finalizePhotoState(fbImg, fbDataUrl, 'Photo loaded with studio face glow!');
+      console.warn('MediaPipe background removal skipped/failed, trying smart fallback:', err);
+    }
+
+    // Attempt 2: Smart Solid / Studio Backdrop Segmentation Fallback
+    try {
+      const smartCutout = removeSolidStudioBackground(img);
+      if (smartCutout) {
+        state.cutoutCanvas = smartCutout;
+        state.cutoutDataUrl = smartCutout.toDataURL('image/png');
+        state.isCutout = true;
+
+        const glowLevel = (state.faceGlow !== false) ? (state.photoGlow ?? 1.0) : 0.0;
+        const enhancedCanvas = applyStudioPortraitEnhancement(smartCutout, glowLevel);
+        const cleanDataUrl = enhancedCanvas.toDataURL('image/png');
+        const cleanImg = new Image();
+        cleanImg.onload = () => {
+          finalizePhotoState(cleanImg, cleanDataUrl, true, 'Background removed & studio face glow applied!');
         };
-        fbImg.src = fbDataUrl;
-      } catch (fbErr) {
-        finalizePhotoState(img, originalDataUrl, 'Photo loaded successfully!');
+        cleanImg.src = cleanDataUrl;
+        return;
       }
+    } catch (smartErr) {
+      console.warn('Smart background removal fallback failed:', smartErr);
+    }
+
+    // Attempt 3: General studio face glow on photo canvas
+    try {
+      state.isCutout = false;
+      state.cutoutCanvas = null;
+      state.cutoutDataUrl = null;
+      const glowLevel = (state.faceGlow !== false) ? (state.photoGlow ?? 1.0) : 0.0;
+      const enhancedCanvas = applyStudioPortraitEnhancement(rawCanvas, glowLevel);
+      const fbDataUrl = enhancedCanvas.toDataURL('image/png');
+      const fbImg = new Image();
+      fbImg.onload = () => {
+        finalizePhotoState(fbImg, fbDataUrl, false, 'Photo loaded with studio face glow!');
+      };
+      fbImg.src = fbDataUrl;
+    } catch (fbErr) {
+      finalizePhotoState(img, originalDataUrl, false, 'Photo loaded successfully!');
     }
   };
 
@@ -1553,29 +1861,26 @@ function renderFrontCard(targetCtx = frontCtx, scale = 1) {
     const drawY = (420 * scale) - (sHeight / 2) + (state.photoOffsetY * scale);
 
     // Subtle soft rim glow & backlight behind cutout portrait
-    if (glowLevel > 0) {
+    // ONLY draw silhouette shadow if the photo is a cutout (has transparent background)
+    if (glowLevel > 0 && state.isCutout) {
       targetCtx.save();
-      targetCtx.shadowColor = 'rgba(255, 255, 255, 0.88)';
-      targetCtx.shadowBlur = Math.round(16 * glowLevel * scale);
+      targetCtx.shadowColor = 'rgba(255, 255, 255, 0.92)';
+      targetCtx.shadowBlur = Math.round(14 * glowLevel * scale);
       targetCtx.drawImage(state.photoImg, drawX, drawY, sWidth, sHeight);
       targetCtx.restore();
     }
 
-    // Draw employee photo with studio lighting enhancement (bright, sharp, vibrant)
-    targetCtx.save();
-    if (glowLevel > 0) {
-      const bVal = (1.0 + 0.06 * glowLevel).toFixed(2);
-      const cVal = (1.0 + 0.04 * glowLevel).toFixed(2);
-      const sVal = (1.0 + 0.05 * glowLevel).toFixed(2);
-      try {
-        targetCtx.filter = `brightness(${bVal}) contrast(${cVal}) saturate(${sVal})`;
-      } catch (e) {}
-    }
+    // Draw employee photo with studio lighting enhancement
     targetCtx.drawImage(state.photoImg, drawX, drawY, sWidth, sHeight);
-    try {
-      targetCtx.filter = 'none';
-    } catch (e) {}
-    targetCtx.restore();
+
+    // Soft diffused studio bloom glow
+    if (glowLevel > 0.4 && state.isCutout) {
+      targetCtx.save();
+      targetCtx.globalCompositeOperation = 'screen';
+      targetCtx.globalAlpha = Math.min(0.12, 0.06 * glowLevel);
+      targetCtx.drawImage(state.photoImg, drawX, drawY, sWidth, sHeight);
+      targetCtx.restore();
+    }
 
     targetCtx.restore();
 
@@ -1827,6 +2132,10 @@ function resetAllDefaults() {
   state.photoDataUrl = null;
   state.rawPhotoImg = null;
   state.rawPhotoDataUrl = null;
+  state.rawPhotoCanvas = null;
+  state.cutoutCanvas = null;
+  state.cutoutDataUrl = null;
+  state.isCutout = false;
   state.signatureDataUrl = null;
   state.photoScale = 1.0;
   state.photoOffsetX = 0;

@@ -22,6 +22,10 @@ export default async function IDCardPage({ params }: { params: { id: string } })
     blood: worker.bloodGroup || '',
     phone: worker.phone || '',
     nid: worker.nationalId || '',
+    photoUrl: worker.photoUrl || '',
+    photo: worker.photoUrl || '',
+    signatureUrl: worker.signatureUrl || '',
+    signature: worker.signatureUrl || '',
     workerDbId: worker.id
   });
 

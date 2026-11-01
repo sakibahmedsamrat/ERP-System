@@ -290,8 +290,8 @@ export default function A4BatchPrintSection({ workers, companies }: Props) {
                             alt={worker.name} 
                             className="w-full h-full object-cover" 
                             style={{
-                              filter: 'brightness(1.06) contrast(1.04) saturate(1.05) drop-shadow(0 0 2px rgba(255,255,255,0.8))',
-                              WebkitFilter: 'brightness(1.06) contrast(1.04) saturate(1.05) drop-shadow(0 0 2px rgba(255,255,255,0.8))'
+                              filter: 'brightness(1.08) contrast(1.05) saturate(1.06)',
+                              WebkitFilter: 'brightness(1.08) contrast(1.05) saturate(1.06)'
                             }}
                           />
                         ) : (
