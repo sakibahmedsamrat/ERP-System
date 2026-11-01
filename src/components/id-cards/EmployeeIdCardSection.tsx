@@ -24,26 +24,26 @@ export default function EmployeeIdCardSection({
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close suggestions when clicking outside
+  // Close suggestions when clicking or tapping outside
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleOutsideInteraction = (event: MouseEvent | TouchEvent) => {
       if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('mousedown', handleOutsideInteraction);
+    document.addEventListener('touchstart', handleOutsideInteraction);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('mousedown', handleOutsideInteraction);
+      document.removeEventListener('touchstart', handleOutsideInteraction);
     };
   }, []);
 
-  // Close suggestions when clicking into the embedded iframe
+  // Close suggestions when window loses focus (e.g. clicking into embedded iframe)
   useEffect(() => {
     const handleBlur = () => {
-      if (document.activeElement === iframeRef.current) {
-        setIsOpen(false);
-      }
+      setIsOpen(false);
     };
     window.addEventListener('blur', handleBlur);
     return () => window.removeEventListener('blur', handleBlur);
@@ -137,21 +137,26 @@ export default function EmployeeIdCardSection({
   }, []);
 
   const handleSelectWorker = useCallback(async (worker: any) => {
-    let target = worker;
-    if ((!target.photoUrl || !target.signatureUrl) && target.id) {
+    // 1. Immediately close dropdown, clear search query, and update UI
+    setIsOpen(false);
+    setQuery('');
+    setResults([]);
+    setSelectedWorker(worker);
+    sendWorkerToIframe(worker);
+
+    // 2. Fetch full photo and signature in background if not already present
+    if ((!worker.photoUrl || !worker.signatureUrl) && worker.id) {
       try {
-        const res = await fetch(`/api/workers/search?id=${target.id}`);
+        const res = await fetch(`/api/workers/search?id=${worker.id}`);
         const data = await res.json();
-        if (data.worker) target = data.worker;
+        if (data?.worker) {
+          setSelectedWorker(data.worker);
+          sendWorkerToIframe(data.worker);
+        }
       } catch (e) {
         console.error('Error fetching full worker details:', e);
       }
     }
-    setSelectedWorker(target);
-    setQuery('');
-    setResults([]);
-    setIsOpen(false);
-    sendWorkerToIframe(target);
   }, [sendWorkerToIframe]);
 
   // Auto-load worker if workerDbId or worker ID is in URL
@@ -175,6 +180,7 @@ export default function EmployeeIdCardSection({
     if (query.trim().length < 2) {
       setResults([]);
       setIsSearching(false);
+      setIsOpen(false);
       return;
     }
 
@@ -200,6 +206,16 @@ export default function EmployeeIdCardSection({
   useEffect(() => {
     setHighlightedIndex(-1);
   }, [results]);
+
+  // Auto-scroll highlighted suggestion into view during keyboard navigation
+  useEffect(() => {
+    if (highlightedIndex >= 0 && dropdownRef.current) {
+      const activeEl = dropdownRef.current.querySelector<HTMLElement>(`[data-index="${highlightedIndex}"]`);
+      if (activeEl) {
+        activeEl.scrollIntoView({ block: 'nearest' });
+      }
+    }
+  }, [highlightedIndex]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Escape') {
@@ -264,7 +280,7 @@ export default function EmployeeIdCardSection({
   return (
     <div className="space-y-6">
       {/* Top Search & Worker Auto-Fill Bar */}
-      <div className="relative z-40 glass-card bg-white/70 backdrop-blur-xl p-5 rounded-2xl border border-white/60 shadow-glass">
+      <div className="relative z-50 glass-card bg-white/70 backdrop-blur-xl p-5 rounded-2xl border border-white/60 shadow-glass">
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
           
           {/* Search Box with Suggestions */}
@@ -283,6 +299,11 @@ export default function EmployeeIdCardSection({
                   }
                 }}
                 onFocus={() => {
+                  if (query.trim().length >= 2) {
+                    setIsOpen(true);
+                  }
+                }}
+                onClick={() => {
                   if (query.trim().length >= 2) {
                     setIsOpen(true);
                   }
@@ -325,6 +346,7 @@ export default function EmployeeIdCardSection({
                       return (
                         <div
                           key={w.id}
+                          data-index={index}
                           onClick={() => handleSelectWorker(w)}
                           onMouseEnter={() => setHighlightedIndex(index)}
                           className={`p-3.5 cursor-pointer transition flex items-center justify-between gap-3 group ${
@@ -408,7 +430,7 @@ export default function EmployeeIdCardSection({
 
       {/* Dynamic Security Verification Card (Dynamic Signed QR + Code-128 Barcode) */}
       {selectedWorker && (
-        <div className="relative z-10 glass-card bg-gradient-to-r from-blue-900 via-slate-900 to-indigo-950 text-white p-5 rounded-2xl border border-blue-500/30 shadow-xl">
+        <div className="relative z-10 backdrop-blur-xl bg-gradient-to-r from-blue-950 via-slate-900 to-indigo-950 text-white p-5 rounded-2xl border border-blue-500/30 shadow-xl">
           <div className="flex flex-col md:flex-row items-center justify-between gap-5">
             <div className="flex items-center gap-4">
               {/* Dynamic QR */}
