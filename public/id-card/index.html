@@ -96,12 +96,20 @@
             <div class="field-header">
               <span class="field-num">1</span>
               <label>Employee Photo</label>
-              <button type="button" class="btn-toggle-switch active" id="btnToggleAutoRemoveBg" title="Auto Remove Background is ON. Click to toggle." aria-pressed="true" aria-label="Toggle Auto Background Removal">
-                <span class="switch-track">
-                  <span class="switch-thumb"></span>
-                </span>
-                <span class="switch-label" id="autoRemoveBgStatusLabel">Auto BG Remove: ON</span>
-              </button>
+              <div class="photo-header-toggles">
+                <button type="button" class="btn-toggle-switch active" id="btnToggleAutoRemoveBg" title="Auto Remove Background is ON. Click to toggle." aria-pressed="true" aria-label="Toggle Auto Background Removal">
+                  <span class="switch-track">
+                    <span class="switch-thumb"></span>
+                  </span>
+                  <span class="switch-label" id="autoRemoveBgStatusLabel">Auto BG Remove: ON</span>
+                </button>
+                <button type="button" class="btn-toggle-switch active" id="btnToggleFaceGlow" title="Studio Face Glow is ON. Click to toggle." aria-pressed="true" aria-label="Toggle Studio Face Glow">
+                  <span class="switch-track">
+                    <span class="switch-thumb"></span>
+                  </span>
+                  <span class="switch-label" id="faceGlowStatusLabel">Face Glow: ON</span>
+                </button>
+              </div>
             </div>
             <div class="photo-uploader" id="photoUploader">
               <div class="uploader-inner">
@@ -128,6 +136,11 @@
                 <span class="control-label">Zoom:</span>
                 <input type="range" class="control-slider" id="photoZoom" min="0.5" max="2.5" step="0.05" value="1">
                 <span class="slider-val" id="valZoom">1.0x</span>
+              </div>
+              <div class="control-row">
+                <span class="control-label">Face Glow:</span>
+                <input type="range" class="control-slider" id="photoGlow" min="0" max="2" step="0.1" value="1">
+                <span class="slider-val" id="valGlow">1.0x</span>
               </div>
               <div class="control-row">
                 <span class="control-label">Horizontal:</span>

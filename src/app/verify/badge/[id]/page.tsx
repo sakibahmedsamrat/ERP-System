@@ -134,6 +134,10 @@ export default async function GateVerificationPage({
                   src={worker.photoUrl}
                   alt={worker.name}
                   className="w-20 h-20 rounded-2xl object-cover border-2 border-white/20 shadow-md shrink-0"
+                  style={{
+                    filter: 'brightness(1.06) contrast(1.04) saturate(1.05)',
+                    WebkitFilter: 'brightness(1.06) contrast(1.04) saturate(1.05)'
+                  }}
                 />
               ) : (
                 <div className="w-20 h-20 rounded-2xl bg-blue-600/30 border border-blue-500/30 flex items-center justify-center font-bold text-2xl text-blue-300 shrink-0">

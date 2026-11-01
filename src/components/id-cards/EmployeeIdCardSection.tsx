@@ -360,6 +360,10 @@ export default function EmployeeIdCardSection({
                                 src={w.photoUrl} 
                                 alt={w.name} 
                                 className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0" 
+                                style={{
+                                  filter: 'brightness(1.06) contrast(1.04) saturate(1.05)',
+                                  WebkitFilter: 'brightness(1.06) contrast(1.04) saturate(1.05)'
+                                }}
                               />
                             ) : (
                               <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm shrink-0">

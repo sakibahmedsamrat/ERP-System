@@ -285,7 +285,15 @@ export default function A4BatchPrintSection({ workers, companies }: Props) {
                       <div className="w-[18mm] h-[22mm] rounded border border-slate-200 bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center">
                         {worker.photoUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={worker.photoUrl} alt={worker.name} className="w-full h-full object-cover" />
+                          <img 
+                            src={worker.photoUrl} 
+                            alt={worker.name} 
+                            className="w-full h-full object-cover" 
+                            style={{
+                              filter: 'brightness(1.06) contrast(1.04) saturate(1.05) drop-shadow(0 0 2px rgba(255,255,255,0.8))',
+                              WebkitFilter: 'brightness(1.06) contrast(1.04) saturate(1.05) drop-shadow(0 0 2px rgba(255,255,255,0.8))'
+                            }}
+                          />
                         ) : (
                           <div className="text-[12px] font-bold text-slate-400">
                             {worker.name.charAt(0)}

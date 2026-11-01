@@ -801,8 +801,22 @@ body::-webkit-scrollbar,
 }
 
 /* ----------------------------------------------------
-   Date of Joining ON/OFF Liquid Glass Toggle Switch
+   Photo Header Toggles Container & Liquid Glass Switch
    ---------------------------------------------------- */
+.photo-header-toggles {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.photo-header-toggles .btn-toggle-switch {
+  margin-left: 0;
+  padding: 3px 8px 3px 6px;
+  font-size: 0.72rem;
+}
+
 .btn-toggle-switch {
   display: inline-flex;
   align-items: center;

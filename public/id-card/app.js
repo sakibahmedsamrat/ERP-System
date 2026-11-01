@@ -30,9 +30,13 @@ const state = {
   employeeId: '',
   photoImg: null,
   photoDataUrl: null,
+  rawPhotoImg: null,
+  rawPhotoDataUrl: null,
   photoScale: 1.0,
   photoOffsetX: 0,
   photoOffsetY: 0,
+  photoGlow: 1.0,
+  faceGlow: true,
   signatureImg: null,
   signatureDataUrl: null,
 
@@ -122,7 +126,10 @@ function scheduleSaveState() {
         photoScale: state.photoScale,
         photoOffsetX: state.photoOffsetX,
         photoOffsetY: state.photoOffsetY,
+        photoGlow: state.photoGlow ?? 1.0,
+        faceGlow: state.faceGlow !== false,
         photoDataUrl: state.photoDataUrl,
+        rawPhotoDataUrl: state.rawPhotoDataUrl || state.photoDataUrl,
         signatureDataUrl: state.signatureDataUrl,
         activeTab: activeTabBtn ? activeTabBtn.dataset.tab : 'tabFront',
         autoRemoveBg: state.autoRemoveBg !== false
@@ -155,6 +162,8 @@ function loadSavedState() {
     if (parsed.dateOfJoin !== undefined) state.dateOfJoin = parsed.dateOfJoin;
     if (parsed.showDateOfJoin !== undefined) state.showDateOfJoin = parsed.showDateOfJoin;
     if (parsed.autoRemoveBg !== undefined) state.autoRemoveBg = parsed.autoRemoveBg;
+    if (parsed.faceGlow !== undefined) state.faceGlow = parsed.faceGlow;
+    if (parsed.photoGlow !== undefined) state.photoGlow = parsed.photoGlow;
     if (parsed.bloodGroup !== undefined) state.bloodGroup = parsed.bloodGroup;
     if (parsed.nid !== undefined) state.nid = parsed.nid;
     if (parsed.emergencyContact !== undefined) state.emergencyContact = parsed.emergencyContact;
@@ -169,6 +178,7 @@ function loadSavedState() {
     if (parsed.photoOffsetX !== undefined) state.photoOffsetX = parsed.photoOffsetX;
     if (parsed.photoOffsetY !== undefined) state.photoOffsetY = parsed.photoOffsetY;
     if (parsed.photoDataUrl) state.photoDataUrl = parsed.photoDataUrl;
+    if (parsed.rawPhotoDataUrl) state.rawPhotoDataUrl = parsed.rawPhotoDataUrl;
     if (parsed.signatureDataUrl) state.signatureDataUrl = parsed.signatureDataUrl;
 
     syncInputsFromState();
@@ -207,6 +217,9 @@ function syncInputsFromState() {
   setVal('photoZoom', state.photoScale);
   setVal('photoPanX', state.photoOffsetX);
   setVal('photoPanY', state.photoOffsetY);
+  setVal('photoGlow', state.photoGlow ?? 1.0);
+  setAutoRemoveBgVisibility(state.autoRemoveBg !== false, false);
+  setFaceGlowVisibility(state.faceGlow !== false, false);
 
   updateSliderBadges();
   updatePhotoUploaderUI();
@@ -214,6 +227,7 @@ function syncInputsFromState() {
 
 // Auto Remove Bg Visibility Toggle Controller
 function setAutoRemoveBgVisibility(show, showNotification = false) {
+  const prevVal = state.autoRemoveBg;
   state.autoRemoveBg = (show === true);
   const btnToggle = document.getElementById('btnToggleAutoRemoveBg');
   const label = document.getElementById('autoRemoveBgStatusLabel');
@@ -232,9 +246,48 @@ function setAutoRemoveBgVisibility(show, showNotification = false) {
     }
   }
 
+  // If toggled and a photo is loaded, reprocess or revert cleanly
+  if (prevVal !== state.autoRemoveBg && state.rawPhotoImg) {
+    if (state.autoRemoveBg) {
+      processPhotoSource(state.rawPhotoImg, { notify: showNotification });
+    } else {
+      state.photoImg = state.rawPhotoImg;
+      state.photoDataUrl = state.rawPhotoDataUrl;
+      scheduleRenderFront();
+      updatePhotoUploaderUI();
+    }
+  }
+
+  scheduleSaveState();
+  if (showNotification && !state.rawPhotoImg) {
+    showToast(state.autoRemoveBg ? 'Auto Remove Background is ON' : 'Auto Remove Background is OFF');
+  }
+}
+
+// Studio Face Glow Visibility Toggle Controller
+function setFaceGlowVisibility(show, showNotification = false) {
+  state.faceGlow = (show === true);
+  const btnToggle = document.getElementById('btnToggleFaceGlow');
+  const label = document.getElementById('faceGlowStatusLabel');
+
+  if (btnToggle) {
+    if (state.faceGlow) {
+      btnToggle.classList.add('active');
+      btnToggle.setAttribute('aria-pressed', 'true');
+      btnToggle.title = 'Studio Face Glow is ON. Click to toggle.';
+      if (label) label.textContent = 'Face Glow: ON';
+    } else {
+      btnToggle.classList.remove('active');
+      btnToggle.setAttribute('aria-pressed', 'false');
+      btnToggle.title = 'Studio Face Glow is OFF. Click to toggle.';
+      if (label) label.textContent = 'Face Glow: OFF';
+    }
+  }
+
+  scheduleRenderFront();
   scheduleSaveState();
   if (showNotification) {
-    showToast(state.autoRemoveBg ? 'Auto Remove Background is ON' : 'Auto Remove Background is OFF');
+    showToast(state.faceGlow ? 'Studio Face Glow is ON' : 'Studio Face Glow is OFF');
   }
 }
 
@@ -243,14 +296,17 @@ function updateSliderBadges() {
   const zoomEl = document.getElementById('photoZoom');
   const panXEl = document.getElementById('photoPanX');
   const panYEl = document.getElementById('photoPanY');
+  const glowEl = document.getElementById('photoGlow');
 
   const valZoom = document.getElementById('valZoom');
   const valPanX = document.getElementById('valPanX');
   const valPanY = document.getElementById('valPanY');
+  const valGlow = document.getElementById('valGlow');
 
-  if (valZoom) valZoom.textContent = `${state.photoScale.toFixed(2)}x`;
-  if (valPanX) valPanX.textContent = `${Math.round(state.photoOffsetX)}px`;
-  if (valPanY) valPanY.textContent = `${Math.round(state.photoOffsetY)}px`;
+  if (valZoom && zoomEl) valZoom.textContent = `${state.photoScale.toFixed(2)}x`;
+  if (valPanX && panXEl) valPanX.textContent = `${Math.round(state.photoOffsetX)}px`;
+  if (valPanY && panYEl) valPanY.textContent = `${Math.round(state.photoOffsetY)}px`;
+  if (valGlow && glowEl) valGlow.textContent = `${(state.photoGlow ?? 1.0).toFixed(1)}x`;
 
   // Compute dynamic fill track progress percentages
   if (zoomEl) {
@@ -264,6 +320,10 @@ function updateSliderBadges() {
   if (panYEl) {
     const pct = Math.max(0, Math.min(100, ((state.photoOffsetY - (-120)) / 240) * 100));
     panYEl.style.setProperty('--slider-progress', `${pct.toFixed(1)}%`);
+  }
+  if (glowEl) {
+    const pct = Math.max(0, Math.min(100, (((state.photoGlow ?? 1.0) - 0) / 2.0) * 100));
+    glowEl.style.setProperty('--slider-progress', `${pct.toFixed(1)}%`);
   }
 }
 
@@ -615,11 +675,16 @@ function initEventListeners() {
     e.preventDefault();
     photoUploader.classList.remove('dragover');
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      processPhotoFile(e.dataTransfer.files[0]);
+      const file = e.dataTransfer.files[0];
+      if (!file.type.startsWith('image/')) {
+        showToast('Please drop a valid image file (JPG/PNG)!');
+        return;
+      }
+      processPhotoSource(file, { notify: true });
     }
   });
 
-  // Photo Zoom & Pan sliders with Live Numeric Badges
+  // Photo Zoom, Pan & Face Glow sliders with Live Numeric Badges
   const zoomSlider = document.getElementById('photoZoom');
   zoomSlider.addEventListener('input', (e) => {
     state.photoScale = parseFloat(e.target.value);
@@ -644,17 +709,29 @@ function initEventListeners() {
     scheduleSaveState();
   });
 
+  const glowSlider = document.getElementById('photoGlow');
+  if (glowSlider) {
+    glowSlider.addEventListener('input', (e) => {
+      state.photoGlow = parseFloat(e.target.value);
+      updateSliderBadges();
+      scheduleRenderFront();
+      scheduleSaveState();
+    });
+  }
+
   document.getElementById('btnResetPhotoAdjust').addEventListener('click', () => {
     state.photoScale = 1.0;
     state.photoOffsetX = 0;
     state.photoOffsetY = 0;
+    state.photoGlow = 1.0;
     zoomSlider.value = 1.0;
     panXSlider.value = 0;
     panYSlider.value = 0;
+    if (glowSlider) glowSlider.value = 1.0;
     updateSliderBadges();
     scheduleRenderFront();
     scheduleSaveState();
-    showToast('Photo position reset');
+    showToast('Photo position & glow reset');
   });
 
   // Signature image upload
@@ -736,6 +813,14 @@ function initEventListeners() {
   if (btnToggleAutoRemoveBg) {
     btnToggleAutoRemoveBg.addEventListener('click', () => {
       setAutoRemoveBgVisibility(!state.autoRemoveBg, true);
+    });
+  }
+
+  // Studio Face Glow Toggle
+  const btnToggleFaceGlow = document.getElementById('btnToggleFaceGlow');
+  if (btnToggleFaceGlow) {
+    btnToggleFaceGlow.addEventListener('click', () => {
+      setFaceGlowVisibility(!state.faceGlow, true);
     });
   }
 
@@ -895,112 +980,232 @@ function bindInput(id, stateKey, onChangeCallback) {
   });
 }
 
-// Handle Photo Upload
-function handlePhotoUpload(e) {
-  if (e.target.files && e.target.files[0]) {
-    processPhotoFile(e.target.files[0]);
+// Singleton MediaPipe SelfieSegmentation instance for fast reuse
+let selfieSegmentationInstance = null;
+
+function getSelfieSegmentation() {
+  if (selfieSegmentationInstance) return selfieSegmentationInstance;
+  if (typeof SelfieSegmentation === 'undefined') return null;
+  try {
+    selfieSegmentationInstance = new SelfieSegmentation({
+      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`
+    });
+    selfieSegmentationInstance.setOptions({
+      modelSelection: 1 // fast landscape model
+    });
+    return selfieSegmentationInstance;
+  } catch (err) {
+    console.warn('Failed to initialize SelfieSegmentation:', err);
+    return null;
   }
 }
 
-function processPhotoFile(file) {
-  if (!file.type.startsWith('image/')) {
-    showToast('Please select a valid image file (JPG/PNG)!');
-    return;
-  }
+// MediaPipe Person Segmentation (async promise)
+function segmentPersonMediaPipe(sourceImg) {
+  return new Promise((resolve, reject) => {
+    const segmenter = getSelfieSegmentation();
+    if (!segmenter) {
+      return reject(new Error('MediaPipe SelfieSegmentation is not available'));
+    }
 
-  const loadOriginalPhoto = () => {
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      const dataUrl = evt.target.result;
-      const img = new Image();
-      img.onload = () => {
-        state.photoImg = img;
-        state.photoDataUrl = dataUrl;
-        state.photoScale = 1.0;
-        state.photoOffsetX = 0;
-        state.photoOffsetY = 0;
-        document.getElementById('photoZoom').value = 1.0;
-        document.getElementById('photoPanX').value = 0;
-        document.getElementById('photoPanY').value = 0;
-        updateSliderBadges();
-        updatePhotoUploaderUI();
-        scheduleRenderFront();
-        scheduleSaveState();
-        showToast('Photo uploaded successfully!');
+    let isResolved = false;
+    const timeout = setTimeout(() => {
+      if (!isResolved) {
+        isResolved = true;
+        reject(new Error('MediaPipe segmentation timeout (7s)'));
+      }
+    }, 7000);
+
+    segmenter.onResults((results) => {
+      if (isResolved) return;
+      isResolved = true;
+      clearTimeout(timeout);
+
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = results.image.width || sourceImg.naturalWidth || sourceImg.width;
+        canvas.height = results.image.height || sourceImg.naturalHeight || sourceImg.height;
+        const ctx = canvas.getContext('2d');
+
+        // Draw the segmentation mask
+        ctx.drawImage(results.segmentationMask, 0, 0, canvas.width, canvas.height);
+
+        // Clip source image to person mask
+        ctx.globalCompositeOperation = 'source-in';
+        ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
+
+        resolve(canvas);
+      } catch (err) {
+        reject(err);
+      }
+    });
+
+    segmenter.send({ image: sourceImg }).catch((err) => {
+      if (!isResolved) {
+        isResolved = true;
+        clearTimeout(timeout);
+        reject(err);
+      }
+    });
+  });
+}
+
+// Intelligent Studio Lighting & Subtle Face Glow Enhancement (Pixel & Canvas levels)
+function applyStudioPortraitEnhancement(sourceCanvas, glowFactor = 1.0) {
+  if (glowFactor <= 0) return sourceCanvas;
+  try {
+    const ctx = sourceCanvas.getContext('2d', { willReadFrequently: true });
+    const w = sourceCanvas.width;
+    const h = sourceCanvas.height;
+    const imgData = ctx.getImageData(0, 0, w, h);
+    const data = imgData.data;
+
+    // Subtle, natural studio lighting tuning
+    // Gently lifts underexposed camera phone shadows and warms skin tone
+    const brightnessBoost = 8 * glowFactor;
+    const contrastFactor = 1.0 + (0.03 * glowFactor);
+    const warmBoost = 3 * glowFactor;
+
+    for (let i = 0; i < data.length; i += 4) {
+      const a = data[i + 3];
+      if (a < 10) continue; // Skip transparent pixels
+
+      let r = data[i];
+      let g = data[i + 1];
+      let b = data[i + 2];
+
+      // 1. Contrast centering around 128
+      r = (r - 128) * contrastFactor + 128;
+      g = (g - 128) * contrastFactor + 128;
+      b = (b - 128) * contrastFactor + 128;
+
+      // 2. Gentle shadow lift and warm skin tone
+      r += brightnessBoost + warmBoost;
+      g += brightnessBoost + (warmBoost * 0.4);
+      b += brightnessBoost - (warmBoost * 0.2);
+
+      // 3. Subtle skin vibrance (increase saturation gracefully)
+      const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+      const vibrance = 1.0 + (0.05 * glowFactor);
+      r = gray + (r - gray) * vibrance;
+      g = gray + (g - gray) * vibrance;
+      b = gray + (b - gray) * vibrance;
+
+      data[i] = Math.min(255, Math.max(0, Math.round(r)));
+      data[i + 1] = Math.min(255, Math.max(0, Math.round(g)));
+      data[i + 2] = Math.min(255, Math.max(0, Math.round(b)));
+    }
+
+    ctx.putImageData(imgData, 0, 0);
+  } catch (e) {
+    console.warn('Canvas pixel enhancement skipped:', e);
+  }
+  return sourceCanvas;
+}
+
+// Unified Photo Processing Pipeline (Handles File, URL, Image, BG Removal & Face Glow)
+function processPhotoSource(source, options = {}) {
+  const notify = options.notify !== false;
+
+  const handleLoadedImage = async (img, originalDataUrl) => {
+    state.rawPhotoImg = img;
+    state.rawPhotoDataUrl = originalDataUrl;
+
+    const finalizePhotoState = (finalImg, finalDataUrl, msg) => {
+      state.photoImg = finalImg;
+      state.photoDataUrl = finalDataUrl;
+      state.photoScale = 1.0;
+      state.photoOffsetX = 0;
+      state.photoOffsetY = 0;
+      const zoomInput = document.getElementById('photoZoom');
+      if (zoomInput) zoomInput.value = 1.0;
+      const panX = document.getElementById('photoPanX');
+      if (panX) panX.value = 0;
+      const panY = document.getElementById('photoPanY');
+      if (panY) panY.value = 0;
+      updateSliderBadges();
+      updatePhotoUploaderUI();
+      scheduleRenderFront();
+      scheduleSaveState();
+      if (notify && msg) showToast(msg);
+    };
+
+    if (!state.autoRemoveBg) {
+      // Auto BG removal is OFF -> use raw photo directly (studio glow renders on card canvas)
+      finalizePhotoState(img, originalDataUrl, 'Photo loaded successfully!');
+      return;
+    }
+
+    if (notify) showToast('Removing background & applying face glow...');
+
+    try {
+      const cutoutCanvas = await segmentPersonMediaPipe(img);
+      const enhancedCanvas = applyStudioPortraitEnhancement(cutoutCanvas, state.faceGlow ? (state.photoGlow ?? 1.0) : 0);
+      const cleanDataUrl = enhancedCanvas.toDataURL('image/png');
+      const cleanImg = new Image();
+      cleanImg.onload = () => {
+        finalizePhotoState(cleanImg, cleanDataUrl, 'Background removed & face glow applied!');
       };
+      cleanImg.src = cleanDataUrl;
+    } catch (err) {
+      console.warn('MediaPipe background removal skipped/failed:', err);
+      // Fallback: create canvas and apply studio enhancement
+      try {
+        const fallbackCanvas = document.createElement('canvas');
+        fallbackCanvas.width = img.naturalWidth || img.width;
+        fallbackCanvas.height = img.naturalHeight || img.height;
+        const fbCtx = fallbackCanvas.getContext('2d');
+        fbCtx.drawImage(img, 0, 0);
+        const enhancedCanvas = applyStudioPortraitEnhancement(fallbackCanvas, state.faceGlow ? (state.photoGlow ?? 1.0) : 0);
+        const fbDataUrl = enhancedCanvas.toDataURL('image/png');
+        const fbImg = new Image();
+        fbImg.onload = () => {
+          finalizePhotoState(fbImg, fbDataUrl, 'Photo loaded with studio face glow!');
+        };
+        fbImg.src = fbDataUrl;
+      } catch (fbErr) {
+        finalizePhotoState(img, originalDataUrl, 'Photo loaded successfully!');
+      }
+    }
+  };
+
+  if (source instanceof File || source instanceof Blob) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target.result;
+      const img = new Image();
+      img.onload = () => handleLoadedImage(img, dataUrl);
       img.src = dataUrl;
     };
-    reader.readAsDataURL(file);
-  };
-
-  const tryMediaPipeBackgroundRemoval = () => {
-    if (typeof SelfieSegmentation === 'undefined') {
-      console.warn('MediaPipe not loaded.');
-      return loadOriginalPhoto();
-    }
-    
-    showToast('Removing background... Please wait.');
-    
-    const selfieSegmentation = new SelfieSegmentation({locateFile: (file) => {
-      return `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`;
-    }});
-    
-    selfieSegmentation.setOptions({
-      modelSelection: 1, // 1 is landscape (faster)
-    });
-    
-    selfieSegmentation.onResults((results) => {
-      const canvas = document.createElement('canvas');
-      canvas.width = results.image.width;
-      canvas.height = results.image.height;
-      const ctx = canvas.getContext('2d');
-
-      // Draw the mask
-      ctx.drawImage(results.segmentationMask, 0, 0, canvas.width, canvas.height);
-      
-      // Use mask to cut out original image
-      ctx.globalCompositeOperation = 'source-in';
-      ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
-
-      const dataUrl = canvas.toDataURL('image/png');
-      const finalImg = new Image();
-      finalImg.onload = () => {
-        state.photoImg = finalImg;
-        state.photoDataUrl = dataUrl;
-        state.photoScale = 1.0;
-        state.photoOffsetX = 0;
-        state.photoOffsetY = 0;
-        document.getElementById('photoZoom').value = 1.0;
-        document.getElementById('photoPanX').value = 0;
-        document.getElementById('photoPanY').value = 0;
-        updateSliderBadges();
-        updatePhotoUploaderUI();
-        scheduleRenderFront();
-        scheduleSaveState();
-        showToast('Photo uploaded & background removed!');
-        selfieSegmentation.close();
-      };
-      finalImg.src = dataUrl;
-    });
-
+    reader.readAsDataURL(source);
+  } else if (typeof source === 'string') {
     const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = async () => {
-      try {
-        await selfieSegmentation.send({image: img});
-      } catch (err) {
-        console.error('Background removal failed', err);
-        showToast('Background removal failed. Using original photo.');
-        loadOriginalPhoto();
+    if (!source.startsWith('data:')) {
+      img.crossOrigin = 'anonymous';
+    }
+    img.onload = () => handleLoadedImage(img, source);
+    img.onerror = () => {
+      if (!source.startsWith('data:')) {
+        const fallback = new Image();
+        fallback.onload = () => handleLoadedImage(fallback, source);
+        fallback.src = source;
       }
     };
-    img.src = URL.createObjectURL(file);
-  };
+    img.src = source;
+  } else if (source instanceof HTMLImageElement) {
+    handleLoadedImage(source, source.src);
+  }
+}
 
-  if (state.autoRemoveBg) {
-    tryMediaPipeBackgroundRemoval();
-  } else {
-    loadOriginalPhoto();
+// Handle Photo Upload
+function handlePhotoUpload(e) {
+  if (e.target.files && e.target.files[0]) {
+    const file = e.target.files[0];
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select a valid image file (JPG/PNG)!');
+      return;
+    }
+    processPhotoSource(file, { notify: true });
   }
 }
 
@@ -1321,8 +1526,20 @@ function renderFrontCard(targetCtx = frontCtx, scale = 1) {
     targetCtx.closePath();
     targetCtx.clip();
 
-    // Fill white background before drawing the photo
-    targetCtx.fillStyle = '#ffffff';
+    // Studio Ambient Light Backdrop inside circular frame
+    const glowLevel = (state.faceGlow !== false) ? (state.photoGlow ?? 1.0) : 0.0;
+    if (glowLevel > 0) {
+      const studioGlow = targetCtx.createRadialGradient(
+        305 * scale, 395 * scale, 25 * scale,
+        305 * scale, 420 * scale, 140 * scale
+      );
+      studioGlow.addColorStop(0, '#ffffff');
+      studioGlow.addColorStop(0.72, '#ffffff');
+      studioGlow.addColorStop(1, '#f1f5f9');
+      targetCtx.fillStyle = studioGlow;
+    } else {
+      targetCtx.fillStyle = '#ffffff';
+    }
     targetCtx.fill();
 
     const pW = state.photoImg.width;
@@ -1335,7 +1552,31 @@ function renderFrontCard(targetCtx = frontCtx, scale = 1) {
     const drawX = (305 * scale) - (sWidth / 2) + (state.photoOffsetX * scale);
     const drawY = (420 * scale) - (sHeight / 2) + (state.photoOffsetY * scale);
 
+    // Subtle soft rim glow & backlight behind cutout portrait
+    if (glowLevel > 0) {
+      targetCtx.save();
+      targetCtx.shadowColor = 'rgba(255, 255, 255, 0.88)';
+      targetCtx.shadowBlur = Math.round(16 * glowLevel * scale);
+      targetCtx.drawImage(state.photoImg, drawX, drawY, sWidth, sHeight);
+      targetCtx.restore();
+    }
+
+    // Draw employee photo with studio lighting enhancement (bright, sharp, vibrant)
+    targetCtx.save();
+    if (glowLevel > 0) {
+      const bVal = (1.0 + 0.06 * glowLevel).toFixed(2);
+      const cVal = (1.0 + 0.04 * glowLevel).toFixed(2);
+      const sVal = (1.0 + 0.05 * glowLevel).toFixed(2);
+      try {
+        targetCtx.filter = `brightness(${bVal}) contrast(${cVal}) saturate(${sVal})`;
+      } catch (e) {}
+    }
     targetCtx.drawImage(state.photoImg, drawX, drawY, sWidth, sHeight);
+    try {
+      targetCtx.filter = 'none';
+    } catch (e) {}
+    targetCtx.restore();
+
     targetCtx.restore();
 
     // Draw authentic ring overlay to ensure 100% flawless circular edge
@@ -1584,10 +1825,14 @@ function resetAllDefaults() {
   state.headOffice = DEFAULT_HEAD_OFFICE;
   setHeadOfficeLock(true);
   state.photoDataUrl = null;
+  state.rawPhotoImg = null;
+  state.rawPhotoDataUrl = null;
   state.signatureDataUrl = null;
   state.photoScale = 1.0;
   state.photoOffsetX = 0;
   state.photoOffsetY = 0;
+  state.photoGlow = 1.0;
+  state.faceGlow = true;
 
   const photoInput = document.getElementById('photoInput');
   if (photoInput) photoInput.value = '';
@@ -1835,44 +2080,10 @@ initLiveBackground();
 
 
 
-// Robust Photo Loading Helper (Supports Base64 Data URL, Relative URLs, and Remote Images)
+// Robust Photo Loading Helper (Supports Base64 Data URL, Relative URLs, and Remote Images with BG removal & Face Glow)
 function loadPhotoIntoState(url) {
   if (!url) return;
-  const img = new Image();
-  // Do NOT set crossOrigin on Data URLs (causes Chromium security error)
-  if (!url.startsWith('data:')) {
-    img.crossOrigin = 'anonymous';
-  }
-  img.onload = function() {
-    state.photoImg = img;
-    state.photoDataUrl = url;
-    state.photoScale = 1.0;
-    state.photoOffsetX = 0;
-    state.photoOffsetY = 0;
-    const zoomInput = document.getElementById('photoZoom');
-    if (zoomInput) zoomInput.value = 1.0;
-    const panX = document.getElementById('photoPanX');
-    if (panX) panX.value = 0;
-    const panY = document.getElementById('photoPanY');
-    if (panY) panY.value = 0;
-    if (typeof updateSliderBadges === 'function') updateSliderBadges();
-    if (typeof updatePhotoUploaderUI === 'function') updatePhotoUploaderUI();
-    if (typeof scheduleRenderFront === 'function') scheduleRenderFront();
-    if (typeof scheduleSaveState === 'function') scheduleSaveState();
-  };
-  img.onerror = function() {
-    if (!url.startsWith('data:')) {
-      const fallback = new Image();
-      fallback.onload = function() {
-        state.photoImg = fallback;
-        state.photoDataUrl = url;
-        if (typeof updatePhotoUploaderUI === 'function') updatePhotoUploaderUI();
-        if (typeof scheduleRenderFront === 'function') scheduleRenderFront();
-      };
-      fallback.src = url;
-    }
-  };
-  img.src = url;
+  processPhotoSource(url, { notify: false });
 }
 
 // Robust Signature Loading Helper
