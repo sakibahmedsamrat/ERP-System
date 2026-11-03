@@ -493,26 +493,34 @@ export default function SalaryStatementClient() {
           container.style.padding = '0';
         }
 
+        const pageWrappers = clonedDoc.querySelectorAll('.salary-page-wrapper, .salary-doc-page-wrapper');
+        pageWrappers.forEach((w: any) => {
+          w.style.margin = '0';
+          w.style.padding = '0';
+          w.style.width = '794px';
+          w.style.maxWidth = '794px';
+          w.style.overflow = 'visible';
+          w.scrollLeft = 0;
+        });
+
         const p1 = clonedDoc.getElementById('salary-statement-page-1');
         if (p1) {
           p1.style.margin = '0';
-          if (p1.parentElement) {
-            p1.parentElement.scrollLeft = 0;
-            p1.parentElement.style.overflow = 'visible';
-            p1.parentElement.style.margin = '0';
-            p1.parentElement.style.padding = '0';
-          }
         }
         const p2 = clonedDoc.getElementById('salary-statement-page-2');
         if (p2) {
           p2.style.margin = '0';
-          if (p2.parentElement) {
-            p2.parentElement.scrollLeft = 0;
-            p2.parentElement.style.overflow = 'visible';
-            p2.parentElement.style.margin = '0';
-            p2.parentElement.style.padding = '0';
-          }
         }
+
+        // Enforce clean table cell styling in html2canvas clone
+        const cells = clonedDoc.querySelectorAll('.salary-doc-page table th, .salary-doc-page table td');
+        cells.forEach((cell: any) => {
+          cell.style.verticalAlign = 'middle';
+          cell.style.lineHeight = '1.35';
+          cell.style.paddingTop = '6px';
+          cell.style.paddingBottom = '6px';
+          cell.style.boxSizing = 'border-box';
+        });
       };
 
       // Render Page 1
@@ -558,6 +566,27 @@ export default function SalaryStatementClient() {
     }
   };
 
+  // Automatically reset horizontal scroll on preview wrappers before any print event (including Ctrl+P)
+  useEffect(() => {
+    const handleBeforePrint = () => {
+      if (page1Ref.current?.parentElement) {
+        page1Ref.current.parentElement.scrollLeft = 0;
+      }
+      if (page2Ref.current?.parentElement) {
+        page2Ref.current.parentElement.scrollLeft = 0;
+      }
+      document.querySelectorAll('.salary-doc-page-wrapper').forEach((el) => {
+        (el as HTMLElement).scrollLeft = 0;
+      });
+      window.scrollTo(0, window.scrollY);
+    };
+
+    window.addEventListener('beforeprint', handleBeforePrint);
+    return () => {
+      window.removeEventListener('beforeprint', handleBeforePrint);
+    };
+  }, []);
+
   const handlePrint = () => {
     // Reset horizontal scroll on page wrappers before opening print dialog
     if (page1Ref.current?.parentElement) {
@@ -566,6 +595,9 @@ export default function SalaryStatementClient() {
     if (page2Ref.current?.parentElement) {
       page2Ref.current.parentElement.scrollLeft = 0;
     }
+    document.querySelectorAll('.salary-doc-page-wrapper').forEach((el) => {
+      (el as HTMLElement).scrollLeft = 0;
+    });
     window.print();
   };
 
@@ -578,14 +610,23 @@ export default function SalaryStatementClient() {
         /* Screen document table styling */
         .salary-doc-page table {
           border-collapse: collapse !important;
+          border-spacing: 0 !important;
           width: 100% !important;
         }
         .salary-doc-page table th,
         .salary-doc-page table td {
+          border: 1px solid #000000 !important;
           vertical-align: middle !important;
-          line-height: 1.4 !important;
-          padding-top: 7px !important;
-          padding-bottom: 7px !important;
+          line-height: 1.35 !important;
+          padding-top: 6px !important;
+          padding-bottom: 6px !important;
+          padding-left: 8px !important;
+          padding-right: 8px !important;
+          box-sizing: border-box !important;
+        }
+        .salary-doc-page-2 table td {
+          padding-left: 10px !important;
+          padding-right: 10px !important;
         }
 
         @media print {
@@ -670,6 +711,14 @@ export default function SalaryStatementClient() {
             page-break-inside: avoid !important;
             break-inside: avoid !important;
           }
+          .salary-page-1-wrapper {
+            page-break-after: always !important;
+            break-after: page !important;
+          }
+          .salary-page-2-wrapper {
+            page-break-after: auto !important;
+            break-after: auto !important;
+          }
           .salary-doc-page-wrapper {
             margin: 0 !important;
             padding: 0 !important;
@@ -680,9 +729,9 @@ export default function SalaryStatementClient() {
             width: 210mm !important;
             min-width: 210mm !important;
             max-width: 210mm !important;
-            height: 297mm !important;
-            min-height: 297mm !important;
-            max-height: 297mm !important;
+            height: 296mm !important;
+            min-height: 296mm !important;
+            max-height: 296.5mm !important;
             margin: 0 !important;
             padding-top: ${padTopMargin}mm !important;
             padding-bottom: ${padBottomMargin}mm !important;
@@ -703,26 +752,31 @@ export default function SalaryStatementClient() {
           }
           .salary-doc-page table {
             border-collapse: collapse !important;
+            border-spacing: 0 !important;
             width: 100% !important;
           }
           .salary-doc-page table th,
           .salary-doc-page table td {
+            border: 1px solid #000000 !important;
             vertical-align: middle !important;
-            line-height: 1.4 !important;
-            padding-top: 7px !important;
-            padding-bottom: 7px !important;
+            line-height: 1.35 !important;
+            padding-top: 6px !important;
+            padding-bottom: 6px !important;
+            padding-left: 8px !important;
+            padding-right: 8px !important;
+            box-sizing: border-box !important;
+          }
+          .salary-doc-page-2 table td {
+            padding-left: 10px !important;
+            padding-right: 10px !important;
           }
           .salary-doc-page-1 {
             page-break-inside: avoid !important;
             break-inside: avoid !important;
-            page-break-after: always !important;
-            break-after: page !important;
           }
           .salary-doc-page-2 {
             page-break-inside: avoid !important;
             break-inside: avoid !important;
-            page-break-after: auto !important;
-            break-after: auto !important;
           }
         }
       `,
@@ -1923,7 +1977,7 @@ export default function SalaryStatementClient() {
             </div>
 
             {/* PAGE 1 CONTAINER */}
-            <div className="salary-page-wrapper relative group print:m-0 print:p-0">
+            <div className="salary-page-wrapper salary-page-1-wrapper relative group print:m-0 print:p-0">
               <div className="flex items-center justify-between mb-2 px-1 text-xs font-semibold text-gray-500 print:hidden">
                 <span className="uppercase tracking-wider">Page 1 of 2: Past 3 Months Breakdown</span>
                 <span className="text-gray-400">Standard A4 Sheet (210mm x 297mm) • Verbatim Official Template</span>
@@ -2014,141 +2068,141 @@ export default function SalaryStatementClient() {
                     </colgroup>
                     <thead>
                       <tr>
-                        <th colSpan={2} className="border border-black py-2 px-2.5 text-center font-bold text-[13.5px] w-1/3 align-middle leading-normal">
+                        <th colSpan={2} className="border border-black py-1.5 px-2.5 text-center font-bold text-[13.5px] w-1/3 align-middle leading-normal">
                           {formData.months[0].monthName}
                         </th>
-                        <th colSpan={2} className="border border-black py-2 px-2.5 text-center font-bold text-[13.5px] w-1/3 align-middle leading-normal">
+                        <th colSpan={2} className="border border-black py-1.5 px-2.5 text-center font-bold text-[13.5px] w-1/3 align-middle leading-normal">
                           {formData.months[1].monthName}
                         </th>
-                        <th colSpan={2} className="border border-black py-2 px-2.5 text-center font-bold text-[13.5px] w-1/3 align-middle leading-normal">
+                        <th colSpan={2} className="border border-black py-1.5 px-2.5 text-center font-bold text-[13.5px] w-1/3 align-middle leading-normal">
                           {formData.months[2].monthName}
                         </th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal w-[20%]">Gross Salary</td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right w-[13.33%]">
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal w-[20%]">Gross Salary</td>
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right w-[13.33%]">
                           {Number(formData.months[0].grossSalary || 0).toLocaleString('en-US')}/-
                         </td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal w-[20%]">Gross Salary</td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right w-[13.33%]">
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal w-[20%]">Gross Salary</td>
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right w-[13.33%]">
                           {Number(formData.months[1].grossSalary || 0).toLocaleString('en-US')}/-
                         </td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal w-[20%]">Gross Salary</td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right w-[13.33%]">
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal w-[20%]">Gross Salary</td>
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right w-[13.33%]">
                           {Number(formData.months[2].grossSalary || 0).toLocaleString('en-US')}/-
                         </td>
                       </tr>
                       <tr>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">Basic</td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">Basic</td>
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[0].basicSalary || 0).toLocaleString('en-US')}/-
                         </td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">Basic</td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">Basic</td>
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[1].basicSalary || 0).toLocaleString('en-US')}/-
                         </td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">Basic</td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">Basic</td>
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[2].basicSalary || 0).toLocaleString('en-US')}/-
                         </td>
                       </tr>
                       <tr>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">House Rent</td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">House Rent</td>
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[0].houseRent || 0).toLocaleString('en-US')}/-
                         </td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">House Rent</td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">House Rent</td>
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[1].houseRent || 0).toLocaleString('en-US')}/-
                         </td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">House Rent</td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">House Rent</td>
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[2].houseRent || 0).toLocaleString('en-US')}/-
                         </td>
                       </tr>
                       <tr>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">Medical</td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">Medical</td>
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[0].medical || 0).toLocaleString('en-US')}/-
                         </td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">Medical</td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">Medical</td>
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[1].medical || 0).toLocaleString('en-US')}/-
                         </td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">Medical</td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">Medical</td>
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[2].medical || 0).toLocaleString('en-US')}/-
                         </td>
                       </tr>
                       <tr>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">Conveyance</td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">Conveyance</td>
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[0].conveyance || 0).toLocaleString('en-US')}/-
                         </td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">Conveyance</td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">Conveyance</td>
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[1].conveyance || 0).toLocaleString('en-US')}/-
                         </td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">Conveyance</td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">Conveyance</td>
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[2].conveyance || 0).toLocaleString('en-US')}/-
                         </td>
                       </tr>
                       <tr>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">(Less) PF</td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">(Less) PF</td>
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[0].pfDeduction || 0).toLocaleString('en-US')}/-
                         </td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">(Less) PF</td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">(Less) PF</td>
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[1].pfDeduction || 0).toLocaleString('en-US')}/-
                         </td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">(Less) PF</td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">(Less) PF</td>
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[2].pfDeduction || 0).toLocaleString('en-US')}/-
                         </td>
                       </tr>
                       <tr>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">Over Time</td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">Over Time</td>
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[0].overtime || 0).toLocaleString('en-US')}/-
                         </td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">Over Time</td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">Over Time</td>
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[1].overtime || 0).toLocaleString('en-US')}/-
                         </td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">Over Time</td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">Over Time</td>
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[2].overtime || 0).toLocaleString('en-US')}/-
                         </td>
                       </tr>
                       <tr>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">Income Tax</td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">Income Tax</td>
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[0].incomeTax || 0).toLocaleString('en-US')}/-
                         </td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">Income Tax</td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">Income Tax</td>
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[1].incomeTax || 0).toLocaleString('en-US')}/-
                         </td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">Income Tax</td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">Income Tax</td>
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[2].incomeTax || 0).toLocaleString('en-US')}/-
                         </td>
                       </tr>
                       <tr className="font-bold">
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">Net Payable=</td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">Net Payable=</td>
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[0].netPayable || 0).toLocaleString('en-US')}/-
                         </td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">Net Payable=</td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">Net Payable=</td>
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[1].netPayable || 0).toLocaleString('en-US')}/-
                         </td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">Net Payable=</td>
-                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">Net Payable=</td>
+                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[2].netPayable || 0).toLocaleString('en-US')}/-
                         </td>
                       </tr>
@@ -2156,12 +2210,12 @@ export default function SalaryStatementClient() {
                   </table>
 
                   {/* Closing Paragraph */}
-                  <p className="text-justify my-5 leading-normal text-[14px]">
+                  <p className="text-justify mt-3.5 mb-4 leading-normal text-[14px]">
                     This certificate is issued upon {getPossessivePronoun(formData.genderPronoun)} personal request for the purpose of {formData.purpose}, for which Company or undersigned has no responsibility or liability at all.
                   </p>
 
                   {/* Signatory Section (Left aligned, with underline separator) */}
-                  <div className="mt-8 text-[14px] leading-snug">
+                  <div className="mt-6 text-[14px] leading-snug">
                     <div className="w-52 border-b border-black mb-1.5" />
                     <div className="font-bold">{formData.signatoryName}</div>
                     <div>{formData.signatoryTitle}</div>
@@ -2173,7 +2227,7 @@ export default function SalaryStatementClient() {
             </div>
 
             {/* PAGE 2 CONTAINER */}
-            <div className="salary-page-wrapper relative group print:m-0 print:p-0">
+            <div className="salary-page-wrapper salary-page-2-wrapper relative group print:m-0 print:p-0">
               <div className="flex items-center justify-between mb-2 px-1 text-xs font-semibold text-gray-500 print:hidden">
                 <span className="uppercase tracking-wider">Page 2 of 2: Monthly Salary Certificate</span>
                 <span className="text-gray-400">Standard A4 Sheet (210mm x 297mm) • Verbatim Official Template</span>
@@ -2260,32 +2314,32 @@ export default function SalaryStatementClient() {
                     </colgroup>
                     <tbody>
                       <tr>
-                        <td className="border border-black py-2 px-3 align-middle leading-normal w-[65%]">Basic</td>
-                        <td className="border border-black py-2 px-3 align-middle leading-normal text-right w-[35%]">
+                        <td className="border border-black py-1.5 px-3 align-middle leading-normal w-[65%]">Basic</td>
+                        <td className="border border-black py-1.5 px-3 align-middle leading-normal text-right w-[35%]">
                           {Number(formData.structureBasic || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
                       </tr>
                       <tr>
-                        <td className="border border-black py-2 px-3 align-middle leading-normal">House Rent</td>
-                        <td className="border border-black py-2 px-3 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-3 align-middle leading-normal">House Rent</td>
+                        <td className="border border-black py-1.5 px-3 align-middle leading-normal text-right">
                           {Number(formData.structureHouseRent || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
                       </tr>
                       <tr>
-                        <td className="border border-black py-2 px-3 align-middle leading-normal">Medical Allowance</td>
-                        <td className="border border-black py-2 px-3 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-3 align-middle leading-normal">Medical Allowance</td>
+                        <td className="border border-black py-1.5 px-3 align-middle leading-normal text-right">
                           {Number(formData.structureMedical || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
                       </tr>
                       <tr>
-                        <td className="border border-black py-2 px-3 align-middle leading-normal">Conveyance</td>
-                        <td className="border border-black py-2 px-3 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-3 align-middle leading-normal">Conveyance</td>
+                        <td className="border border-black py-1.5 px-3 align-middle leading-normal text-right">
                           {Number(formData.structureConveyance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
                       </tr>
                       <tr className="font-bold">
-                        <td className="border border-black py-2 px-3 align-middle leading-normal">Total Salary</td>
-                        <td className="border border-black py-2 px-3 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-3 align-middle leading-normal">Total Salary</td>
+                        <td className="border border-black py-1.5 px-3 align-middle leading-normal text-right">
                           {Number(formData.structureTotal || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
                       </tr>
