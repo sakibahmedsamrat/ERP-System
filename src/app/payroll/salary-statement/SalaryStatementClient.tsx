@@ -3,30 +3,23 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import {
-  Banknote,
   Search,
   Printer,
   Download,
-  RotateCcw,
   Building2,
   User,
   CheckCircle2,
   FileSpreadsheet,
-  Calendar,
   DollarSign,
-  ChevronDown,
-  ChevronUp,
   FileText,
   ShieldCheck,
   CreditCard,
   ArrowLeft,
-  Eye,
-  Edit3,
-  Sparkles,
   Loader2,
-  Sliders
+  Sliders,
+  Sparkles
 } from 'lucide-react';
-import { numberToWords, formatDate } from '@/lib/formatDate';
+import { numberToWords, parseFlexibleDate } from '@/lib/formatDate';
 
 interface MonthBreakdown {
   monthName: string;
@@ -36,8 +29,8 @@ interface MonthBreakdown {
   medical: number;
   conveyance: number;
   pfDeduction: number;
-  advanceSalary: number;
-  lwpDeduction: number;
+  overtime: number;
+  incomeTax: number;
   netPayable: number;
 }
 
@@ -46,30 +39,32 @@ interface StatementData {
   date: string;
   workerId: string;
   name: string;
+  salutation: string;
+  genderPronoun: 'He' | 'She' | 'He/She';
   designation: string;
   department: string;
   companyName: string;
   companyAddress: string;
   joiningDate: string;
-  employmentType: string;
   purpose: string;
   months: [MonthBreakdown, MonthBreakdown, MonthBreakdown];
   // Page 2 specific
-  certificationText: string;
   structureBasic: number;
   structureHouseRent: number;
   structureMedical: number;
   structureConveyance: number;
   structureTotal: number;
   amountInWords: string;
-  bankNameAndAcc: string;
+  bankName: string;
+  bankAccountNo: string;
   monthlyPayableAmount: number;
   monthlyPayableInWords: string;
-  totalMonthlyDeduction: number;
+  pfDeductionPage2: number;
   disclaimer: string;
   // Signatory
   signatoryName: string;
   signatoryTitle: string;
+  signatoryDepartment: string;
   signatoryOrg: string;
 }
 
@@ -84,6 +79,45 @@ function getDefault3Months(): [string, string, string] {
     res.push(`${mName}-${yStr}`);
   }
   return [res[0] || 'May-26', res[1] || 'Jun-26', res[2] || 'Jul-26'];
+}
+
+function formatDocDate(d: Date): string {
+  const day = String(d.getDate()).padStart(2, '0');
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const month = months[d.getMonth()];
+  const year = d.getFullYear();
+  return `${day}-${month}-${year}`;
+}
+
+function formatOrdinalDate(dateInput: string | Date | null | undefined): string {
+  if (!dateInput) return '';
+  const d = parseFlexibleDate(dateInput);
+  if (!d) return String(dateInput);
+  const day = d.getDate();
+  const getOrdinalSuffix = (n: number) => {
+    const s = ['th', 'st', 'nd', 'rd'];
+    const v = n % 100;
+    return s[(v - 20) % 10] || s[v] || s[0];
+  };
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+  return `${day}${getOrdinalSuffix(day)} ${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function formatDepartment(dept: string): string {
+  const trimmed = (dept || '').trim();
+  if (trimmed.toLowerCase().endsWith('department')) {
+    return trimmed.slice(0, -10).trim();
+  }
+  return trimmed;
+}
+
+function formatWordsOnly(num: number): string {
+  if (!num || isNaN(num) || num <= 0) return 'Zero Taka Only.';
+  const words = numberToWords(Math.round(num));
+  return `${words} Taka Only.`;
 }
 
 export default function SalaryStatementClient() {
@@ -108,10 +142,10 @@ export default function SalaryStatementClient() {
   // Official Letterhead Pad & Print Clearance Settings
   const [padTopMargin, setPadTopMargin] = useState<number>(38); // mm: clearance for pre-printed letterhead pad header
   const [padBottomMargin, setPadBottomMargin] = useState<number>(28); // mm: clearance for pre-printed letterhead pad footer
-  const [padLeftMargin, setPadLeftMargin] = useState<number>(18); // mm
-  const [padRightMargin, setPadRightMargin] = useState<number>(18); // mm
+  const [padLeftMargin, setPadLeftMargin] = useState<number>(20); // mm
+  const [padRightMargin, setPadRightMargin] = useState<number>(20); // mm
   const [logoDisplay, setLogoDisplay] = useState<'blank_space' | 'collapsed' | 'digital_logo'>('blank_space');
-  const [headerMode, setHeaderMode] = useState<'company_info' | 'blank_header'>('company_info');
+  const [headerMode, setHeaderMode] = useState<'company_info' | 'blank_header'>('blank_header');
 
   // Convert mm to pixels for screen canvas render (1mm ~= 3.7795px at 96 DPI)
   const topPaddingPx = Math.round(padTopMargin * 3.7795);
@@ -120,79 +154,78 @@ export default function SalaryStatementClient() {
   const rightPaddingPx = Math.round(padRightMargin * 3.7795);
 
   const currentYear = new Date().getFullYear();
-  const todayFormatted = new Date().toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric'
-  });
+  const todayFormatted = formatDocDate(new Date());
 
   const [formData, setFormData] = useState<StatementData>({
-    refNo: `MEPG/HR&ADMIN/314/${currentYear}`,
+    refNo: `MEPG/HR&ADMIN/309/${currentYear}`,
     date: todayFormatted,
-    workerId: '10245',
-    name: 'Md. Abdur Rahim',
-    designation: 'Senior Executive',
-    department: 'Accounts & Finance',
-    companyName: 'Mohammadi Electric Wires & Multi Products (MEP) Ltd.',
+    workerId: '4917',
+    name: 'Sakib Ahmed Samrat',
+    salutation: 'Mr.',
+    genderPronoun: 'He',
+    designation: 'Executive',
+    department: 'HR & Admin',
+    companyName: 'Mohammadi Electric Wires and Multi Products (MEP) Limited',
     companyAddress: 'Head Office: MEP Group, 161 Sadar Road, Barishal, Bangladesh.',
-    joiningDate: '01 January, 2022',
-    employmentType: 'Permanent',
-    purpose: 'personal loan application from Bank',
+    joiningDate: '14th June 2009',
+    purpose: 'personal loan from Bank',
     months: [
       {
         monthName: defaultMonths[0],
-        grossSalary: 50000,
-        basicSalary: 30000,
-        houseRent: 15000,
-        medical: 2500,
-        conveyance: 2500,
-        pfDeduction: 0,
-        advanceSalary: 0,
-        lwpDeduction: 0,
-        netPayable: 50000,
+        grossSalary: 44000,
+        basicSalary: 22000,
+        houseRent: 13200,
+        medical: 4400,
+        conveyance: 4400,
+        pfDeduction: 1848,
+        overtime: 2933,
+        incomeTax: 1000,
+        netPayable: 44085,
       },
       {
         monthName: defaultMonths[1],
-        grossSalary: 50000,
-        basicSalary: 30000,
-        houseRent: 15000,
-        medical: 2500,
-        conveyance: 2500,
-        pfDeduction: 0,
-        advanceSalary: 0,
-        lwpDeduction: 0,
-        netPayable: 50000,
+        grossSalary: 44000,
+        basicSalary: 22000,
+        houseRent: 13200,
+        medical: 4400,
+        conveyance: 4400,
+        pfDeduction: 1848,
+        overtime: 14986,
+        incomeTax: 1000,
+        netPayable: 56138,
       },
       {
         monthName: defaultMonths[2],
-        grossSalary: 50000,
-        basicSalary: 30000,
-        houseRent: 15000,
-        medical: 2500,
-        conveyance: 2500,
-        pfDeduction: 0,
-        advanceSalary: 0,
-        lwpDeduction: 0,
-        netPayable: 50000,
+        grossSalary: 44000,
+        basicSalary: 22000,
+        houseRent: 13200,
+        medical: 4400,
+        conveyance: 4400,
+        pfDeduction: 1848,
+        overtime: 4400,
+        incomeTax: 417,
+        netPayable: 46135,
       },
     ],
-    certificationText:
-      'This is to certify that Mr./Ms. [Name], Staff ID: [ID], Designation: [Designation], Department of [Department] has been serving at [Company] as a Permanent employee since [JoiningDate]. His/Her current monthly salary structure and payment particulars are certified below:',
-    structureBasic: 30000,
-    structureHouseRent: 15000,
-    structureMedical: 2500,
-    structureConveyance: 2500,
-    structureTotal: 50000,
-    amountInWords: 'Fifty Thousand Taka Only.',
-    bankNameAndAcc: 'Dutch-Bangla Bank PLC, A/C: 123-151-0098765',
-    monthlyPayableAmount: 50000,
-    monthlyPayableInWords: 'Fifty Thousand Taka Only.',
-    totalMonthlyDeduction: 0,
+    // Page 2 specific
+    structureBasic: 22000,
+    structureHouseRent: 13200,
+    structureMedical: 4400,
+    structureConveyance: 4400,
+    structureTotal: 44000,
+    amountInWords: 'Forty-Four Thousand Taka Only.',
+    bankName: 'Prime Bank',
+    bankAccountNo: '2111212026612',
+    monthlyPayableAmount: 41735,
+    monthlyPayableInWords: 'Forty- One Thousand Seven Hundred Thirty-Five Taka Only.',
+    pfDeductionPage2: 417,
     disclaimer:
-      'This certificate is issued at the request of the employee for banking / official purposes without any financial liability, endorsement or guarantee on the part of the organization.',
-    signatoryName: 'Md. Tariqul Islam',
-    signatoryTitle: 'Asst. Manager, HR & Admin',
-    signatoryOrg: 'MEP Group',
+      'This certificate is issued at the request of the mentioned employee with no responsibility borne either on the signatory or the company for any kind of financial transactions.',
+    // Signatory
+    signatoryName: 'Md Touhiduzzaman',
+    signatoryTitle: 'Assistant Manager',
+    signatoryDepartment: 'HR & Admin',
+    signatoryOrg: 'MEP Group.',
   });
 
   // Search workers via API
@@ -226,34 +259,48 @@ export default function SalaryStatementClient() {
     setShowSearchDropdown(false);
     setSearchQuery('');
 
-    const gross = Number(worker.grossSalary) || 0;
-    const basic = Number(worker.basicSalary) || (gross > 0 ? Math.round(gross * 0.6) : 0);
-    const houseRent = Number(worker.houseRent) || (gross > 0 ? Math.round(gross * 0.3) : 0);
-    const medical = Number(worker.medicalAllowance) || (gross > 0 ? Math.round(gross * 0.05) : 0);
-    const conveyance = Number(worker.conveyanceAllowance) || (gross > 0 ? Math.max(0, gross - (basic + houseRent + medical)) : 0);
+    const gross = Number(worker.grossSalary) || 44000;
+    const basic = Number(worker.basicSalary) || (gross > 0 ? Math.round(gross * 0.5) : 22000);
+    const houseRent = Number(worker.houseRent) || (gross > 0 ? Math.round(gross * 0.3) : 13200);
+    const medical = Number(worker.medicalAllowance) || (gross > 0 ? Math.round(gross * 0.1) : 4400);
+    const conveyance = Number(worker.conveyanceAllowance) || (gross > 0 ? Math.max(0, gross - (basic + houseRent + medical)) : 4400);
     const totalStructure = basic + houseRent + medical + conveyance || gross;
-    const words = totalStructure > 0 ? `${numberToWords(totalStructure)} Taka Only.` : '';
+    const words = formatWordsOnly(totalStructure);
 
-    const joinDateFormatted = worker.joinDate ? formatDate(worker.joinDate) : '01-Jan-2022';
-    const compName = worker.company?.name || 'Mohammadi Electric Wires & Multi Products (MEP) Ltd.';
+    const isFemale = String(worker.gender || '').toUpperCase() === 'FEMALE';
+    const salutation = isFemale ? 'Ms.' : 'Mr.';
+    const pronoun: 'He' | 'She' = isFemale ? 'She' : 'He';
+
+    const joinDateFormatted = worker.joinDate ? formatOrdinalDate(worker.joinDate) : '14th June 2009';
+    const compName = worker.company?.name || 'Mohammadi Electric Wires and Multi Products (MEP) Limited';
+    const deptName = worker.department?.name || 'HR & Admin';
+    const bankName = worker.bankName || 'Prime Bank';
+    const accountNo = worker.bankAccountNo || '2111212026612';
+    const pfDeduct = Number(worker.pfContribution || worker.pfAmount) || 417;
+    const netPayable = Math.max(0, totalStructure - pfDeduct);
+    const payableWords = formatWordsOnly(netPayable);
 
     setFormData((prev) => ({
       ...prev,
       workerId: worker.workerId || prev.workerId,
       name: worker.name || prev.name,
+      salutation,
+      genderPronoun: pronoun,
       designation: worker.designation || prev.designation,
-      department: worker.department?.name || prev.department,
+      department: deptName,
       companyName: compName,
       joiningDate: joinDateFormatted,
+      bankName,
+      bankAccountNo: accountNo,
+      pfDeductionPage2: pfDeduct,
       structureBasic: basic,
       structureHouseRent: houseRent,
       structureMedical: medical,
       structureConveyance: conveyance,
       structureTotal: totalStructure,
       amountInWords: words,
-      monthlyPayableAmount: totalStructure,
-      monthlyPayableInWords: words,
-      totalMonthlyDeduction: 0,
+      monthlyPayableAmount: netPayable,
+      monthlyPayableInWords: payableWords,
       months: [
         {
           monthName: prev.months[0].monthName,
@@ -262,10 +309,10 @@ export default function SalaryStatementClient() {
           houseRent: houseRent,
           medical: medical,
           conveyance: conveyance,
-          pfDeduction: 0,
-          advanceSalary: 0,
-          lwpDeduction: 0,
-          netPayable: totalStructure,
+          pfDeduction: pfDeduct,
+          overtime: 0,
+          incomeTax: 0,
+          netPayable: Math.max(0, totalStructure - pfDeduct),
         },
         {
           monthName: prev.months[1].monthName,
@@ -274,10 +321,10 @@ export default function SalaryStatementClient() {
           houseRent: houseRent,
           medical: medical,
           conveyance: conveyance,
-          pfDeduction: 0,
-          advanceSalary: 0,
-          lwpDeduction: 0,
-          netPayable: totalStructure,
+          pfDeduction: pfDeduct,
+          overtime: 0,
+          incomeTax: 0,
+          netPayable: Math.max(0, totalStructure - pfDeduct),
         },
         {
           monthName: prev.months[2].monthName,
@@ -286,10 +333,10 @@ export default function SalaryStatementClient() {
           houseRent: houseRent,
           medical: medical,
           conveyance: conveyance,
-          pfDeduction: 0,
-          advanceSalary: 0,
-          lwpDeduction: 0,
-          netPayable: totalStructure,
+          pfDeduction: pfDeduct,
+          overtime: 0,
+          incomeTax: 0,
+          netPayable: Math.max(0, totalStructure - pfDeduct),
         },
       ],
     }));
@@ -316,9 +363,9 @@ export default function SalaryStatementClient() {
       if (field !== 'netPayable' && field !== 'monthName') {
         const gross = Number(currentMonth.grossSalary) || 0;
         const pf = Number(currentMonth.pfDeduction) || 0;
-        const advance = Number(currentMonth.advanceSalary) || 0;
-        const lwp = Number(currentMonth.lwpDeduction) || 0;
-        currentMonth.netPayable = Math.max(0, gross - (pf + advance + lwp));
+        const overtime = Number(currentMonth.overtime) || 0;
+        const incomeTax = Number(currentMonth.incomeTax) || 0;
+        currentMonth.netPayable = Math.max(0, gross - pf + overtime - incomeTax);
       }
 
       updatedMonths[index] = currentMonth;
@@ -334,27 +381,27 @@ export default function SalaryStatementClient() {
     setFormData((prev) => {
       const next = { ...prev, [field]: val };
       const total =
-        Number(next.structureBasic) +
-        Number(next.structureHouseRent) +
-        Number(next.structureMedical) +
-        Number(next.structureConveyance);
+        Number(next.structureBasic || 0) +
+        Number(next.structureHouseRent || 0) +
+        Number(next.structureMedical || 0) +
+        Number(next.structureConveyance || 0);
       next.structureTotal = total;
-      next.amountInWords = total > 0 ? `${numberToWords(total)} Taka Only.` : '';
-      const net = Math.max(0, total - Number(next.totalMonthlyDeduction || 0));
+      next.amountInWords = formatWordsOnly(total);
+      const net = Math.max(0, total - Number(next.pfDeductionPage2 || 0));
       next.monthlyPayableAmount = net;
-      next.monthlyPayableInWords = net > 0 ? `${numberToWords(net)} Taka Only.` : '';
+      next.monthlyPayableInWords = formatWordsOnly(net);
       return next;
     });
   };
 
-  const handleDeductionChange = (val: number) => {
+  const handlePage2PfChange = (val: number) => {
     setFormData((prev) => {
-      const net = Math.max(0, Number(prev.structureTotal) - val);
+      const net = Math.max(0, Number(prev.structureTotal || 0) - val);
       return {
         ...prev,
-        totalMonthlyDeduction: val,
+        pfDeductionPage2: val,
         monthlyPayableAmount: net,
-        monthlyPayableInWords: net > 0 ? `${numberToWords(net)} Taka Only.` : '',
+        monthlyPayableInWords: formatWordsOnly(net),
       };
     });
   };
@@ -374,6 +421,13 @@ export default function SalaryStatementClient() {
     });
   };
 
+  // Helper for possessive pronoun
+  const getPossessivePronoun = (pronoun: 'He' | 'She' | 'He/She'): string => {
+    if (pronoun === 'He') return 'his';
+    if (pronoun === 'She') return 'her';
+    return 'his/her';
+  };
+
   // Download 2-Page PDF
   const handleDownloadPdf = async () => {
     if (!page1Ref.current || !page2Ref.current) return;
@@ -382,7 +436,7 @@ export default function SalaryStatementClient() {
     try {
       const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
         import('jspdf'),
-        import('html2canvas')
+        import('html2canvas'),
       ]);
 
       const pdf = new jsPDF({
@@ -475,6 +529,7 @@ export default function SalaryStatementClient() {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
             overflow: visible !important;
+            font-family: 'Times New Roman', Times, Georgia, serif !important;
           }
           .print\\:hidden, header, nav, aside, footer {
             display: none !important;
@@ -534,10 +589,11 @@ export default function SalaryStatementClient() {
             border-radius: 0 !important;
             display: flex !important;
             flex-direction: column !important;
-            justify-content: space-between !important;
+            justify-content: flex-start !important;
             box-sizing: border-box !important;
             overflow: hidden !important;
             background: #ffffff !important;
+            font-family: 'Times New Roman', Times, Georgia, serif !important;
           }
           .salary-doc-page-1 {
             page-break-inside: avoid !important;
@@ -613,7 +669,7 @@ export default function SalaryStatementClient() {
             <div className="hidden xl:flex items-center gap-2 bg-amber-50/90 text-amber-800 border border-amber-200/80 px-3 py-1.5 rounded-xl text-xs font-semibold">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
               <span>
-                Office Pad Mode: <strong className="font-bold">{padTopMargin}mm Top</strong> / <strong className="font-bold">{padBottomMargin}mm Btm</strong> ({logoDisplay === 'blank_space' ? (headerMode === 'blank_header' ? 'Blank Header' : 'Blank Logo') : logoDisplay === 'digital_logo' ? 'Digital Logo' : 'No Logo'})
+                Office Pad: <strong className="font-bold">{padTopMargin}mm Top</strong> / <strong className="font-bold">{padBottomMargin}mm Btm</strong> ({headerMode === 'blank_header' ? 'Pre-printed Header' : 'Company Info Header'})
               </span>
             </div>
 
@@ -656,7 +712,7 @@ export default function SalaryStatementClient() {
                 <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search by Employee ID, Name, or Phone (e.g. 10245)..."
+                  placeholder="Search by Employee ID, Name, or Phone (e.g. 4917 or Sakib)..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => {
@@ -774,7 +830,7 @@ export default function SalaryStatementClient() {
                           type="text"
                           value={formData.refNo}
                           onChange={(e) => setFormData({ ...formData, refNo: e.target.value })}
-                          className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 font-mono"
                         />
                       </div>
                       <div>
@@ -789,12 +845,12 @@ export default function SalaryStatementClient() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-gray-600 mb-1">Certificate Purpose</label>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1">Certificate Purpose (Page 1 Closing)</label>
                       <input
                         type="text"
                         value={formData.purpose}
                         onChange={(e) => setFormData({ ...formData, purpose: e.target.value })}
-                        placeholder="e.g., personal loan application from Bank"
+                        placeholder="e.g. personal loan from Bank"
                         className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
@@ -824,6 +880,22 @@ export default function SalaryStatementClient() {
                           setPadTopMargin(38);
                           setPadBottomMargin(28);
                           setLogoDisplay('blank_space');
+                          setHeaderMode('blank_header');
+                        }}
+                        className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition border ${
+                          padTopMargin === 38 && padBottomMargin === 28 && headerMode === 'blank_header'
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                            : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
+                        }`}
+                      >
+                        Official Pad (Blank Top Header)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPadTopMargin(38);
+                          setPadBottomMargin(28);
+                          setLogoDisplay('blank_space');
                           setHeaderMode('company_info');
                         }}
                         className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition border ${
@@ -832,23 +904,7 @@ export default function SalaryStatementClient() {
                             : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
                         }`}
                       >
-                        Official Pad (Blank Logo)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPadTopMargin(45);
-                          setPadBottomMargin(28);
-                          setLogoDisplay('blank_space');
-                          setHeaderMode('blank_header');
-                        }}
-                        className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition border ${
-                          padTopMargin === 45 && padBottomMargin === 28 && headerMode === 'blank_header'
-                            ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                            : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
-                        }`}
-                      >
-                        Pre-printed Pad (Blank Header)
+                        Pad with Blank Logo Space
                       </button>
                       <button
                         type="button"
@@ -871,6 +927,20 @@ export default function SalaryStatementClient() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Header Text Option
+                        </label>
+                        <select
+                          value={headerMode}
+                          onChange={(e) => setHeaderMode(e.target.value as any)}
+                          className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-medium bg-white focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="blank_header">Blank Top Header (For Pre-printed Letterhead Pad)</option>
+                          <option value="company_info">Show Company Name & Address (For Plain Paper)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
                           Logo / Image Spot
                         </label>
                         <select
@@ -881,20 +951,6 @@ export default function SalaryStatementClient() {
                           <option value="blank_space">Blank Space (Reserved for Pad Logo)</option>
                           <option value="collapsed">No Logo (Align Left)</option>
                           <option value="digital_logo">Show Digital Logo</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-700 mb-1">
-                          Header Text Option
-                        </label>
-                        <select
-                          value={headerMode}
-                          onChange={(e) => setHeaderMode(e.target.value as any)}
-                          className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-medium bg-white focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="company_info">Show Company Name & Address</option>
-                          <option value="blank_header">Blank Top Header (Pre-printed Pad)</option>
                         </select>
                       </div>
 
@@ -974,23 +1030,52 @@ export default function SalaryStatementClient() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1">Salutation</label>
+                        <select
+                          value={formData.salutation}
+                          onChange={(e) => setFormData({ ...formData, salutation: e.target.value })}
+                          className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm bg-white"
+                        >
+                          <option value="Mr.">Mr.</option>
+                          <option value="Ms.">Ms.</option>
+                          <option value="Mrs.">Mrs.</option>
+                          <option value="Mr./Ms.">Mr./Ms.</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1">Pronoun</label>
+                        <select
+                          value={formData.genderPronoun}
+                          onChange={(e) => setFormData({ ...formData, genderPronoun: e.target.value as any })}
+                          className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm bg-white"
+                        >
+                          <option value="He">He (his)</option>
+                          <option value="She">She (her)</option>
+                          <option value="He/She">He/She (his/her)</option>
+                        </select>
+                      </div>
+
+                      <div>
                         <label className="block text-xs font-semibold text-gray-600 mb-1">Full Name</label>
                         <input
                           type="text"
                           value={formData.name}
                           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                          className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 font-semibold"
                         />
                       </div>
+
                       <div>
                         <label className="block text-xs font-semibold text-gray-600 mb-1">Staff / Worker ID</label>
                         <input
                           type="text"
                           value={formData.workerId}
                           onChange={(e) => setFormData({ ...formData, workerId: e.target.value })}
-                          className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 font-mono"
                         />
                       </div>
+
                       <div>
                         <label className="block text-xs font-semibold text-gray-600 mb-1">Designation</label>
                         <input
@@ -1000,6 +1085,7 @@ export default function SalaryStatementClient() {
                           className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
+
                       <div>
                         <label className="block text-xs font-semibold text-gray-600 mb-1">Department</label>
                         <input
@@ -1009,27 +1095,30 @@ export default function SalaryStatementClient() {
                           className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
+
                       <div>
                         <label className="block text-xs font-semibold text-gray-600 mb-1">Joining Date</label>
                         <input
                           type="text"
                           value={formData.joiningDate}
                           onChange={(e) => setFormData({ ...formData, joiningDate: e.target.value })}
+                          placeholder="e.g. 14th June 2009"
                           className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
+
                       <div>
-                        <label className="block text-xs font-semibold text-gray-600 mb-1">Employment Type</label>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1">Parent Group Reference</label>
                         <input
                           type="text"
-                          value={formData.employmentType}
-                          onChange={(e) => setFormData({ ...formData, employmentType: e.target.value })}
-                          placeholder="e.g. Permanent"
-                          className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                          disabled
+                          value="MEP GROUP (Permanent employee)"
+                          className="w-full px-3 py-1.5 border border-gray-200 bg-gray-50 text-gray-600 rounded-lg text-sm"
                         />
                       </div>
+
                       <div className="sm:col-span-2">
-                        <label className="block text-xs font-semibold text-gray-600 mb-1">Company / Sister Concern</label>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1">Company / Sister Concern Name</label>
                         <input
                           type="text"
                           value={formData.companyName}
@@ -1037,13 +1126,13 @@ export default function SalaryStatementClient() {
                           className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
+
                       <div className="sm:col-span-2">
-                        <label className="block text-xs font-semibold text-gray-600 mb-1">Company Address / Office Location</label>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1">Company Address (Plain Paper Mode)</label>
                         <input
                           type="text"
                           value={formData.companyAddress}
                           onChange={(e) => setFormData({ ...formData, companyAddress: e.target.value })}
-                          placeholder="e.g. Corporate Office: MEP Group, 161 Sadar Road, Barishal, Bangladesh."
                           className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
@@ -1054,7 +1143,7 @@ export default function SalaryStatementClient() {
                   <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm space-y-4">
                     <div className="flex items-center justify-between border-b pb-2">
                       <h3 className="font-bold text-gray-800 text-sm flex items-center gap-2">
-                        <DollarSign size={16} className="text-emerald-600" /> Past 3 Months Breakdown
+                        <DollarSign size={16} className="text-emerald-600" /> Past 3 Months Breakdown Table
                       </h3>
                       <button
                         type="button"
@@ -1097,7 +1186,7 @@ export default function SalaryStatementClient() {
                               />
                             </div>
                             <div>
-                              <label className="block text-gray-500 mb-0.5">Basic Salary</label>
+                              <label className="block text-gray-500 mb-0.5">Basic</label>
                               <input
                                 type="number"
                                 value={m.basicSalary}
@@ -1142,35 +1231,35 @@ export default function SalaryStatementClient() {
                               />
                             </div>
                             <div>
-                              <label className="block text-gray-500 mb-0.5">Advance Salary</label>
+                              <label className="block text-gray-500 mb-0.5">Over Time</label>
                               <input
                                 type="number"
-                                value={m.advanceSalary}
-                                onChange={(e) => handleMonthChange(mIdx, 'advanceSalary', Number(e.target.value))}
+                                value={m.overtime}
+                                onChange={(e) => handleMonthChange(mIdx, 'overtime', Number(e.target.value))}
                                 className="w-full px-2 py-1 border border-gray-300 rounded bg-white font-medium"
                               />
                             </div>
                             <div>
-                              <label className="block text-gray-500 mb-0.5">LWP/Late Deduct</label>
+                              <label className="block text-gray-500 mb-0.5">Income Tax</label>
                               <input
                                 type="number"
-                                value={m.lwpDeduction}
-                                onChange={(e) => handleMonthChange(mIdx, 'lwpDeduction', Number(e.target.value))}
+                                value={m.incomeTax}
+                                onChange={(e) => handleMonthChange(mIdx, 'incomeTax', Number(e.target.value))}
                                 className="w-full px-2 py-1 border border-gray-300 rounded bg-white font-medium"
                               />
                             </div>
                           </div>
 
                           <div className="flex items-center justify-between pt-1 border-t border-gray-200">
-                            <span className="text-xs font-semibold text-gray-600">Net Payable =</span>
+                            <span className="text-xs font-bold text-gray-800">Net Payable =</span>
                             <div className="flex items-center gap-1">
                               <input
                                 type="number"
                                 value={m.netPayable}
                                 onChange={(e) => handleMonthChange(mIdx, 'netPayable', Number(e.target.value))}
-                                className="w-28 px-2 py-0.5 border border-emerald-300 rounded bg-emerald-50 text-right font-bold text-xs text-emerald-800"
+                                className="w-32 px-2 py-0.5 border border-emerald-300 rounded bg-emerald-50 text-right font-bold text-xs text-emerald-800"
                               />
-                              <span className="text-xs font-medium text-gray-500">BDT</span>
+                              <span className="text-xs font-semibold text-gray-600">/-</span>
                             </div>
                           </div>
                         </div>
@@ -1183,33 +1272,15 @@ export default function SalaryStatementClient() {
               {/* TAB 2: Page 2 Data */}
               {activeTab === 'p2' && (
                 <div className="space-y-6">
-                  {/* Certification Text */}
-                  <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm space-y-4">
-                    <h3 className="font-bold text-gray-800 text-sm flex items-center gap-2 border-b pb-2">
-                      <FileText size={16} className="text-blue-600" /> Certification Statement Text
-                    </h3>
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-600 mb-1">
-                        Certificate Body Text (Supports [Name], [ID], [Designation], [Department], [Company], [JoiningDate])
-                      </label>
-                      <textarea
-                        rows={3}
-                        value={formData.certificationText}
-                        onChange={(e) => setFormData({ ...formData, certificationText: e.target.value })}
-                        className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs leading-relaxed"
-                      />
-                    </div>
-                  </div>
-
                   {/* Monthly Salary Structure Table */}
                   <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm space-y-4">
                     <h3 className="font-bold text-gray-800 text-sm flex items-center gap-2 border-b pb-2">
-                      <CreditCard size={16} className="text-blue-600" /> Monthly Salary Structure (Page 2)
+                      <CreditCard size={16} className="text-blue-600" /> Monthly Salary & Allowance Structure (Page 2)
                     </h3>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                       <div>
-                        <label className="block font-semibold text-gray-600 mb-1">Basic Salary (BDT)</label>
+                        <label className="block font-semibold text-gray-600 mb-1">Basic (BDT)</label>
                         <input
                           type="number"
                           value={formData.structureBasic}
@@ -1218,7 +1289,7 @@ export default function SalaryStatementClient() {
                         />
                       </div>
                       <div>
-                        <label className="block font-semibold text-gray-600 mb-1">House Rent Allowance (BDT)</label>
+                        <label className="block font-semibold text-gray-600 mb-1">House Rent (BDT)</label>
                         <input
                           type="number"
                           value={formData.structureHouseRent}
@@ -1236,7 +1307,7 @@ export default function SalaryStatementClient() {
                         />
                       </div>
                       <div>
-                        <label className="block font-semibold text-gray-600 mb-1">Conveyance Allowance (BDT)</label>
+                        <label className="block font-semibold text-gray-600 mb-1">Conveyance (BDT)</label>
                         <input
                           type="number"
                           value={formData.structureConveyance}
@@ -1247,19 +1318,19 @@ export default function SalaryStatementClient() {
                     </div>
 
                     <div className="bg-blue-50 p-3 rounded-xl border border-blue-200 flex items-center justify-between">
-                      <span className="text-xs font-bold text-blue-900">Total Gross Salary:</span>
+                      <span className="text-xs font-bold text-blue-900">Total Salary:</span>
                       <span className="text-sm font-extrabold text-blue-900">
-                        {formData.structureTotal.toLocaleString()} BDT
+                        {formData.structureTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} BDT
                       </span>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-gray-600 mb-1">Amount in Words</label>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1">In Word (Total Salary)</label>
                       <input
                         type="text"
                         value={formData.amountInWords}
                         onChange={(e) => setFormData({ ...formData, amountInWords: e.target.value })}
-                        className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
+                        className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-medium"
                       />
                     </div>
                   </div>
@@ -1267,37 +1338,51 @@ export default function SalaryStatementClient() {
                   {/* Bank & Payment Details */}
                   <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm space-y-4">
                     <h3 className="font-bold text-gray-800 text-sm flex items-center gap-2 border-b pb-2">
-                      <Building2 size={16} className="text-blue-600" /> Bank & Monthly Payable Particulars
+                      <Building2 size={16} className="text-blue-600" /> Monthly Salary Details (Numbered List)
                     </h3>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-600 mb-1">
-                        Bank Name & Account No.
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.bankNameAndAcc}
-                        onChange={(e) => setFormData({ ...formData, bankNameAndAcc: e.target.value })}
-                        placeholder="e.g. Dutch-Bangla Bank PLC, A/C: 123-151-0000000"
-                        className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
-                      />
-                    </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                       <div>
                         <label className="block font-semibold text-gray-600 mb-1">
-                          Total Deductions (PF & other fines)
+                          Bank Name
                         </label>
                         <input
-                          type="number"
-                          value={formData.totalMonthlyDeduction}
-                          onChange={(e) => handleDeductionChange(Number(e.target.value))}
+                          type="text"
+                          value={formData.bankName}
+                          onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
+                          placeholder="e.g. Prime Bank"
                           className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
                         />
                       </div>
                       <div>
                         <label className="block font-semibold text-gray-600 mb-1">
-                          Monthly Net Payable (BDT)
+                          Account Number
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.bankAccountNo}
+                          onChange={(e) => setFormData({ ...formData, bankAccountNo: e.target.value })}
+                          placeholder="e.g. 2111212026612"
+                          className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-mono"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      <div>
+                        <label className="block font-semibold text-gray-600 mb-1">
+                          Total Deduction (PF purpose Tk.)
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.pfDeductionPage2}
+                          onChange={(e) => handlePage2PfChange(Number(e.target.value))}
+                          className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-semibold text-gray-600 mb-1">
+                          Monthly Net Payable Amount
                         </label>
                         <input
                           type="number"
@@ -1306,7 +1391,7 @@ export default function SalaryStatementClient() {
                             setFormData({
                               ...formData,
                               monthlyPayableAmount: Number(e.target.value),
-                              monthlyPayableInWords: `${numberToWords(Number(e.target.value))} Taka Only.`,
+                              monthlyPayableInWords: formatWordsOnly(Number(e.target.value)),
                             })
                           }
                           className="w-full px-3 py-1.5 border border-emerald-300 rounded-lg text-sm bg-emerald-50 text-emerald-800 font-bold"
@@ -1316,7 +1401,7 @@ export default function SalaryStatementClient() {
 
                     <div>
                       <label className="block text-xs font-semibold text-gray-600 mb-1">
-                        Payable Amount in Words
+                        Payable in Words (Item 1)
                       </label>
                       <input
                         type="text"
@@ -1327,9 +1412,9 @@ export default function SalaryStatementClient() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-gray-600 mb-1">Certificate Disclaimer</label>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1">Item 3 Disclaimer Statement</label>
                       <textarea
-                        rows={2}
+                        rows={3}
                         value={formData.disclaimer}
                         onChange={(e) => setFormData({ ...formData, disclaimer: e.target.value })}
                         className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs leading-relaxed"
@@ -1352,8 +1437,8 @@ export default function SalaryStatementClient() {
                       type="text"
                       value={formData.signatoryName}
                       onChange={(e) => setFormData({ ...formData, signatoryName: e.target.value })}
-                      placeholder="e.g. Md. Tariqul Islam"
-                      className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
+                      placeholder="e.g. Md Touhiduzzaman"
+                      className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-semibold"
                     />
                   </div>
 
@@ -1363,18 +1448,29 @@ export default function SalaryStatementClient() {
                       type="text"
                       value={formData.signatoryTitle}
                       onChange={(e) => setFormData({ ...formData, signatoryTitle: e.target.value })}
-                      placeholder="e.g. Asst. Manager, HR & Admin"
+                      placeholder="e.g. Assistant Manager"
                       className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Organization / Group</label>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Department</label>
+                    <input
+                      type="text"
+                      value={formData.signatoryDepartment}
+                      onChange={(e) => setFormData({ ...formData, signatoryDepartment: e.target.value })}
+                      placeholder="e.g. HR & Admin"
+                      className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Organization / Group (Page 1 line 4)</label>
                     <input
                       type="text"
                       value={formData.signatoryOrg}
                       onChange={(e) => setFormData({ ...formData, signatoryOrg: e.target.value })}
-                      placeholder="e.g. MEP Group"
+                      placeholder="e.g. MEP Group."
                       className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
                     />
                   </div>
@@ -1477,6 +1573,23 @@ export default function SalaryStatementClient() {
                       setPadTopMargin(38);
                       setPadBottomMargin(28);
                       setLogoDisplay('blank_space');
+                      setHeaderMode('blank_header');
+                    }}
+                    className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition border ${
+                      padTopMargin === 38 && padBottomMargin === 28 && headerMode === 'blank_header'
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                    }`}
+                    title="Office pad with pre-printed header (hides digital header completely, generous top clearance)"
+                  >
+                    Official Pad (Blank Top Header)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPadTopMargin(38);
+                      setPadBottomMargin(28);
+                      setLogoDisplay('blank_space');
                       setHeaderMode('company_info');
                     }}
                     className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition border ${
@@ -1486,24 +1599,7 @@ export default function SalaryStatementClient() {
                     }`}
                     title="Office pad with pre-printed logo space only (prints company info, leaves logo spot blank)"
                   >
-                    Official Pad (Blank Logo)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPadTopMargin(45);
-                      setPadBottomMargin(28);
-                      setLogoDisplay('blank_space');
-                      setHeaderMode('blank_header');
-                    }}
-                    className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition border ${
-                      padTopMargin === 45 && padBottomMargin === 28 && headerMode === 'blank_header'
-                        ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
-                    }`}
-                    title="Office pad with full pre-printed header (hides digital header completely, generous top clearance)"
-                  >
-                    Pre-printed Pad (Blank Top Header)
+                    Pad (Blank Logo Spot)
                   </button>
                   <button
                     type="button"
@@ -1526,6 +1622,21 @@ export default function SalaryStatementClient() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                {/* Header Text Mode */}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Header Text Mode
+                  </label>
+                  <select
+                    value={headerMode}
+                    onChange={(e) => setHeaderMode(e.target.value as any)}
+                    className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs font-semibold bg-white text-slate-800 focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="blank_header">Blank Top Header (Pre-printed Pad)</option>
+                    <option value="company_info">Show Company Info (Plain Paper)</option>
+                  </select>
+                </div>
+
                 {/* Logo Display Setting */}
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
@@ -1539,21 +1650,6 @@ export default function SalaryStatementClient() {
                     <option value="blank_space">Blank Space (Reserved for Pad Logo)</option>
                     <option value="collapsed">No Logo (Align Left)</option>
                     <option value="digital_logo">Show Digital Logo</option>
-                  </select>
-                </div>
-
-                {/* Company Header Setting */}
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Header Text Mode
-                  </label>
-                  <select
-                    value={headerMode}
-                    onChange={(e) => setHeaderMode(e.target.value as any)}
-                    className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs font-semibold bg-white text-slate-800 focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="company_info">Show Company Info (Blank Logo)</option>
-                    <option value="blank_header">Blank Top Header (Pre-printed Pad)</option>
                   </select>
                 </div>
 
@@ -1635,13 +1731,13 @@ export default function SalaryStatementClient() {
             <div className="salary-page-wrapper relative group print:m-0 print:p-0">
               <div className="flex items-center justify-between mb-2 px-1 text-xs font-semibold text-gray-500 print:hidden">
                 <span className="uppercase tracking-wider">Page 1 of 2: Past 3 Months Breakdown</span>
-                <span className="text-gray-400">Standard A4 Sheet (210mm x 297mm) • Office Pad Spacing</span>
+                <span className="text-gray-400">Standard A4 Sheet (210mm x 297mm) • Verbatim Official Template</span>
               </div>
 
               <div className="salary-doc-page-wrapper w-full overflow-x-auto pb-4 print:p-0 print:m-0 print:overflow-visible">
                 <div
                   ref={page1Ref}
-                  className="salary-doc-page salary-doc-page-1 bg-white shadow-xl rounded-xl border border-gray-200 text-[13px] text-gray-900 leading-relaxed font-sans flex flex-col justify-between mx-auto overflow-hidden print:rounded-none print:border-none print:shadow-none print:m-0"
+                  className="salary-doc-page salary-doc-page-1 bg-white shadow-xl rounded-xl border border-gray-200 text-[13.5px] text-black leading-relaxed flex flex-col justify-start mx-auto overflow-hidden print:rounded-none print:border-none print:shadow-none print:m-0"
                   style={{
                     width: '794px',
                     height: '1123px',
@@ -1652,220 +1748,221 @@ export default function SalaryStatementClient() {
                     paddingBottom: `${bottomPaddingPx}px`,
                     paddingLeft: `${leftPaddingPx}px`,
                     paddingRight: `${rightPaddingPx}px`,
+                    fontFamily: "'Times New Roman', Times, Georgia, serif",
                   }}
                 >
-                  {/* Top Letterhead & Main Content */}
-                  <div>
-                    {headerMode !== 'blank_header' ? (
-                      <div className="flex items-center justify-between border-b-2 border-gray-900 pb-3 mb-4">
-                        <div className="flex items-center gap-4">
-                          {logoDisplay === 'digital_logo' ? (
-                            /* eslint-disable-next-line @next/next/no-img-element */
-                            <img
-                              src="/logo.png"
-                              alt="MEP Logo"
-                              className="h-14 w-auto object-contain shrink-0"
-                            />
-                          ) : logoDisplay === 'blank_space' ? (
-                            <div className="h-14 w-[105px] shrink-0" aria-hidden="true" />
-                          ) : null}
-                          <div>
-                            <h2 className="text-xl font-extrabold uppercase tracking-wide text-gray-900">
-                              {formData.companyName}
-                            </h2>
-                            <p className="text-[11px] text-gray-600 leading-tight mt-0.5">
-                              {formData.companyAddress}
-                            </p>
-                            <p className="text-[11px] text-gray-500">
-                              Web: www.mepgroupbd.com | Email: hr@mepgroupbd.com
-                            </p>
-                          </div>
+                  {/* Top Letterhead (Visible in Plain Paper mode or if headerMode === 'company_info') */}
+                  {headerMode !== 'blank_header' && (
+                    <div className="flex items-center justify-between border-b-2 border-black pb-3 mb-5">
+                      <div className="flex items-center gap-4">
+                        {logoDisplay === 'digital_logo' ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img
+                            src="/logo.png"
+                            alt="MEP Logo"
+                            className="h-14 w-auto object-contain shrink-0"
+                          />
+                        ) : logoDisplay === 'blank_space' ? (
+                          <div className="h-14 w-[105px] shrink-0" aria-hidden="true" />
+                        ) : null}
+                        <div>
+                          <h2 className="text-xl font-bold uppercase tracking-wide text-black">
+                            {formData.companyName}
+                          </h2>
+                          <p className="text-[11px] text-gray-700 leading-tight mt-0.5">
+                            {formData.companyAddress}
+                          </p>
+                          <p className="text-[11px] text-gray-600">
+                            Web: www.mepgroupbd.com | Email: hr@mepgroupbd.com
+                          </p>
                         </div>
                       </div>
-                    ) : null}
-
-                    {/* Ref and Date */}
-                    <div className="flex justify-between items-center text-xs font-semibold mb-4">
-                      <div>
-                        Ref: <span className="font-mono text-gray-800">{formData.refNo}</span>
-                      </div>
-                      <div>
-                        Date: <span className="text-gray-800">{formData.date}</span>
-                      </div>
                     </div>
+                  )}
 
-                    {/* Document Title */}
-                    <div className="text-center my-3">
-                      <h3 className="text-base font-extrabold tracking-wider uppercase underline underline-offset-4 decoration-2 inline-block">
-                        TO WHOM IT MAY CONCERN
-                      </h3>
+                  {/* Ref No and Date */}
+                  <div className="flex justify-between items-baseline mb-6 text-[14px]">
+                    <div>
+                      <strong className="font-bold">Ref No:</strong> {formData.refNo}
                     </div>
-
-                    {/* Introduction Paragraph */}
-                    <p className="text-justify mb-3 text-gray-800 leading-relaxed text-[12.5px]">
-                      This is to certify that <strong>Mr./Ms. {formData.name}</strong>, Staff ID:{' '}
-                      <strong>{formData.workerId}</strong> is serving in our organization as{' '}
-                      <strong>{formData.designation}</strong> in the <strong>{formData.department}</strong> department since{' '}
-                      <strong>{formData.joiningDate}</strong>. His/Her employment type is{' '}
-                      <strong>{formData.employmentType}</strong>.
-                    </p>
-
-                    <p className="mb-3 text-gray-800 text-[12.5px]">
-                      His/Her gross monthly salary breakdown for the past 3 (three) consecutive months is detailed below:
-                    </p>
-
-                    {/* Past 3 Months Table */}
-                    <table className="w-full border-collapse border border-gray-900 text-xs mb-4">
-                      <thead>
-                        <tr className="bg-gray-100 font-bold border-b border-gray-900 text-center">
-                          <th className="border border-gray-900 py-1.5 px-3 text-left w-1/3">
-                            Particulars / Salary Head
-                          </th>
-                          <th className="border border-gray-900 py-1.5 px-3 w-[22%]">
-                            {formData.months[0].monthName}
-                          </th>
-                          <th className="border border-gray-900 py-1.5 px-3 w-[22%]">
-                            {formData.months[1].monthName}
-                          </th>
-                          <th className="border border-gray-900 py-1.5 px-3 w-[22%]">
-                            {formData.months[2].monthName}
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-800">
-                        <tr className="font-bold bg-gray-50/60">
-                          <td className="border border-gray-900 py-1 px-3">Gross Salary (BDT)</td>
-                          <td className="border border-gray-900 py-1 px-3 text-right">
-                            {formData.months[0].grossSalary.toLocaleString()}
-                          </td>
-                          <td className="border border-gray-900 py-1 px-3 text-right">
-                            {formData.months[1].grossSalary.toLocaleString()}
-                          </td>
-                          <td className="border border-gray-900 py-1 px-3 text-right">
-                            {formData.months[2].grossSalary.toLocaleString()}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="border border-gray-900 py-1 px-3">Basic</td>
-                          <td className="border border-gray-900 py-1 px-3 text-right">
-                            {formData.months[0].basicSalary.toLocaleString()}
-                          </td>
-                          <td className="border border-gray-900 py-1 px-3 text-right">
-                            {formData.months[1].basicSalary.toLocaleString()}
-                          </td>
-                          <td className="border border-gray-900 py-1 px-3 text-right">
-                            {formData.months[2].basicSalary.toLocaleString()}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="border border-gray-900 py-1 px-3">House Rent</td>
-                          <td className="border border-gray-900 py-1 px-3 text-right">
-                            {formData.months[0].houseRent.toLocaleString()}
-                          </td>
-                          <td className="border border-gray-900 py-1 px-3 text-right">
-                            {formData.months[1].houseRent.toLocaleString()}
-                          </td>
-                          <td className="border border-gray-900 py-1 px-3 text-right">
-                            {formData.months[2].houseRent.toLocaleString()}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="border border-gray-900 py-1 px-3">Medical</td>
-                          <td className="border border-gray-900 py-1 px-3 text-right">
-                            {formData.months[0].medical.toLocaleString()}
-                          </td>
-                          <td className="border border-gray-900 py-1 px-3 text-right">
-                            {formData.months[1].medical.toLocaleString()}
-                          </td>
-                          <td className="border border-gray-900 py-1 px-3 text-right">
-                            {formData.months[2].medical.toLocaleString()}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="border border-gray-900 py-1 px-3">Conveyance</td>
-                          <td className="border border-gray-900 py-1 px-3 text-right">
-                            {formData.months[0].conveyance.toLocaleString()}
-                          </td>
-                          <td className="border border-gray-900 py-1 px-3 text-right">
-                            {formData.months[1].conveyance.toLocaleString()}
-                          </td>
-                          <td className="border border-gray-900 py-1 px-3 text-right">
-                            {formData.months[2].conveyance.toLocaleString()}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="border border-gray-900 py-1 px-3 text-rose-800 font-medium">
-                            (Less) PF
-                          </td>
-                          <td className="border border-gray-900 py-1 px-3 text-right">
-                            {formData.months[0].pfDeduction.toLocaleString()}
-                          </td>
-                          <td className="border border-gray-900 py-1 px-3 text-right">
-                            {formData.months[1].pfDeduction.toLocaleString()}
-                          </td>
-                          <td className="border border-gray-900 py-1 px-3 text-right">
-                            {formData.months[2].pfDeduction.toLocaleString()}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="border border-gray-900 py-1 px-3 text-rose-800 font-medium">
-                            Advance Salary
-                          </td>
-                          <td className="border border-gray-900 py-1 px-3 text-right">
-                            {formData.months[0].advanceSalary.toLocaleString()}
-                          </td>
-                          <td className="border border-gray-900 py-1 px-3 text-right">
-                            {formData.months[1].advanceSalary.toLocaleString()}
-                          </td>
-                          <td className="border border-gray-900 py-1 px-3 text-right">
-                            {formData.months[2].advanceSalary.toLocaleString()}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="border border-gray-900 py-1 px-3 text-rose-800 font-medium">
-                            LWP/Late & Early Deduction
-                          </td>
-                          <td className="border border-gray-900 py-1 px-3 text-right">
-                            {formData.months[0].lwpDeduction.toLocaleString()}
-                          </td>
-                          <td className="border border-gray-900 py-1 px-3 text-right">
-                            {formData.months[1].lwpDeduction.toLocaleString()}
-                          </td>
-                          <td className="border border-gray-900 py-1 px-3 text-right">
-                            {formData.months[2].lwpDeduction.toLocaleString()}
-                          </td>
-                        </tr>
-                        <tr className="font-extrabold bg-gray-100 text-gray-950">
-                          <td className="border border-gray-900 py-1.5 px-3">Net Payable =</td>
-                          <td className="border border-gray-900 py-1.5 px-3 text-right text-sm">
-                            {formData.months[0].netPayable.toLocaleString()}
-                          </td>
-                          <td className="border border-gray-900 py-1.5 px-3 text-right text-sm">
-                            {formData.months[1].netPayable.toLocaleString()}
-                          </td>
-                          <td className="border border-gray-900 py-1.5 px-3 text-right text-sm">
-                            {formData.months[2].netPayable.toLocaleString()}
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-
-                    {/* Purpose Disclaimer */}
-                    <p className="text-justify text-xs text-gray-700 leading-relaxed mb-4">
-                      This certificate is issued upon the request of the employee for the purpose of{' '}
-                      <strong>{formData.purpose}</strong> and carries no financial liability or commitment on the part
-                      of the organization or any of its management.
-                    </p>
+                    <div>
+                      Date: {formData.date}
+                    </div>
                   </div>
 
-                  {/* Signatory Section Bottom */}
-                  <div className="pt-4">
-                    <p className="text-xs mb-8">Sincerely yours,</p>
-                    <div className="inline-block border-t border-gray-900 pt-1.5 text-xs min-w-[200px]">
-                      <div className="font-bold text-gray-900">{formData.signatoryName}</div>
-                      <div className="text-gray-700">{formData.signatoryTitle}</div>
-                      <div className="font-semibold text-gray-800">{formData.signatoryOrg}</div>
-                    </div>
+                  {/* Document Title */}
+                  <div className="text-center mb-6">
+                    <u className="font-bold text-[16px]">To Whom It May Concern</u>
+                  </div>
+
+                  {/* Paragraph 1 */}
+                  <p className="text-justify mb-4 leading-normal text-[14px]">
+                    This is to certify that {formData.salutation ? `${formData.salutation} ` : ''}
+                    <strong className="font-bold">{formData.name}</strong> (Staff ID: {formData.workerId}) has been employed with {formData.companyName}, a sister concern of MEP GROUP since {formData.joiningDate}. {formData.genderPronoun} is currently working as a {formData.designation} in the {formatDepartment(formData.department)} Department. {formData.genderPronoun} is a permanent employee of MEP GROUP.
+                  </p>
+
+                  {/* Intro line before table */}
+                  <p className="mb-3 text-[14px]">
+                    The details of {getPossessivePronoun(formData.genderPronoun)} gross monthly salary for the past three months are as follows:
+                  </p>
+
+                  {/* Past 3 Months Table (6 Columns: Month 1 | Month 2 | Month 3) */}
+                  <table className="w-full border-collapse border border-black text-[13px] mb-4">
+                    <thead>
+                      <tr>
+                        <th colSpan={2} className="border border-black py-1 px-2 text-center font-bold text-[13.5px] w-1/3">
+                          {formData.months[0].monthName}
+                        </th>
+                        <th colSpan={2} className="border border-black py-1 px-2 text-center font-bold text-[13.5px] w-1/3">
+                          {formData.months[1].monthName}
+                        </th>
+                        <th colSpan={2} className="border border-black py-1 px-2 text-center font-bold text-[13.5px] w-1/3">
+                          {formData.months[2].monthName}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td className="border border-black py-0.5 px-2 w-[20%]">Gross Salary</td>
+                        <td className="border border-black py-0.5 px-2 text-right w-[13.33%]">
+                          {Number(formData.months[0].grossSalary || 0).toLocaleString('en-US')}/-
+                        </td>
+                        <td className="border border-black py-0.5 px-2 w-[20%]">Gross Salary</td>
+                        <td className="border border-black py-0.5 px-2 text-right w-[13.33%]">
+                          {Number(formData.months[1].grossSalary || 0).toLocaleString('en-US')}/-
+                        </td>
+                        <td className="border border-black py-0.5 px-2 w-[20%]">Gross Salary</td>
+                        <td className="border border-black py-0.5 px-2 text-right w-[13.33%]">
+                          {Number(formData.months[2].grossSalary || 0).toLocaleString('en-US')}/-
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-black py-0.5 px-2">Basic</td>
+                        <td className="border border-black py-0.5 px-2 text-right">
+                          {Number(formData.months[0].basicSalary || 0).toLocaleString('en-US')}/-
+                        </td>
+                        <td className="border border-black py-0.5 px-2">Basic</td>
+                        <td className="border border-black py-0.5 px-2 text-right">
+                          {Number(formData.months[1].basicSalary || 0).toLocaleString('en-US')}/-
+                        </td>
+                        <td className="border border-black py-0.5 px-2">Basic</td>
+                        <td className="border border-black py-0.5 px-2 text-right">
+                          {Number(formData.months[2].basicSalary || 0).toLocaleString('en-US')}/-
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-black py-0.5 px-2">House Rent</td>
+                        <td className="border border-black py-0.5 px-2 text-right">
+                          {Number(formData.months[0].houseRent || 0).toLocaleString('en-US')}/-
+                        </td>
+                        <td className="border border-black py-0.5 px-2">House Rent</td>
+                        <td className="border border-black py-0.5 px-2 text-right">
+                          {Number(formData.months[1].houseRent || 0).toLocaleString('en-US')}/-
+                        </td>
+                        <td className="border border-black py-0.5 px-2">House Rent</td>
+                        <td className="border border-black py-0.5 px-2 text-right">
+                          {Number(formData.months[2].houseRent || 0).toLocaleString('en-US')}/-
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-black py-0.5 px-2">Medical</td>
+                        <td className="border border-black py-0.5 px-2 text-right">
+                          {Number(formData.months[0].medical || 0).toLocaleString('en-US')}/-
+                        </td>
+                        <td className="border border-black py-0.5 px-2">Medical</td>
+                        <td className="border border-black py-0.5 px-2 text-right">
+                          {Number(formData.months[1].medical || 0).toLocaleString('en-US')}/-
+                        </td>
+                        <td className="border border-black py-0.5 px-2">Medical</td>
+                        <td className="border border-black py-0.5 px-2 text-right">
+                          {Number(formData.months[2].medical || 0).toLocaleString('en-US')}/-
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-black py-0.5 px-2">Conveyance</td>
+                        <td className="border border-black py-0.5 px-2 text-right">
+                          {Number(formData.months[0].conveyance || 0).toLocaleString('en-US')}/-
+                        </td>
+                        <td className="border border-black py-0.5 px-2">Conveyance</td>
+                        <td className="border border-black py-0.5 px-2 text-right">
+                          {Number(formData.months[1].conveyance || 0).toLocaleString('en-US')}/-
+                        </td>
+                        <td className="border border-black py-0.5 px-2">Conveyance</td>
+                        <td className="border border-black py-0.5 px-2 text-right">
+                          {Number(formData.months[2].conveyance || 0).toLocaleString('en-US')}/-
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-black py-0.5 px-2">(Less) PF</td>
+                        <td className="border border-black py-0.5 px-2 text-right">
+                          {Number(formData.months[0].pfDeduction || 0).toLocaleString('en-US')}/-
+                        </td>
+                        <td className="border border-black py-0.5 px-2">(Less) PF</td>
+                        <td className="border border-black py-0.5 px-2 text-right">
+                          {Number(formData.months[1].pfDeduction || 0).toLocaleString('en-US')}/-
+                        </td>
+                        <td className="border border-black py-0.5 px-2">(Less) PF</td>
+                        <td className="border border-black py-0.5 px-2 text-right">
+                          {Number(formData.months[2].pfDeduction || 0).toLocaleString('en-US')}/-
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-black py-0.5 px-2">Over Time</td>
+                        <td className="border border-black py-0.5 px-2 text-right">
+                          {Number(formData.months[0].overtime || 0).toLocaleString('en-US')}/-
+                        </td>
+                        <td className="border border-black py-0.5 px-2">Over Time</td>
+                        <td className="border border-black py-0.5 px-2 text-right">
+                          {Number(formData.months[1].overtime || 0).toLocaleString('en-US')}/-
+                        </td>
+                        <td className="border border-black py-0.5 px-2">Over Time</td>
+                        <td className="border border-black py-0.5 px-2 text-right">
+                          {Number(formData.months[2].overtime || 0).toLocaleString('en-US')}/-
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-black py-0.5 px-2">Income Tax</td>
+                        <td className="border border-black py-0.5 px-2 text-right">
+                          {Number(formData.months[0].incomeTax || 0).toLocaleString('en-US')}/-
+                        </td>
+                        <td className="border border-black py-0.5 px-2">Income Tax</td>
+                        <td className="border border-black py-0.5 px-2 text-right">
+                          {Number(formData.months[1].incomeTax || 0).toLocaleString('en-US')}/-
+                        </td>
+                        <td className="border border-black py-0.5 px-2">Income Tax</td>
+                        <td className="border border-black py-0.5 px-2 text-right">
+                          {Number(formData.months[2].incomeTax || 0).toLocaleString('en-US')}/-
+                        </td>
+                      </tr>
+                      <tr className="font-bold">
+                        <td className="border border-black py-0.5 px-2">Net Payable=</td>
+                        <td className="border border-black py-0.5 px-2 text-right">
+                          {Number(formData.months[0].netPayable || 0).toLocaleString('en-US')}/-
+                        </td>
+                        <td className="border border-black py-0.5 px-2">Net Payable=</td>
+                        <td className="border border-black py-0.5 px-2 text-right">
+                          {Number(formData.months[1].netPayable || 0).toLocaleString('en-US')}/-
+                        </td>
+                        <td className="border border-black py-0.5 px-2">Net Payable=</td>
+                        <td className="border border-black py-0.5 px-2 text-right">
+                          {Number(formData.months[2].netPayable || 0).toLocaleString('en-US')}/-
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  {/* Closing Paragraph */}
+                  <p className="text-justify my-5 leading-normal text-[14px]">
+                    This certificate is issued upon {getPossessivePronoun(formData.genderPronoun)} personal request for the purpose of {formData.purpose}, for which Company or undersigned has no responsibility or liability at all.
+                  </p>
+
+                  {/* Signatory Section (Left aligned, with underline separator) */}
+                  <div className="mt-14 text-[14px] leading-snug">
+                    <div className="w-52 border-b border-black mb-1.5" />
+                    <div className="font-bold">{formData.signatoryName}</div>
+                    <div>{formData.signatoryTitle}</div>
+                    <div>{formData.signatoryDepartment}</div>
+                    <div>{formData.signatoryOrg}</div>
                   </div>
                 </div>
               </div>
@@ -1875,13 +1972,13 @@ export default function SalaryStatementClient() {
             <div className="salary-page-wrapper relative group print:m-0 print:p-0">
               <div className="flex items-center justify-between mb-2 px-1 text-xs font-semibold text-gray-500 print:hidden">
                 <span className="uppercase tracking-wider">Page 2 of 2: Monthly Salary Certificate</span>
-                <span className="text-gray-400">Standard A4 Sheet (210mm x 297mm) • Office Pad Spacing</span>
+                <span className="text-gray-400">Standard A4 Sheet (210mm x 297mm) • Verbatim Official Template</span>
               </div>
 
               <div className="salary-doc-page-wrapper w-full overflow-x-auto pb-4 print:p-0 print:m-0 print:overflow-visible">
                 <div
                   ref={page2Ref}
-                  className="salary-doc-page salary-doc-page-2 bg-white shadow-xl rounded-xl border border-gray-200 text-[13px] text-gray-900 leading-relaxed font-sans flex flex-col justify-between mx-auto overflow-hidden print:rounded-none print:border-none print:shadow-none print:m-0"
+                  className="salary-doc-page salary-doc-page-2 bg-white shadow-xl rounded-xl border border-gray-200 text-[13.5px] text-black leading-relaxed flex flex-col justify-start mx-auto overflow-hidden print:rounded-none print:border-none print:shadow-none print:m-0"
                   style={{
                     width: '794px',
                     height: '1123px',
@@ -1892,157 +1989,129 @@ export default function SalaryStatementClient() {
                     paddingBottom: `${bottomPaddingPx}px`,
                     paddingLeft: `${leftPaddingPx}px`,
                     paddingRight: `${rightPaddingPx}px`,
+                    fontFamily: "'Times New Roman', Times, Georgia, serif",
                   }}
                 >
-                  {/* Top Letterhead & Main Content */}
-                  <div>
-                    {headerMode !== 'blank_header' ? (
-                      <div className="flex items-center justify-between border-b-2 border-gray-900 pb-3 mb-4">
-                        <div className="flex items-center gap-4">
-                          {logoDisplay === 'digital_logo' ? (
-                            /* eslint-disable-next-line @next/next/no-img-element */
-                            <img
-                              src="/logo.png"
-                              alt="MEP Logo"
-                              className="h-14 w-auto object-contain shrink-0"
-                            />
-                          ) : logoDisplay === 'blank_space' ? (
-                            <div className="h-14 w-[105px] shrink-0" aria-hidden="true" />
-                          ) : null}
-                          <div>
-                            <h2 className="text-xl font-extrabold uppercase tracking-wide text-gray-900">
-                              {formData.companyName}
-                            </h2>
-                            <p className="text-[11px] text-gray-600 leading-tight mt-0.5">
-                              {formData.companyAddress}
-                            </p>
-                            <p className="text-[11px] text-gray-500">
-                              Web: www.mepgroupbd.com | Email: hr@mepgroupbd.com
-                            </p>
-                          </div>
+                  {/* Top Letterhead (Visible in Plain Paper mode or if headerMode === 'company_info') */}
+                  {headerMode !== 'blank_header' && (
+                    <div className="flex items-center justify-between border-b-2 border-black pb-3 mb-5">
+                      <div className="flex items-center gap-4">
+                        {logoDisplay === 'digital_logo' ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img
+                            src="/logo.png"
+                            alt="MEP Logo"
+                            className="h-14 w-auto object-contain shrink-0"
+                          />
+                        ) : logoDisplay === 'blank_space' ? (
+                          <div className="h-14 w-[105px] shrink-0" aria-hidden="true" />
+                        ) : null}
+                        <div>
+                          <h2 className="text-xl font-bold uppercase tracking-wide text-black">
+                            {formData.companyName}
+                          </h2>
+                          <p className="text-[11px] text-gray-700 leading-tight mt-0.5">
+                            {formData.companyAddress}
+                          </p>
+                          <p className="text-[11px] text-gray-600">
+                            Web: www.mepgroupbd.com | Email: hr@mepgroupbd.com
+                          </p>
                         </div>
                       </div>
-                    ) : null}
-
-                    {/* Ref and Date */}
-                    <div className="flex justify-between items-center text-xs font-semibold mb-4">
-                      <div>
-                        Ref: <span className="font-mono text-gray-800">{formData.refNo}</span>
-                      </div>
-                      <div>
-                        Date: <span className="text-gray-800">{formData.date}</span>
-                      </div>
                     </div>
+                  )}
 
-                    {/* Document Title */}
-                    <div className="text-center my-3">
-                      <h3 className="text-base font-extrabold tracking-wider uppercase underline underline-offset-4 decoration-2 inline-block">
-                        MONTHLY SALARY CERTIFICATE
-                      </h3>
+                  {/* Ref No and Date */}
+                  <div className="flex justify-between items-baseline mb-6 text-[14px]">
+                    <div>
+                      <strong className="font-bold">Ref No:</strong> {formData.refNo}
                     </div>
+                    <div>
+                      Date: {formData.date}
+                    </div>
+                  </div>
 
-                    {/* Certification Text */}
-                    <p className="text-justify mb-2.5 text-gray-800 leading-relaxed text-[12.5px] whitespace-pre-line">
-                      {formData.certificationText
-                        .replace(/\[Name\]/gi, formData.name)
-                        .replace(/\[ID\]/gi, formData.workerId)
-                        .replace(/\[Designation\]/gi, formData.designation)
-                        .replace(/\[Department\]/gi, formData.department)
-                        .replace(/\[Company\]/gi, formData.companyName)
-                        .replace(/\[JoiningDate\]/gi, formData.joiningDate)}
+                  {/* Document Title */}
+                  <div className="text-center mb-6">
+                    <u className="font-bold text-[16px]">Monthly Salary Certificate</u>
+                  </div>
+
+                  {/* Paragraph 1 */}
+                  <p className="text-justify mb-4 leading-normal text-[14px]">
+                    This is to certify that {formData.salutation ? `${formData.salutation} ` : ''}
+                    <strong className="font-bold">{formData.name}</strong> (Staff ID: {formData.workerId}) has been employed with {formData.companyName}, a sister concern of MEP GROUP since {formData.joiningDate}. {formData.genderPronoun} is currently working as a {formData.designation} in the {formatDepartment(formData.department)} Department. {formData.genderPronoun} is a permanent employee of MEP GROUP.
+                  </p>
+
+                  {/* Intro line before table */}
+                  <p className="mb-3 text-[14px]">
+                    Details of {getPossessivePronoun(formData.genderPronoun)} monthly salary & allowance are as follows:
+                  </p>
+
+                  {/* 2-Column Monthly Salary & Allowance Table */}
+                  <table className="w-full border-collapse border border-black text-[13.5px] mb-3">
+                    <tbody>
+                      <tr>
+                        <td className="border border-black py-1 px-3 w-[65%]">Basic</td>
+                        <td className="border border-black py-1 px-3 text-right w-[35%]">
+                          {Number(formData.structureBasic || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-black py-1 px-3">House Rent</td>
+                        <td className="border border-black py-1 px-3 text-right">
+                          {Number(formData.structureHouseRent || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-black py-1 px-3">Medical Allowance</td>
+                        <td className="border border-black py-1 px-3 text-right">
+                          {Number(formData.structureMedical || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border border-black py-1 px-3">Conveyance</td>
+                        <td className="border border-black py-1 px-3 text-right">
+                          {Number(formData.structureConveyance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                      </tr>
+                      <tr className="font-bold">
+                        <td className="border border-black py-1 px-3">Total Salary</td>
+                        <td className="border border-black py-1 px-3 text-right">
+                          {Number(formData.structureTotal || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  {/* In Word line */}
+                  <div className="font-bold text-[14px] mt-2 mb-3">
+                    In Word: - {formData.amountInWords}
+                  </div>
+
+                  {/* Monthly salary details heading */}
+                  <div className="font-bold underline text-[14px] mt-3 mb-2">
+                    Monthly salary details:
+                  </div>
+
+                  {/* Numbered Items List */}
+                  <div className="space-y-2 text-[14px] leading-relaxed">
+                    <p>
+                      1. {formData.bankName} (A/C No. {formData.bankAccountNo}) payable amount:  {Number(formData.monthlyPayableAmount || 0).toLocaleString('en-US')}/- (In Word: - {formData.monthlyPayableInWords})
                     </p>
-
-                    <p className="mb-2.5 text-gray-800 text-[12.5px]">
-                      As per official payroll records, his/her current monthly salary structure is detailed below:
+                    <p>
+                      2. Total deduction amount (PF purpose Tk. {Number(formData.pfDeductionPage2 || 0).toLocaleString('en-US')}/-)
                     </p>
-
-                    {/* Table of Monthly Salary Structure */}
-                    <table className="w-full border-collapse border border-gray-900 text-xs mb-3">
-                      <thead>
-                        <tr className="bg-gray-100 font-bold border-b border-gray-900">
-                          <th className="border border-gray-900 py-1.5 px-3 text-left w-2/3">Salary Component</th>
-                          <th className="border border-gray-900 py-1.5 px-3 text-right w-1/3">
-                            Monthly Amount (BDT)
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-800">
-                        <tr>
-                          <td className="border border-gray-900 py-1 px-3">Basic</td>
-                          <td className="border border-gray-900 py-1 px-3 text-right">
-                            {formData.structureBasic.toLocaleString()}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="border border-gray-900 py-1 px-3">House Rent</td>
-                          <td className="border border-gray-900 py-1 px-3 text-right">
-                            {formData.structureHouseRent.toLocaleString()}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="border border-gray-900 py-1 px-3">Medical Allowance</td>
-                          <td className="border border-gray-900 py-1 px-3 text-right">
-                            {formData.structureMedical.toLocaleString()}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="border border-gray-900 py-1 px-3">Conveyance</td>
-                          <td className="border border-gray-900 py-1 px-3 text-right">
-                            {formData.structureConveyance.toLocaleString()}
-                          </td>
-                        </tr>
-                        <tr className="font-extrabold bg-gray-100 text-gray-950">
-                          <td className="border border-gray-900 py-1 px-3">Total Salary</td>
-                          <td className="border border-gray-900 py-1 px-3 text-right text-sm">
-                            {formData.structureTotal.toLocaleString()} BDT
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-
-                    {/* Amount in Words */}
-                    <div className="text-xs mb-3 font-medium text-gray-900">
-                      Amount in Words: <span className="font-bold underline">{formData.amountInWords}</span>
-                    </div>
-
-                    {/* Monthly Salary Details Box */}
-                    <div className="border border-gray-900 rounded-lg p-3 bg-gray-50/60 mb-3 space-y-1.5 text-xs">
-                      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-1 border-b border-gray-200 pb-1">
-                        <span className="font-semibold text-gray-700">Bank Details:</span>
-                        <span className="font-bold text-gray-900">{formData.bankNameAndAcc}</span>
-                      </div>
-                      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-1 border-b border-gray-200 pb-1">
-                        <span className="font-semibold text-gray-700">Monthly Net Payable Amount:</span>
-                        <span className="font-extrabold text-gray-950 text-sm">
-                          {formData.monthlyPayableAmount.toLocaleString()} BDT
-                        </span>
-                      </div>
-                      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-1 border-b border-gray-200 pb-1">
-                        <span className="font-semibold text-gray-700">Payable in Words:</span>
-                        <span className="font-bold text-gray-900 italic">{formData.monthlyPayableInWords}</span>
-                      </div>
-                      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-1">
-                        <span className="font-semibold text-gray-700">Total Monthly Deductions:</span>
-                        <span className="font-medium text-rose-800">
-                          (PF & other fines): {formData.totalMonthlyDeduction.toLocaleString()} BDT
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Disclaimer */}
-                    <p className="text-justify text-xs text-gray-700 leading-relaxed mb-3">
-                      {formData.disclaimer}
+                    <p>
+                      3. {formData.disclaimer}
                     </p>
                   </div>
 
-                  {/* Signatory Section Bottom */}
-                  <div className="pt-4">
-                    <p className="text-xs mb-8">Sincerely yours,</p>
-                    <div className="inline-block border-t border-gray-900 pt-1.5 text-xs min-w-[200px]">
-                      <div className="font-bold text-gray-900">{formData.signatoryName}</div>
-                      <div className="text-gray-700">{formData.signatoryTitle}</div>
-                      <div className="font-semibold text-gray-800">{formData.signatoryOrg}</div>
-                    </div>
+                  {/* Signatory Section (Left aligned, with underline separator) */}
+                  <div className="mt-14 text-[14px] leading-snug">
+                    <div className="w-52 border-b border-black mb-1.5" />
+                    <div className="font-bold">{formData.signatoryName}</div>
+                    <div>{formData.signatoryTitle}</div>
+                    <div>{formData.signatoryDepartment}</div>
                   </div>
                 </div>
               </div>
