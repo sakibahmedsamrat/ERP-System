@@ -120,6 +120,21 @@ function formatWordsOnly(num: number): string {
   return `${words} Taka Only.`;
 }
 
+function renderOrdinalDateText(text: string): React.ReactNode {
+  if (!text) return '';
+  const match = text.match(/^(\d+)(st|nd|rd|th)(\s+.+)$/i);
+  if (match) {
+    return (
+      <>
+        {match[1]}
+        <sup className="text-[10px] leading-none">{match[2].toLowerCase()}</sup>
+        {match[3]}
+      </>
+    );
+  }
+  return text;
+}
+
 export default function SalaryStatementClient() {
   const [defaultMonths] = useState<[string, string, string]>(getDefault3Months());
 
@@ -561,6 +576,10 @@ export default function SalaryStatementClient() {
             left: auto !important;
             top: auto !important;
             opacity: 1 !important;
+          }
+          #printable-pages-container > * + * {
+            margin-top: 0 !important;
+            margin-bottom: 0 !important;
           }
           .salary-page-wrapper {
             margin: 0 !important;
@@ -1737,6 +1756,7 @@ export default function SalaryStatementClient() {
               <div className="salary-doc-page-wrapper w-full overflow-x-auto pb-4 print:p-0 print:m-0 print:overflow-visible">
                 <div
                   ref={page1Ref}
+                  id="salary-statement-page-1"
                   className="salary-doc-page salary-doc-page-1 bg-white shadow-xl rounded-xl border border-gray-200 text-[13.5px] text-black leading-relaxed flex flex-col justify-start mx-auto overflow-hidden print:rounded-none print:border-none print:shadow-none print:m-0"
                   style={{
                     width: '794px',
@@ -1798,7 +1818,7 @@ export default function SalaryStatementClient() {
                   {/* Paragraph 1 */}
                   <p className="text-justify mb-4 leading-normal text-[14px]">
                     This is to certify that {formData.salutation ? `${formData.salutation} ` : ''}
-                    <strong className="font-bold">{formData.name}</strong> (Staff ID: {formData.workerId}) has been employed with {formData.companyName}, a sister concern of MEP GROUP since {formData.joiningDate}. {formData.genderPronoun} is currently working as a {formData.designation} in the {formatDepartment(formData.department)} Department. {formData.genderPronoun} is a permanent employee of MEP GROUP.
+                    <strong className="font-bold">{formData.name}</strong> (Staff ID: {formData.workerId}) has been employed with {formData.companyName}, a sister concern of MEP GROUP since {renderOrdinalDateText(formData.joiningDate)}. {formData.genderPronoun} is currently working as a {formData.designation} in the {formatDepartment(formData.department)} Department. {formData.genderPronoun} is a permanent employee of MEP GROUP.
                   </p>
 
                   {/* Intro line before table */}
@@ -1807,7 +1827,15 @@ export default function SalaryStatementClient() {
                   </p>
 
                   {/* Past 3 Months Table (6 Columns: Month 1 | Month 2 | Month 3) */}
-                  <table className="w-full border-collapse border border-black text-[13px] mb-4">
+                  <table className="w-full table-fixed border-collapse border border-black text-[13px] mb-4">
+                    <colgroup>
+                      <col style={{ width: '20%' }} />
+                      <col style={{ width: '13.33%' }} />
+                      <col style={{ width: '20%' }} />
+                      <col style={{ width: '13.33%' }} />
+                      <col style={{ width: '20%' }} />
+                      <col style={{ width: '13.34%' }} />
+                    </colgroup>
                     <thead>
                       <tr>
                         <th colSpan={2} className="border border-black py-1 px-2 text-center font-bold text-[13.5px] w-1/3">
@@ -1978,6 +2006,7 @@ export default function SalaryStatementClient() {
               <div className="salary-doc-page-wrapper w-full overflow-x-auto pb-4 print:p-0 print:m-0 print:overflow-visible">
                 <div
                   ref={page2Ref}
+                  id="salary-statement-page-2"
                   className="salary-doc-page salary-doc-page-2 bg-white shadow-xl rounded-xl border border-gray-200 text-[13.5px] text-black leading-relaxed flex flex-col justify-start mx-auto overflow-hidden print:rounded-none print:border-none print:shadow-none print:m-0"
                   style={{
                     width: '794px',
@@ -2039,7 +2068,7 @@ export default function SalaryStatementClient() {
                   {/* Paragraph 1 */}
                   <p className="text-justify mb-4 leading-normal text-[14px]">
                     This is to certify that {formData.salutation ? `${formData.salutation} ` : ''}
-                    <strong className="font-bold">{formData.name}</strong> (Staff ID: {formData.workerId}) has been employed with {formData.companyName}, a sister concern of MEP GROUP since {formData.joiningDate}. {formData.genderPronoun} is currently working as a {formData.designation} in the {formatDepartment(formData.department)} Department. {formData.genderPronoun} is a permanent employee of MEP GROUP.
+                    <strong className="font-bold">{formData.name}</strong> (Staff ID: {formData.workerId}) has been employed with {formData.companyName}, a sister concern of MEP GROUP since {renderOrdinalDateText(formData.joiningDate)}. {formData.genderPronoun} is currently working as a {formData.designation} in the {formatDepartment(formData.department)} Department. {formData.genderPronoun} is a permanent employee of MEP GROUP.
                   </p>
 
                   {/* Intro line before table */}
@@ -2048,7 +2077,11 @@ export default function SalaryStatementClient() {
                   </p>
 
                   {/* 2-Column Monthly Salary & Allowance Table */}
-                  <table className="w-full border-collapse border border-black text-[13.5px] mb-3">
+                  <table className="w-full table-fixed border-collapse border border-black text-[13.5px] mb-3">
+                    <colgroup>
+                      <col style={{ width: '65%' }} />
+                      <col style={{ width: '35%' }} />
+                    </colgroup>
                     <tbody>
                       <tr>
                         <td className="border border-black py-1 px-3 w-[65%]">Basic</td>
@@ -2085,7 +2118,7 @@ export default function SalaryStatementClient() {
 
                   {/* In Word line */}
                   <div className="font-bold text-[14px] mt-2 mb-3">
-                    In Word: - {formData.amountInWords}
+                    In Word: - {(formData.amountInWords || '').replace(/^In Word:\s*-?\s*/i, '').trim()}
                   </div>
 
                   {/* Monthly salary details heading */}
@@ -2096,7 +2129,7 @@ export default function SalaryStatementClient() {
                   {/* Numbered Items List */}
                   <div className="space-y-2 text-[14px] leading-relaxed">
                     <p>
-                      1. {formData.bankName} (A/C No. {formData.bankAccountNo}) payable amount:  {Number(formData.monthlyPayableAmount || 0).toLocaleString('en-US')}/- (In Word: - {formData.monthlyPayableInWords})
+                      1. {formData.bankName} (A/C No. {formData.bankAccountNo}) payable amount:  {Number(formData.monthlyPayableAmount || 0).toLocaleString('en-US')}/- (In Word: - {(formData.monthlyPayableInWords || '').replace(/^\(?In Word:\s*-?\s*/i, '').replace(/\)?\s*$/, '').trim()})
                     </p>
                     <p>
                       2. Total deduction amount (PF purpose Tk. {Number(formData.pfDeductionPage2 || 0).toLocaleString('en-US')}/-)
