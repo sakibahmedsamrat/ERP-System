@@ -448,6 +448,14 @@ export default function SalaryStatementClient() {
     if (!page1Ref.current || !page2Ref.current) return;
     setIsGeneratingPdf(true);
 
+    // Reset horizontal scroll on page wrappers
+    if (page1Ref.current.parentElement) {
+      page1Ref.current.parentElement.scrollLeft = 0;
+    }
+    if (page2Ref.current.parentElement) {
+      page2Ref.current.parentElement.scrollLeft = 0;
+    }
+
     try {
       const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
         import('jspdf'),
@@ -460,6 +468,53 @@ export default function SalaryStatementClient() {
         format: 'a4',
       });
 
+      const cloneSetup = (clonedDoc: Document) => {
+        // Hide non-printable elements in cloned doc
+        const nonPrintables = clonedDoc.querySelectorAll('.print\\:hidden, header, nav, aside, footer');
+        nonPrintables.forEach((el: any) => {
+          el.style.display = 'none';
+        });
+
+        const grid = clonedDoc.querySelector('.salary-statement-grid');
+        if (grid) {
+          (grid as HTMLElement).style.display = 'block';
+          (grid as HTMLElement).style.margin = '0';
+          (grid as HTMLElement).style.padding = '0';
+        }
+
+        const container = clonedDoc.getElementById('printable-pages-container');
+        if (container) {
+          container.style.position = 'static';
+          container.style.left = '0';
+          container.style.opacity = '1';
+          container.style.display = 'block';
+          container.style.width = '794px';
+          container.style.margin = '0';
+          container.style.padding = '0';
+        }
+
+        const p1 = clonedDoc.getElementById('salary-statement-page-1');
+        if (p1) {
+          p1.style.margin = '0';
+          if (p1.parentElement) {
+            p1.parentElement.scrollLeft = 0;
+            p1.parentElement.style.overflow = 'visible';
+            p1.parentElement.style.margin = '0';
+            p1.parentElement.style.padding = '0';
+          }
+        }
+        const p2 = clonedDoc.getElementById('salary-statement-page-2');
+        if (p2) {
+          p2.style.margin = '0';
+          if (p2.parentElement) {
+            p2.parentElement.scrollLeft = 0;
+            p2.parentElement.style.overflow = 'visible';
+            p2.parentElement.style.margin = '0';
+            p2.parentElement.style.padding = '0';
+          }
+        }
+      };
+
       // Render Page 1
       const canvas1 = await html2canvas(page1Ref.current, {
         scale: 2,
@@ -471,15 +526,7 @@ export default function SalaryStatementClient() {
         windowWidth: 1200,
         scrollX: 0,
         scrollY: 0,
-        onclone: (clonedDoc) => {
-          const container = clonedDoc.getElementById('printable-pages-container');
-          if (container) {
-            container.style.position = 'static';
-            container.style.left = '0';
-            container.style.opacity = '1';
-            container.style.display = 'block';
-          }
-        },
+        onclone: cloneSetup,
       });
       const img1 = canvas1.toDataURL('image/jpeg', 0.98);
       pdf.addImage(img1, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
@@ -496,15 +543,7 @@ export default function SalaryStatementClient() {
         windowWidth: 1200,
         scrollX: 0,
         scrollY: 0,
-        onclone: (clonedDoc) => {
-          const container = clonedDoc.getElementById('printable-pages-container');
-          if (container) {
-            container.style.position = 'static';
-            container.style.left = '0';
-            container.style.opacity = '1';
-            container.style.display = 'block';
-          }
-        },
+        onclone: cloneSetup,
       });
       const img2 = canvas2.toDataURL('image/jpeg', 0.98);
       pdf.addImage(img2, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
@@ -520,19 +559,42 @@ export default function SalaryStatementClient() {
   };
 
   const handlePrint = () => {
+    // Reset horizontal scroll on page wrappers before opening print dialog
+    if (page1Ref.current?.parentElement) {
+      page1Ref.current.parentElement.scrollLeft = 0;
+    }
+    if (page2Ref.current?.parentElement) {
+      page2Ref.current.parentElement.scrollLeft = 0;
+    }
     window.print();
   };
 
   return (
     <div className="salary-statement-root min-h-screen bg-transparent print:bg-white text-slate-900 pb-16 print:p-0 print:m-0 print:min-h-0 print:pb-0">
-      {/* Print CSS styles */}
+      {/* Print CSS styles and document table typography */}
       <style
         dangerouslySetInnerHTML={{
           __html: `
+        /* Screen document table styling */
+        .salary-doc-page table {
+          border-collapse: collapse !important;
+          width: 100% !important;
+        }
+        .salary-doc-page table th,
+        .salary-doc-page table td {
+          vertical-align: middle !important;
+          line-height: 1.4 !important;
+          padding-top: 7px !important;
+          padding-bottom: 7px !important;
+        }
+
         @media print {
           @page {
-            size: 210mm 297mm;
-            margin: 0 !important;
+            size: A4 portrait;
+            margin: 0;
+          }
+          *, *::before, *::after {
+            box-sizing: border-box !important;
           }
           html, body {
             margin: 0 !important;
@@ -549,11 +611,30 @@ export default function SalaryStatementClient() {
           .print\\:hidden, header, nav, aside, footer {
             display: none !important;
           }
+          /* Reset all app layout wrappers and flex containers for print to eliminate margin clipping */
+          .ambient-mesh,
+          .ambient-mesh > div,
+          main,
+          main > div {
+            display: block !important;
+            position: static !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            min-width: 0 !important;
+            max-width: none !important;
+            height: auto !important;
+            min-height: 0 !important;
+            overflow: visible !important;
+            float: none !important;
+            transform: none !important;
+          }
           .salary-statement-root {
             margin: 0 !important;
             padding: 0 !important;
             min-height: 0 !important;
             background: #ffffff !important;
+            width: 210mm !important;
           }
           .salary-statement-container {
             max-width: none !important;
@@ -566,6 +647,7 @@ export default function SalaryStatementClient() {
             margin: 0 !important;
             padding: 0 !important;
             gap: 0 !important;
+            width: 210mm !important;
           }
           #printable-pages-container {
             display: block !important;
@@ -573,8 +655,8 @@ export default function SalaryStatementClient() {
             width: 210mm !important;
             margin: 0 !important;
             padding: 0 !important;
-            left: auto !important;
-            top: auto !important;
+            left: 0 !important;
+            top: 0 !important;
             opacity: 1 !important;
           }
           #printable-pages-container > * + * {
@@ -584,6 +666,9 @@ export default function SalaryStatementClient() {
           .salary-page-wrapper {
             margin: 0 !important;
             padding: 0 !important;
+            width: 210mm !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
           }
           .salary-doc-page-wrapper {
             margin: 0 !important;
@@ -613,6 +698,19 @@ export default function SalaryStatementClient() {
             overflow: hidden !important;
             background: #ffffff !important;
             font-family: 'Times New Roman', Times, Georgia, serif !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+          .salary-doc-page table {
+            border-collapse: collapse !important;
+            width: 100% !important;
+          }
+          .salary-doc-page table th,
+          .salary-doc-page table td {
+            vertical-align: middle !important;
+            line-height: 1.4 !important;
+            padding-top: 7px !important;
+            padding-bottom: 7px !important;
           }
           .salary-doc-page-1 {
             page-break-inside: avoid !important;
@@ -688,7 +786,7 @@ export default function SalaryStatementClient() {
             <div className="hidden xl:flex items-center gap-2 bg-amber-50/90 text-amber-800 border border-amber-200/80 px-3 py-1.5 rounded-xl text-xs font-semibold">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
               <span>
-                Office Pad: <strong className="font-bold">{padTopMargin}mm Top</strong> / <strong className="font-bold">{padBottomMargin}mm Btm</strong> ({headerMode === 'blank_header' ? 'Pre-printed Header' : 'Company Info Header'})
+                Office Pad: <strong className="font-bold">{padTopMargin}mm Top</strong> / <strong className="font-bold">{padBottomMargin}mm Btm</strong> / <strong className="font-bold">{padLeftMargin}mm L</strong> / <strong className="font-bold">{padRightMargin}mm R</strong> ({headerMode === 'blank_header' ? 'Pre-printed Header' : 'Company Info Header'})
               </span>
             </div>
 
@@ -1591,11 +1689,13 @@ export default function SalaryStatementClient() {
                     onClick={() => {
                       setPadTopMargin(38);
                       setPadBottomMargin(28);
+                      setPadLeftMargin(20);
+                      setPadRightMargin(20);
                       setLogoDisplay('blank_space');
                       setHeaderMode('blank_header');
                     }}
                     className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition border ${
-                      padTopMargin === 38 && padBottomMargin === 28 && headerMode === 'blank_header'
+                      padTopMargin === 38 && padBottomMargin === 28 && padLeftMargin === 20 && padRightMargin === 20 && headerMode === 'blank_header'
                         ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
                         : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
                     }`}
@@ -1608,11 +1708,13 @@ export default function SalaryStatementClient() {
                     onClick={() => {
                       setPadTopMargin(38);
                       setPadBottomMargin(28);
+                      setPadLeftMargin(20);
+                      setPadRightMargin(20);
                       setLogoDisplay('blank_space');
                       setHeaderMode('company_info');
                     }}
                     className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition border ${
-                      padTopMargin === 38 && padBottomMargin === 28 && logoDisplay === 'blank_space' && headerMode === 'company_info'
+                      padTopMargin === 38 && padBottomMargin === 28 && padLeftMargin === 20 && padRightMargin === 20 && logoDisplay === 'blank_space' && headerMode === 'company_info'
                         ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
                         : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
                     }`}
@@ -1625,11 +1727,13 @@ export default function SalaryStatementClient() {
                     onClick={() => {
                       setPadTopMargin(16);
                       setPadBottomMargin(16);
+                      setPadLeftMargin(20);
+                      setPadRightMargin(20);
                       setLogoDisplay('digital_logo');
                       setHeaderMode('company_info');
                     }}
                     className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition border ${
-                      padTopMargin === 16 && padBottomMargin === 16 && logoDisplay === 'digital_logo' && headerMode === 'company_info'
+                      padTopMargin === 16 && padBottomMargin === 16 && padLeftMargin === 20 && padRightMargin === 20 && logoDisplay === 'digital_logo' && headerMode === 'company_info'
                         ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
                         : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
                     }`}
@@ -1640,7 +1744,7 @@ export default function SalaryStatementClient() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 text-xs">
                 {/* Header Text Mode */}
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
@@ -1743,6 +1847,78 @@ export default function SalaryStatementClient() {
                     </div>
                   </div>
                 </div>
+
+                {/* Left Margin Clearance */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                      Left Margin
+                    </label>
+                    <span className="text-[11px] font-bold text-blue-600">{padLeftMargin} mm</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="number"
+                      min={10}
+                      max={40}
+                      value={padLeftMargin}
+                      onChange={(e) => setPadLeftMargin(Math.max(10, Math.min(40, Number(e.target.value) || 0)))}
+                      className="w-14 px-2 py-1 border border-slate-300 rounded text-xs font-bold text-slate-800 text-center"
+                    />
+                    <div className="flex items-center gap-1 flex-1">
+                      {[15, 20, 25].map((mm) => (
+                        <button
+                          key={mm}
+                          type="button"
+                          onClick={() => setPadLeftMargin(mm)}
+                          className={`flex-1 py-1 rounded text-[10px] font-bold transition border ${
+                            padLeftMargin === mm
+                              ? 'bg-blue-600 text-white border-blue-600'
+                              : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          {mm}mm
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Margin Clearance */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                      Right Margin
+                    </label>
+                    <span className="text-[11px] font-bold text-blue-600">{padRightMargin} mm</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="number"
+                      min={10}
+                      max={40}
+                      value={padRightMargin}
+                      onChange={(e) => setPadRightMargin(Math.max(10, Math.min(40, Number(e.target.value) || 0)))}
+                      className="w-14 px-2 py-1 border border-slate-300 rounded text-xs font-bold text-slate-800 text-center"
+                    />
+                    <div className="flex items-center gap-1 flex-1">
+                      {[15, 20, 25].map((mm) => (
+                        <button
+                          key={mm}
+                          type="button"
+                          onClick={() => setPadRightMargin(mm)}
+                          className={`flex-1 py-1 rounded text-[10px] font-bold transition border ${
+                            padRightMargin === mm
+                              ? 'bg-blue-600 text-white border-blue-600'
+                              : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          {mm}mm
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -1827,7 +2003,7 @@ export default function SalaryStatementClient() {
                   </p>
 
                   {/* Past 3 Months Table (6 Columns: Month 1 | Month 2 | Month 3) */}
-                  <table className="w-full table-fixed border-collapse border border-black text-[13px] mb-4">
+                  <table className="salary-table w-full table-fixed border-collapse border border-black text-[13px] mb-4">
                     <colgroup>
                       <col style={{ width: '20%' }} />
                       <col style={{ width: '13.33%' }} />
@@ -1838,141 +2014,141 @@ export default function SalaryStatementClient() {
                     </colgroup>
                     <thead>
                       <tr>
-                        <th colSpan={2} className="border border-black py-1 px-2 text-center font-bold text-[13.5px] w-1/3">
+                        <th colSpan={2} className="border border-black py-2 px-2.5 text-center font-bold text-[13.5px] w-1/3 align-middle leading-normal">
                           {formData.months[0].monthName}
                         </th>
-                        <th colSpan={2} className="border border-black py-1 px-2 text-center font-bold text-[13.5px] w-1/3">
+                        <th colSpan={2} className="border border-black py-2 px-2.5 text-center font-bold text-[13.5px] w-1/3 align-middle leading-normal">
                           {formData.months[1].monthName}
                         </th>
-                        <th colSpan={2} className="border border-black py-1 px-2 text-center font-bold text-[13.5px] w-1/3">
+                        <th colSpan={2} className="border border-black py-2 px-2.5 text-center font-bold text-[13.5px] w-1/3 align-middle leading-normal">
                           {formData.months[2].monthName}
                         </th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr>
-                        <td className="border border-black py-0.5 px-2 w-[20%]">Gross Salary</td>
-                        <td className="border border-black py-0.5 px-2 text-right w-[13.33%]">
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal w-[20%]">Gross Salary</td>
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right w-[13.33%]">
                           {Number(formData.months[0].grossSalary || 0).toLocaleString('en-US')}/-
                         </td>
-                        <td className="border border-black py-0.5 px-2 w-[20%]">Gross Salary</td>
-                        <td className="border border-black py-0.5 px-2 text-right w-[13.33%]">
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal w-[20%]">Gross Salary</td>
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right w-[13.33%]">
                           {Number(formData.months[1].grossSalary || 0).toLocaleString('en-US')}/-
                         </td>
-                        <td className="border border-black py-0.5 px-2 w-[20%]">Gross Salary</td>
-                        <td className="border border-black py-0.5 px-2 text-right w-[13.33%]">
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal w-[20%]">Gross Salary</td>
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right w-[13.33%]">
                           {Number(formData.months[2].grossSalary || 0).toLocaleString('en-US')}/-
                         </td>
                       </tr>
                       <tr>
-                        <td className="border border-black py-0.5 px-2">Basic</td>
-                        <td className="border border-black py-0.5 px-2 text-right">
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">Basic</td>
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[0].basicSalary || 0).toLocaleString('en-US')}/-
                         </td>
-                        <td className="border border-black py-0.5 px-2">Basic</td>
-                        <td className="border border-black py-0.5 px-2 text-right">
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">Basic</td>
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[1].basicSalary || 0).toLocaleString('en-US')}/-
                         </td>
-                        <td className="border border-black py-0.5 px-2">Basic</td>
-                        <td className="border border-black py-0.5 px-2 text-right">
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">Basic</td>
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[2].basicSalary || 0).toLocaleString('en-US')}/-
                         </td>
                       </tr>
                       <tr>
-                        <td className="border border-black py-0.5 px-2">House Rent</td>
-                        <td className="border border-black py-0.5 px-2 text-right">
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">House Rent</td>
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[0].houseRent || 0).toLocaleString('en-US')}/-
                         </td>
-                        <td className="border border-black py-0.5 px-2">House Rent</td>
-                        <td className="border border-black py-0.5 px-2 text-right">
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">House Rent</td>
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[1].houseRent || 0).toLocaleString('en-US')}/-
                         </td>
-                        <td className="border border-black py-0.5 px-2">House Rent</td>
-                        <td className="border border-black py-0.5 px-2 text-right">
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">House Rent</td>
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[2].houseRent || 0).toLocaleString('en-US')}/-
                         </td>
                       </tr>
                       <tr>
-                        <td className="border border-black py-0.5 px-2">Medical</td>
-                        <td className="border border-black py-0.5 px-2 text-right">
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">Medical</td>
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[0].medical || 0).toLocaleString('en-US')}/-
                         </td>
-                        <td className="border border-black py-0.5 px-2">Medical</td>
-                        <td className="border border-black py-0.5 px-2 text-right">
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">Medical</td>
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[1].medical || 0).toLocaleString('en-US')}/-
                         </td>
-                        <td className="border border-black py-0.5 px-2">Medical</td>
-                        <td className="border border-black py-0.5 px-2 text-right">
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">Medical</td>
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[2].medical || 0).toLocaleString('en-US')}/-
                         </td>
                       </tr>
                       <tr>
-                        <td className="border border-black py-0.5 px-2">Conveyance</td>
-                        <td className="border border-black py-0.5 px-2 text-right">
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">Conveyance</td>
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[0].conveyance || 0).toLocaleString('en-US')}/-
                         </td>
-                        <td className="border border-black py-0.5 px-2">Conveyance</td>
-                        <td className="border border-black py-0.5 px-2 text-right">
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">Conveyance</td>
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[1].conveyance || 0).toLocaleString('en-US')}/-
                         </td>
-                        <td className="border border-black py-0.5 px-2">Conveyance</td>
-                        <td className="border border-black py-0.5 px-2 text-right">
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">Conveyance</td>
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[2].conveyance || 0).toLocaleString('en-US')}/-
                         </td>
                       </tr>
                       <tr>
-                        <td className="border border-black py-0.5 px-2">(Less) PF</td>
-                        <td className="border border-black py-0.5 px-2 text-right">
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">(Less) PF</td>
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[0].pfDeduction || 0).toLocaleString('en-US')}/-
                         </td>
-                        <td className="border border-black py-0.5 px-2">(Less) PF</td>
-                        <td className="border border-black py-0.5 px-2 text-right">
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">(Less) PF</td>
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[1].pfDeduction || 0).toLocaleString('en-US')}/-
                         </td>
-                        <td className="border border-black py-0.5 px-2">(Less) PF</td>
-                        <td className="border border-black py-0.5 px-2 text-right">
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">(Less) PF</td>
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[2].pfDeduction || 0).toLocaleString('en-US')}/-
                         </td>
                       </tr>
                       <tr>
-                        <td className="border border-black py-0.5 px-2">Over Time</td>
-                        <td className="border border-black py-0.5 px-2 text-right">
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">Over Time</td>
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[0].overtime || 0).toLocaleString('en-US')}/-
                         </td>
-                        <td className="border border-black py-0.5 px-2">Over Time</td>
-                        <td className="border border-black py-0.5 px-2 text-right">
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">Over Time</td>
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[1].overtime || 0).toLocaleString('en-US')}/-
                         </td>
-                        <td className="border border-black py-0.5 px-2">Over Time</td>
-                        <td className="border border-black py-0.5 px-2 text-right">
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">Over Time</td>
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[2].overtime || 0).toLocaleString('en-US')}/-
                         </td>
                       </tr>
                       <tr>
-                        <td className="border border-black py-0.5 px-2">Income Tax</td>
-                        <td className="border border-black py-0.5 px-2 text-right">
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">Income Tax</td>
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[0].incomeTax || 0).toLocaleString('en-US')}/-
                         </td>
-                        <td className="border border-black py-0.5 px-2">Income Tax</td>
-                        <td className="border border-black py-0.5 px-2 text-right">
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">Income Tax</td>
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[1].incomeTax || 0).toLocaleString('en-US')}/-
                         </td>
-                        <td className="border border-black py-0.5 px-2">Income Tax</td>
-                        <td className="border border-black py-0.5 px-2 text-right">
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">Income Tax</td>
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[2].incomeTax || 0).toLocaleString('en-US')}/-
                         </td>
                       </tr>
                       <tr className="font-bold">
-                        <td className="border border-black py-0.5 px-2">Net Payable=</td>
-                        <td className="border border-black py-0.5 px-2 text-right">
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">Net Payable=</td>
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[0].netPayable || 0).toLocaleString('en-US')}/-
                         </td>
-                        <td className="border border-black py-0.5 px-2">Net Payable=</td>
-                        <td className="border border-black py-0.5 px-2 text-right">
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">Net Payable=</td>
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[1].netPayable || 0).toLocaleString('en-US')}/-
                         </td>
-                        <td className="border border-black py-0.5 px-2">Net Payable=</td>
-                        <td className="border border-black py-0.5 px-2 text-right">
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal">Net Payable=</td>
+                        <td className="border border-black py-2 px-2.5 align-middle leading-normal text-right">
                           {Number(formData.months[2].netPayable || 0).toLocaleString('en-US')}/-
                         </td>
                       </tr>
@@ -1985,7 +2161,7 @@ export default function SalaryStatementClient() {
                   </p>
 
                   {/* Signatory Section (Left aligned, with underline separator) */}
-                  <div className="mt-14 text-[14px] leading-snug">
+                  <div className="mt-8 text-[14px] leading-snug">
                     <div className="w-52 border-b border-black mb-1.5" />
                     <div className="font-bold">{formData.signatoryName}</div>
                     <div>{formData.signatoryTitle}</div>
@@ -2077,39 +2253,39 @@ export default function SalaryStatementClient() {
                   </p>
 
                   {/* 2-Column Monthly Salary & Allowance Table */}
-                  <table className="w-full table-fixed border-collapse border border-black text-[13.5px] mb-3">
+                  <table className="salary-table w-full table-fixed border-collapse border border-black text-[13.5px] mb-3">
                     <colgroup>
                       <col style={{ width: '65%' }} />
                       <col style={{ width: '35%' }} />
                     </colgroup>
                     <tbody>
                       <tr>
-                        <td className="border border-black py-1 px-3 w-[65%]">Basic</td>
-                        <td className="border border-black py-1 px-3 text-right w-[35%]">
+                        <td className="border border-black py-2 px-3 align-middle leading-normal w-[65%]">Basic</td>
+                        <td className="border border-black py-2 px-3 align-middle leading-normal text-right w-[35%]">
                           {Number(formData.structureBasic || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
                       </tr>
                       <tr>
-                        <td className="border border-black py-1 px-3">House Rent</td>
-                        <td className="border border-black py-1 px-3 text-right">
+                        <td className="border border-black py-2 px-3 align-middle leading-normal">House Rent</td>
+                        <td className="border border-black py-2 px-3 align-middle leading-normal text-right">
                           {Number(formData.structureHouseRent || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
                       </tr>
                       <tr>
-                        <td className="border border-black py-1 px-3">Medical Allowance</td>
-                        <td className="border border-black py-1 px-3 text-right">
+                        <td className="border border-black py-2 px-3 align-middle leading-normal">Medical Allowance</td>
+                        <td className="border border-black py-2 px-3 align-middle leading-normal text-right">
                           {Number(formData.structureMedical || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
                       </tr>
                       <tr>
-                        <td className="border border-black py-1 px-3">Conveyance</td>
-                        <td className="border border-black py-1 px-3 text-right">
+                        <td className="border border-black py-2 px-3 align-middle leading-normal">Conveyance</td>
+                        <td className="border border-black py-2 px-3 align-middle leading-normal text-right">
                           {Number(formData.structureConveyance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
                       </tr>
                       <tr className="font-bold">
-                        <td className="border border-black py-1 px-3">Total Salary</td>
-                        <td className="border border-black py-1 px-3 text-right">
+                        <td className="border border-black py-2 px-3 align-middle leading-normal">Total Salary</td>
+                        <td className="border border-black py-2 px-3 align-middle leading-normal text-right">
                           {Number(formData.structureTotal || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
                       </tr>
@@ -2140,7 +2316,7 @@ export default function SalaryStatementClient() {
                   </div>
 
                   {/* Signatory Section (Left aligned, with underline separator) */}
-                  <div className="mt-14 text-[14px] leading-snug">
+                  <div className="mt-10 text-[14px] leading-snug">
                     <div className="w-52 border-b border-black mb-1.5" />
                     <div className="font-bold">{formData.signatoryName}</div>
                     <div>{formData.signatoryTitle}</div>
