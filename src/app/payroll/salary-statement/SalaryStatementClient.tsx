@@ -23,7 +23,8 @@ import {
   Eye,
   Edit3,
   Sparkles,
-  Loader2
+  Loader2,
+  Sliders
 } from 'lucide-react';
 import { numberToWords, formatDate } from '@/lib/formatDate';
 
@@ -103,6 +104,20 @@ export default function SalaryStatementClient() {
   // Printable pages refs
   const page1Ref = useRef<HTMLDivElement>(null);
   const page2Ref = useRef<HTMLDivElement>(null);
+
+  // Official Letterhead Pad & Print Clearance Settings
+  const [padTopMargin, setPadTopMargin] = useState<number>(38); // mm: clearance for pre-printed letterhead pad header
+  const [padBottomMargin, setPadBottomMargin] = useState<number>(28); // mm: clearance for pre-printed letterhead pad footer
+  const [padLeftMargin, setPadLeftMargin] = useState<number>(18); // mm
+  const [padRightMargin, setPadRightMargin] = useState<number>(18); // mm
+  const [logoDisplay, setLogoDisplay] = useState<'blank_space' | 'collapsed' | 'digital_logo'>('blank_space');
+  const [headerMode, setHeaderMode] = useState<'company_info' | 'blank_header'>('company_info');
+
+  // Convert mm to pixels for screen canvas render (1mm ~= 3.7795px at 96 DPI)
+  const topPaddingPx = Math.round(padTopMargin * 3.7795);
+  const bottomPaddingPx = Math.round(padBottomMargin * 3.7795);
+  const leftPaddingPx = Math.round(padLeftMargin * 3.7795);
+  const rightPaddingPx = Math.round(padRightMargin * 3.7795);
 
   const currentYear = new Date().getFullYear();
   const todayFormatted = new Date().toLocaleDateString('en-GB', {
@@ -385,6 +400,15 @@ export default function SalaryStatementClient() {
         width: 794,
         height: 1123,
         windowWidth: 1200,
+        onclone: (clonedDoc) => {
+          const container = clonedDoc.getElementById('printable-pages-container');
+          if (container) {
+            container.style.position = 'static';
+            container.style.left = '0';
+            container.style.opacity = '1';
+            container.style.display = 'block';
+          }
+        },
       });
       const img1 = canvas1.toDataURL('image/jpeg', 0.98);
       pdf.addImage(img1, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
@@ -399,6 +423,15 @@ export default function SalaryStatementClient() {
         width: 794,
         height: 1123,
         windowWidth: 1200,
+        onclone: (clonedDoc) => {
+          const container = clonedDoc.getElementById('printable-pages-container');
+          if (container) {
+            container.style.position = 'static';
+            container.style.left = '0';
+            container.style.opacity = '1';
+            container.style.display = 'block';
+          }
+        },
       });
       const img2 = canvas2.toDataURL('image/jpeg', 0.98);
       pdf.addImage(img2, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
@@ -443,7 +476,10 @@ export default function SalaryStatementClient() {
             max-height: 297mm !important;
             height: 297mm !important;
             margin: 0 auto !important;
-            padding: 16mm 18mm !important;
+            padding-top: ${padTopMargin}mm !important;
+            padding-bottom: ${padBottomMargin}mm !important;
+            padding-left: ${padLeftMargin}mm !important;
+            padding-right: ${padRightMargin}mm !important;
             box-shadow: none !important;
             border: none !important;
             page-break-after: always !important;
@@ -453,6 +489,11 @@ export default function SalaryStatementClient() {
             flex-direction: column !important;
             justify-content: space-between !important;
             box-sizing: border-box !important;
+            overflow: hidden !important;
+          }
+          .salary-doc-page:last-child {
+            page-break-after: auto !important;
+            break-after: auto !important;
           }
         }
       `,
@@ -510,6 +551,14 @@ export default function SalaryStatementClient() {
               >
                 Preview Only
               </button>
+            </div>
+
+            {/* Letterhead Pad Mode Status Badge */}
+            <div className="hidden xl:flex items-center gap-2 bg-amber-50/90 text-amber-800 border border-amber-200/80 px-3 py-1.5 rounded-xl text-xs font-semibold">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <span>
+                Office Pad Mode: <strong className="font-bold">{padTopMargin}mm Top</strong> / <strong className="font-bold">{padBottomMargin}mm Btm</strong>
+              </span>
             </div>
 
             <button
@@ -692,6 +741,119 @@ export default function SalaryStatementClient() {
                         placeholder="e.g., personal loan application from Bank"
                         className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                       />
+                    </div>
+                  </div>
+
+                  {/* Official Letterhead Pad & Clearance Setup */}
+                  <div className="glass-card rounded-3xl p-5 border border-amber-200/70 bg-gradient-to-br from-amber-50/40 to-white shadow-sm space-y-4">
+                    <div className="flex items-center justify-between border-b border-amber-200/60 pb-2">
+                      <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                        <Sliders size={16} className="text-amber-600" /> Letterhead Pad & Print Clearance
+                      </h3>
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full border border-emerald-200">
+                        Official Pad Preset
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      Configure blank top and bottom clearance for printing on pre-printed office letterhead pads.
+                    </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Logo / Image Spot
+                        </label>
+                        <select
+                          value={logoDisplay}
+                          onChange={(e) => setLogoDisplay(e.target.value as any)}
+                          className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-medium bg-white focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="blank_space">Blank Space (Reserved for Pad Logo)</option>
+                          <option value="collapsed">No Logo (Align Left)</option>
+                          <option value="digital_logo">Show Digital Logo</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Header Text Option
+                        </label>
+                        <select
+                          value={headerMode}
+                          onChange={(e) => setHeaderMode(e.target.value as any)}
+                          className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-medium bg-white focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="company_info">Show Company Name & Address</option>
+                          <option value="blank_header">Blank Top Header (Pre-printed Pad)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between items-center mb-1">
+                          <label className="text-xs font-semibold text-slate-700">Top Blank Space</label>
+                          <span className="text-xs font-bold text-blue-600">{padTopMargin} mm</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            min={10}
+                            max={70}
+                            value={padTopMargin}
+                            onChange={(e) => setPadTopMargin(Math.max(10, Math.min(70, Number(e.target.value) || 0)))}
+                            className="w-20 px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs font-bold text-center"
+                          />
+                          <div className="flex items-center gap-1 flex-1">
+                            {[30, 38, 45].map((mm) => (
+                              <button
+                                key={mm}
+                                type="button"
+                                onClick={() => setPadTopMargin(mm)}
+                                className={`flex-1 py-1 rounded text-[11px] font-bold transition border ${
+                                  padTopMargin === mm
+                                    ? 'bg-blue-600 text-white border-blue-600'
+                                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                                }`}
+                              >
+                                {mm}mm
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between items-center mb-1">
+                          <label className="text-xs font-semibold text-slate-700">Bottom Blank Space</label>
+                          <span className="text-xs font-bold text-blue-600">{padBottomMargin} mm</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            min={10}
+                            max={60}
+                            value={padBottomMargin}
+                            onChange={(e) => setPadBottomMargin(Math.max(10, Math.min(60, Number(e.target.value) || 0)))}
+                            className="w-20 px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs font-bold text-center"
+                          />
+                          <div className="flex items-center gap-1 flex-1">
+                            {[20, 28, 35].map((mm) => (
+                              <button
+                                key={mm}
+                                type="button"
+                                onClick={() => setPadBottomMargin(mm)}
+                                className={`flex-1 py-1 rounded text-[11px] font-bold transition border ${
+                                  padBottomMargin === mm
+                                    ? 'bg-blue-600 text-white border-blue-600'
+                                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                                }`}
+                              >
+                                {mm}mm
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -1168,261 +1330,211 @@ export default function SalaryStatementClient() {
 
           {/* Right Column: High-Fidelity 2-Page Document Preview */}
           <div
+            id="printable-pages-container"
             className={
               viewMode === 'form'
-                ? 'fixed -left-[99999px] top-0 pointer-events-none opacity-0 print:static print:opacity-100 print:left-auto print:w-full space-y-10'
+                ? 'fixed -left-[99999px] top-0 pointer-events-none print:static print:opacity-100 print:left-auto print:w-full space-y-6'
                 : viewMode === 'preview'
-                ? 'max-w-4xl mx-auto space-y-10 w-full'
-                : 'lg:col-span-7 space-y-10'
+                ? 'max-w-4xl mx-auto space-y-6 w-full'
+                : 'lg:col-span-7 space-y-6'
             }
           >
-            {/* PAGE 1 CONTAINER */}
-            <div className="relative group">
-              <div className="flex items-center justify-between mb-2 px-1 text-xs font-semibold text-gray-500 print:hidden">
-                <span className="uppercase tracking-wider">Page 1 of 2: Past 3 Months Breakdown</span>
-                <span className="text-gray-400">Standard A4 Sheet (210mm x 297mm)</span>
-              </div>
-
-              <div className="w-full overflow-x-auto pb-4">
-                <div
-                  ref={page1Ref}
-                  className="salary-doc-page bg-white shadow-xl rounded-xl border border-gray-200 p-8 sm:p-10 text-[13px] text-gray-900 leading-relaxed font-sans flex flex-col justify-between mx-auto"
-                  style={{ width: '794px', minHeight: '1123px', boxSizing: 'border-box' }}
-                >
-                  {/* Top Letterhead */}
+            {/* Official Letterhead Pad Print Settings Control Panel */}
+            <div className="print:hidden bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-4 shadow-sm space-y-3.5">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 shrink-0">
+                    <Sliders size={18} />
+                  </div>
                   <div>
-                    <div className="flex items-center justify-between border-b-2 border-gray-900 pb-4 mb-5">
-                      <div className="flex items-center gap-4">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src="/logo.png"
-                          alt="MEP Logo"
-                          className="h-16 w-auto object-contain shrink-0"
-                        />
-                        <div>
-                          <h2 className="text-xl font-extrabold uppercase tracking-wide text-gray-900">
-                            {formData.companyName}
-                          </h2>
-                          <p className="text-[11px] text-gray-600 leading-tight mt-0.5">
-                            {formData.companyAddress}
-                          </p>
-                          <p className="text-[11px] text-gray-500">
-                            Web: www.mepgroupbd.com | Email: hr@mepgroupbd.com
-                          </p>
-                        </div>
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">
+                        Official Letterhead Pad Print Clearance
+                      </h4>
+                      <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        Ready to Print
+                      </span>
                     </div>
-
-                    {/* Ref and Date */}
-                    <div className="flex justify-between items-center text-xs font-semibold mb-6">
-                      <div>
-                        Ref: <span className="font-mono text-gray-800">{formData.refNo}</span>
-                      </div>
-                      <div>
-                        Date: <span className="text-gray-800">{formData.date}</span>
-                      </div>
-                    </div>
-
-                    {/* Document Title */}
-                    <div className="text-center my-4">
-                      <h3 className="text-base font-extrabold tracking-wider uppercase underline underline-offset-4 decoration-2 inline-block">
-                        TO WHOM IT MAY CONCERN
-                      </h3>
-                    </div>
-
-                    {/* Introduction Paragraph */}
-                    <p className="text-justify mb-4 text-gray-800 leading-relaxed text-[13px]">
-                      This is to certify that <strong>Mr./Ms. {formData.name}</strong>, Staff ID:{' '}
-                      <strong>{formData.workerId}</strong> is serving in our organization as{' '}
-                      <strong>{formData.designation}</strong> in the <strong>{formData.department}</strong> department since{' '}
-                      <strong>{formData.joiningDate}</strong>. His/Her employment type is{' '}
-                      <strong>{formData.employmentType}</strong>.
-                    </p>
-
-                    <p className="mb-4 text-gray-800 text-[13px]">
-                      His/Her gross monthly salary breakdown for the past 3 (three) consecutive months is detailed below:
-                    </p>
-
-                    {/* Past 3 Months Table */}
-                    <table className="w-full border-collapse border border-gray-900 text-xs mb-6">
-                      <thead>
-                        <tr className="bg-gray-100 font-bold border-b border-gray-900 text-center">
-                          <th className="border border-gray-900 py-2 px-3 text-left w-1/3">
-                            Particulars / Salary Head
-                          </th>
-                          <th className="border border-gray-900 py-2 px-3 w-[22%]">
-                            {formData.months[0].monthName}
-                          </th>
-                          <th className="border border-gray-900 py-2 px-3 w-[22%]">
-                            {formData.months[1].monthName}
-                          </th>
-                          <th className="border border-gray-900 py-2 px-3 w-[22%]">
-                            {formData.months[2].monthName}
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-800">
-                        <tr className="font-bold bg-gray-50/60">
-                          <td className="border border-gray-900 py-1.5 px-3">Gross Salary (BDT)</td>
-                          <td className="border border-gray-900 py-1.5 px-3 text-right">
-                            {formData.months[0].grossSalary.toLocaleString()}
-                          </td>
-                          <td className="border border-gray-900 py-1.5 px-3 text-right">
-                            {formData.months[1].grossSalary.toLocaleString()}
-                          </td>
-                          <td className="border border-gray-900 py-1.5 px-3 text-right">
-                            {formData.months[2].grossSalary.toLocaleString()}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="border border-gray-900 py-1.5 px-3">Basic</td>
-                          <td className="border border-gray-900 py-1.5 px-3 text-right">
-                            {formData.months[0].basicSalary.toLocaleString()}
-                          </td>
-                          <td className="border border-gray-900 py-1.5 px-3 text-right">
-                            {formData.months[1].basicSalary.toLocaleString()}
-                          </td>
-                          <td className="border border-gray-900 py-1.5 px-3 text-right">
-                            {formData.months[2].basicSalary.toLocaleString()}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="border border-gray-900 py-1.5 px-3">House Rent</td>
-                          <td className="border border-gray-900 py-1.5 px-3 text-right">
-                            {formData.months[0].houseRent.toLocaleString()}
-                          </td>
-                          <td className="border border-gray-900 py-1.5 px-3 text-right">
-                            {formData.months[1].houseRent.toLocaleString()}
-                          </td>
-                          <td className="border border-gray-900 py-1.5 px-3 text-right">
-                            {formData.months[2].houseRent.toLocaleString()}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="border border-gray-900 py-1.5 px-3">Medical</td>
-                          <td className="border border-gray-900 py-1.5 px-3 text-right">
-                            {formData.months[0].medical.toLocaleString()}
-                          </td>
-                          <td className="border border-gray-900 py-1.5 px-3 text-right">
-                            {formData.months[1].medical.toLocaleString()}
-                          </td>
-                          <td className="border border-gray-900 py-1.5 px-3 text-right">
-                            {formData.months[2].medical.toLocaleString()}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="border border-gray-900 py-1.5 px-3">Conveyance</td>
-                          <td className="border border-gray-900 py-1.5 px-3 text-right">
-                            {formData.months[0].conveyance.toLocaleString()}
-                          </td>
-                          <td className="border border-gray-900 py-1.5 px-3 text-right">
-                            {formData.months[1].conveyance.toLocaleString()}
-                          </td>
-                          <td className="border border-gray-900 py-1.5 px-3 text-right">
-                            {formData.months[2].conveyance.toLocaleString()}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="border border-gray-900 py-1.5 px-3 text-rose-800 font-medium">
-                            (Less) PF
-                          </td>
-                          <td className="border border-gray-900 py-1.5 px-3 text-right">
-                            {formData.months[0].pfDeduction.toLocaleString()}
-                          </td>
-                          <td className="border border-gray-900 py-1.5 px-3 text-right">
-                            {formData.months[1].pfDeduction.toLocaleString()}
-                          </td>
-                          <td className="border border-gray-900 py-1.5 px-3 text-right">
-                            {formData.months[2].pfDeduction.toLocaleString()}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="border border-gray-900 py-1.5 px-3 text-rose-800 font-medium">
-                            Advance Salary
-                          </td>
-                          <td className="border border-gray-900 py-1.5 px-3 text-right">
-                            {formData.months[0].advanceSalary.toLocaleString()}
-                          </td>
-                          <td className="border border-gray-900 py-1.5 px-3 text-right">
-                            {formData.months[1].advanceSalary.toLocaleString()}
-                          </td>
-                          <td className="border border-gray-900 py-1.5 px-3 text-right">
-                            {formData.months[2].advanceSalary.toLocaleString()}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="border border-gray-900 py-1.5 px-3 text-rose-800 font-medium">
-                            LWP/Late & Early Deduction
-                          </td>
-                          <td className="border border-gray-900 py-1.5 px-3 text-right">
-                            {formData.months[0].lwpDeduction.toLocaleString()}
-                          </td>
-                          <td className="border border-gray-900 py-1.5 px-3 text-right">
-                            {formData.months[1].lwpDeduction.toLocaleString()}
-                          </td>
-                          <td className="border border-gray-900 py-1.5 px-3 text-right">
-                            {formData.months[2].lwpDeduction.toLocaleString()}
-                          </td>
-                        </tr>
-                        <tr className="font-extrabold bg-gray-100 text-gray-950">
-                          <td className="border border-gray-900 py-2 px-3">Net Payable =</td>
-                          <td className="border border-gray-900 py-2 px-3 text-right text-sm">
-                            {formData.months[0].netPayable.toLocaleString()}
-                          </td>
-                          <td className="border border-gray-900 py-2 px-3 text-right text-sm">
-                            {formData.months[1].netPayable.toLocaleString()}
-                          </td>
-                          <td className="border border-gray-900 py-2 px-3 text-right text-sm">
-                            {formData.months[2].netPayable.toLocaleString()}
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-
-                    {/* Purpose Disclaimer */}
-                    <p className="text-justify text-xs text-gray-700 leading-relaxed mb-6">
-                      This certificate is issued upon the request of the employee for the purpose of{' '}
-                      <strong>{formData.purpose}</strong> and carries no financial liability or commitment on the part
-                      of the organization or any of its management.
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Top & bottom blank margins reserved for company letterhead pad header & footer
                     </p>
                   </div>
+                </div>
 
-                  {/* Signatory Section Bottom */}
-                  <div className="pt-8">
-                    <p className="text-xs mb-12">Sincerely yours,</p>
-                    <div className="inline-block border-t border-gray-900 pt-1.5 text-xs min-w-[200px]">
-                      <div className="font-bold text-gray-900">{formData.signatoryName}</div>
-                      <div className="text-gray-700">{formData.signatoryTitle}</div>
-                      <div className="font-semibold text-gray-800">{formData.signatoryOrg}</div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPadTopMargin(38);
+                      setPadBottomMargin(28);
+                      setLogoDisplay('blank_space');
+                      setHeaderMode('company_info');
+                    }}
+                    className="px-2.5 py-1 text-[11px] font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition"
+                    title="Reset to recommended office pad margins"
+                  >
+                    Reset Defaults
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPadTopMargin(16);
+                      setPadBottomMargin(16);
+                      setLogoDisplay('digital_logo');
+                      setHeaderMode('company_info');
+                    }}
+                    className="px-2.5 py-1 text-[11px] font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition border border-slate-200"
+                    title="Switch to plain A4 paper print layout"
+                  >
+                    Plain Paper Mode
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                {/* Logo Display Setting */}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Logo / Image Spot
+                  </label>
+                  <select
+                    value={logoDisplay}
+                    onChange={(e) => setLogoDisplay(e.target.value as any)}
+                    className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs font-semibold bg-white text-slate-800 focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="blank_space">Blank Space (Reserved for Pad Logo)</option>
+                    <option value="collapsed">No Logo (Align Left)</option>
+                    <option value="digital_logo">Show Digital Logo</option>
+                  </select>
+                </div>
+
+                {/* Company Header Setting */}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Header Text Mode
+                  </label>
+                  <select
+                    value={headerMode}
+                    onChange={(e) => setHeaderMode(e.target.value as any)}
+                    className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs font-semibold bg-white text-slate-800 focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="company_info">Show Company Info (Blank Logo)</option>
+                    <option value="blank_header">Blank Top Header (Pre-printed Pad)</option>
+                  </select>
+                </div>
+
+                {/* Top Margin Clearance */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                      Top Blank Space
+                    </label>
+                    <span className="text-[11px] font-bold text-blue-600">{padTopMargin} mm</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="number"
+                      min={10}
+                      max={70}
+                      value={padTopMargin}
+                      onChange={(e) => setPadTopMargin(Math.max(10, Math.min(70, Number(e.target.value) || 0)))}
+                      className="w-14 px-2 py-1 border border-slate-300 rounded text-xs font-bold text-slate-800 text-center"
+                    />
+                    <div className="flex items-center gap-1 flex-1">
+                      {[30, 38, 45].map((mm) => (
+                        <button
+                          key={mm}
+                          type="button"
+                          onClick={() => setPadTopMargin(mm)}
+                          className={`flex-1 py-1 rounded text-[10px] font-bold transition border ${
+                            padTopMargin === mm
+                              ? 'bg-blue-600 text-white border-blue-600'
+                              : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          {mm}mm
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bottom Margin Clearance */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                      Bottom Blank Space
+                    </label>
+                    <span className="text-[11px] font-bold text-blue-600">{padBottomMargin} mm</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="number"
+                      min={10}
+                      max={60}
+                      value={padBottomMargin}
+                      onChange={(e) => setPadBottomMargin(Math.max(10, Math.min(60, Number(e.target.value) || 0)))}
+                      className="w-14 px-2 py-1 border border-slate-300 rounded text-xs font-bold text-slate-800 text-center"
+                    />
+                    <div className="flex items-center gap-1 flex-1">
+                      {[20, 28, 35].map((mm) => (
+                        <button
+                          key={mm}
+                          type="button"
+                          onClick={() => setPadBottomMargin(mm)}
+                          className={`flex-1 py-1 rounded text-[10px] font-bold transition border ${
+                            padBottomMargin === mm
+                              ? 'bg-blue-600 text-white border-blue-600'
+                              : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          {mm}mm
+                        </button>
+                      ))}
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* PAGE 2 CONTAINER */}
-              <div className="relative group">
-                <div className="flex items-center justify-between mb-2 px-1 text-xs font-semibold text-gray-500 print:hidden">
-                  <span className="uppercase tracking-wider">Page 2 of 2: Monthly Salary Certificate</span>
-                  <span className="text-gray-400">Standard A4 Sheet (210mm x 297mm)</span>
-                </div>
+            {/* PAGE 1 CONTAINER */}
+            <div className="relative group">
+              <div className="flex items-center justify-between mb-2 px-1 text-xs font-semibold text-gray-500 print:hidden">
+                <span className="uppercase tracking-wider">Page 1 of 2: Past 3 Months Breakdown</span>
+                <span className="text-gray-400">Standard A4 Sheet (210mm x 297mm) • Office Pad Spacing</span>
+              </div>
 
-                <div className="w-full overflow-x-auto pb-4">
-                  <div
-                    ref={page2Ref}
-                    className="salary-doc-page bg-white shadow-xl rounded-xl border border-gray-200 p-8 sm:p-10 text-[13px] text-gray-900 leading-relaxed font-sans flex flex-col justify-between mx-auto"
-                    style={{ width: '794px', minHeight: '1123px', boxSizing: 'border-box' }}
-                  >
-                    {/* Top Letterhead */}
-                    <div>
-                      <div className="flex items-center justify-between border-b-2 border-gray-900 pb-4 mb-5">
+              <div className="w-full overflow-x-auto pb-4">
+                <div
+                  ref={page1Ref}
+                  className="salary-doc-page bg-white shadow-xl rounded-xl border border-gray-200 text-[13px] text-gray-900 leading-relaxed font-sans flex flex-col justify-between mx-auto overflow-hidden"
+                  style={{
+                    width: '794px',
+                    height: '1123px',
+                    minHeight: '1123px',
+                    maxHeight: '1123px',
+                    boxSizing: 'border-box',
+                    paddingTop: `${topPaddingPx}px`,
+                    paddingBottom: `${bottomPaddingPx}px`,
+                    paddingLeft: `${leftPaddingPx}px`,
+                    paddingRight: `${rightPaddingPx}px`,
+                  }}
+                >
+                  {/* Top Letterhead & Main Content */}
+                  <div>
+                    {headerMode !== 'blank_header' ? (
+                      <div className="flex items-center justify-between border-b-2 border-gray-900 pb-3 mb-4">
                         <div className="flex items-center gap-4">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src="/logo.png"
-                            alt="MEP Logo"
-                            className="h-16 w-auto object-contain shrink-0"
-                          />
+                          {logoDisplay === 'digital_logo' ? (
+                            /* eslint-disable-next-line @next/next/no-img-element */
+                            <img
+                              src="/logo.png"
+                              alt="MEP Logo"
+                              className="h-14 w-auto object-contain shrink-0"
+                            />
+                          ) : logoDisplay === 'blank_space' ? (
+                            <div className="h-14 w-20 shrink-0" aria-hidden="true" />
+                          ) : null}
                           <div>
                             <h2 className="text-xl font-extrabold uppercase tracking-wide text-gray-900">
                               {formData.companyName}
@@ -1436,77 +1548,322 @@ export default function SalaryStatementClient() {
                           </div>
                         </div>
                       </div>
+                    ) : (
+                      <div className="h-4" aria-hidden="true" />
+                    )}
 
-                      {/* Ref and Date */}
-                      <div className="flex justify-between items-center text-xs font-semibold mb-6">
-                        <div>
-                          Ref: <span className="font-mono text-gray-800">{formData.refNo}</span>
-                        </div>
-                        <div>
-                          Date: <span className="text-gray-800">{formData.date}</span>
+                    {/* Ref and Date */}
+                    <div className="flex justify-between items-center text-xs font-semibold mb-4">
+                      <div>
+                        Ref: <span className="font-mono text-gray-800">{formData.refNo}</span>
+                      </div>
+                      <div>
+                        Date: <span className="text-gray-800">{formData.date}</span>
+                      </div>
+                    </div>
+
+                    {/* Document Title */}
+                    <div className="text-center my-3">
+                      <h3 className="text-base font-extrabold tracking-wider uppercase underline underline-offset-4 decoration-2 inline-block">
+                        TO WHOM IT MAY CONCERN
+                      </h3>
+                    </div>
+
+                    {/* Introduction Paragraph */}
+                    <p className="text-justify mb-3 text-gray-800 leading-relaxed text-[12.5px]">
+                      This is to certify that <strong>Mr./Ms. {formData.name}</strong>, Staff ID:{' '}
+                      <strong>{formData.workerId}</strong> is serving in our organization as{' '}
+                      <strong>{formData.designation}</strong> in the <strong>{formData.department}</strong> department since{' '}
+                      <strong>{formData.joiningDate}</strong>. His/Her employment type is{' '}
+                      <strong>{formData.employmentType}</strong>.
+                    </p>
+
+                    <p className="mb-3 text-gray-800 text-[12.5px]">
+                      His/Her gross monthly salary breakdown for the past 3 (three) consecutive months is detailed below:
+                    </p>
+
+                    {/* Past 3 Months Table */}
+                    <table className="w-full border-collapse border border-gray-900 text-xs mb-4">
+                      <thead>
+                        <tr className="bg-gray-100 font-bold border-b border-gray-900 text-center">
+                          <th className="border border-gray-900 py-1.5 px-3 text-left w-1/3">
+                            Particulars / Salary Head
+                          </th>
+                          <th className="border border-gray-900 py-1.5 px-3 w-[22%]">
+                            {formData.months[0].monthName}
+                          </th>
+                          <th className="border border-gray-900 py-1.5 px-3 w-[22%]">
+                            {formData.months[1].monthName}
+                          </th>
+                          <th className="border border-gray-900 py-1.5 px-3 w-[22%]">
+                            {formData.months[2].monthName}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-800">
+                        <tr className="font-bold bg-gray-50/60">
+                          <td className="border border-gray-900 py-1 px-3">Gross Salary (BDT)</td>
+                          <td className="border border-gray-900 py-1 px-3 text-right">
+                            {formData.months[0].grossSalary.toLocaleString()}
+                          </td>
+                          <td className="border border-gray-900 py-1 px-3 text-right">
+                            {formData.months[1].grossSalary.toLocaleString()}
+                          </td>
+                          <td className="border border-gray-900 py-1 px-3 text-right">
+                            {formData.months[2].grossSalary.toLocaleString()}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="border border-gray-900 py-1 px-3">Basic</td>
+                          <td className="border border-gray-900 py-1 px-3 text-right">
+                            {formData.months[0].basicSalary.toLocaleString()}
+                          </td>
+                          <td className="border border-gray-900 py-1 px-3 text-right">
+                            {formData.months[1].basicSalary.toLocaleString()}
+                          </td>
+                          <td className="border border-gray-900 py-1 px-3 text-right">
+                            {formData.months[2].basicSalary.toLocaleString()}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="border border-gray-900 py-1 px-3">House Rent</td>
+                          <td className="border border-gray-900 py-1 px-3 text-right">
+                            {formData.months[0].houseRent.toLocaleString()}
+                          </td>
+                          <td className="border border-gray-900 py-1 px-3 text-right">
+                            {formData.months[1].houseRent.toLocaleString()}
+                          </td>
+                          <td className="border border-gray-900 py-1 px-3 text-right">
+                            {formData.months[2].houseRent.toLocaleString()}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="border border-gray-900 py-1 px-3">Medical</td>
+                          <td className="border border-gray-900 py-1 px-3 text-right">
+                            {formData.months[0].medical.toLocaleString()}
+                          </td>
+                          <td className="border border-gray-900 py-1 px-3 text-right">
+                            {formData.months[1].medical.toLocaleString()}
+                          </td>
+                          <td className="border border-gray-900 py-1 px-3 text-right">
+                            {formData.months[2].medical.toLocaleString()}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="border border-gray-900 py-1 px-3">Conveyance</td>
+                          <td className="border border-gray-900 py-1 px-3 text-right">
+                            {formData.months[0].conveyance.toLocaleString()}
+                          </td>
+                          <td className="border border-gray-900 py-1 px-3 text-right">
+                            {formData.months[1].conveyance.toLocaleString()}
+                          </td>
+                          <td className="border border-gray-900 py-1 px-3 text-right">
+                            {formData.months[2].conveyance.toLocaleString()}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="border border-gray-900 py-1 px-3 text-rose-800 font-medium">
+                            (Less) PF
+                          </td>
+                          <td className="border border-gray-900 py-1 px-3 text-right">
+                            {formData.months[0].pfDeduction.toLocaleString()}
+                          </td>
+                          <td className="border border-gray-900 py-1 px-3 text-right">
+                            {formData.months[1].pfDeduction.toLocaleString()}
+                          </td>
+                          <td className="border border-gray-900 py-1 px-3 text-right">
+                            {formData.months[2].pfDeduction.toLocaleString()}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="border border-gray-900 py-1 px-3 text-rose-800 font-medium">
+                            Advance Salary
+                          </td>
+                          <td className="border border-gray-900 py-1 px-3 text-right">
+                            {formData.months[0].advanceSalary.toLocaleString()}
+                          </td>
+                          <td className="border border-gray-900 py-1 px-3 text-right">
+                            {formData.months[1].advanceSalary.toLocaleString()}
+                          </td>
+                          <td className="border border-gray-900 py-1 px-3 text-right">
+                            {formData.months[2].advanceSalary.toLocaleString()}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="border border-gray-900 py-1 px-3 text-rose-800 font-medium">
+                            LWP/Late & Early Deduction
+                          </td>
+                          <td className="border border-gray-900 py-1 px-3 text-right">
+                            {formData.months[0].lwpDeduction.toLocaleString()}
+                          </td>
+                          <td className="border border-gray-900 py-1 px-3 text-right">
+                            {formData.months[1].lwpDeduction.toLocaleString()}
+                          </td>
+                          <td className="border border-gray-900 py-1 px-3 text-right">
+                            {formData.months[2].lwpDeduction.toLocaleString()}
+                          </td>
+                        </tr>
+                        <tr className="font-extrabold bg-gray-100 text-gray-950">
+                          <td className="border border-gray-900 py-1.5 px-3">Net Payable =</td>
+                          <td className="border border-gray-900 py-1.5 px-3 text-right text-sm">
+                            {formData.months[0].netPayable.toLocaleString()}
+                          </td>
+                          <td className="border border-gray-900 py-1.5 px-3 text-right text-sm">
+                            {formData.months[1].netPayable.toLocaleString()}
+                          </td>
+                          <td className="border border-gray-900 py-1.5 px-3 text-right text-sm">
+                            {formData.months[2].netPayable.toLocaleString()}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+
+                    {/* Purpose Disclaimer */}
+                    <p className="text-justify text-xs text-gray-700 leading-relaxed mb-4">
+                      This certificate is issued upon the request of the employee for the purpose of{' '}
+                      <strong>{formData.purpose}</strong> and carries no financial liability or commitment on the part
+                      of the organization or any of its management.
+                    </p>
+                  </div>
+
+                  {/* Signatory Section Bottom */}
+                  <div className="pt-4">
+                    <p className="text-xs mb-8">Sincerely yours,</p>
+                    <div className="inline-block border-t border-gray-900 pt-1.5 text-xs min-w-[200px]">
+                      <div className="font-bold text-gray-900">{formData.signatoryName}</div>
+                      <div className="text-gray-700">{formData.signatoryTitle}</div>
+                      <div className="font-semibold text-gray-800">{formData.signatoryOrg}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* PAGE 2 CONTAINER */}
+            <div className="relative group">
+              <div className="flex items-center justify-between mb-2 px-1 text-xs font-semibold text-gray-500 print:hidden">
+                <span className="uppercase tracking-wider">Page 2 of 2: Monthly Salary Certificate</span>
+                <span className="text-gray-400">Standard A4 Sheet (210mm x 297mm) • Office Pad Spacing</span>
+              </div>
+
+              <div className="w-full overflow-x-auto pb-4">
+                <div
+                  ref={page2Ref}
+                  className="salary-doc-page bg-white shadow-xl rounded-xl border border-gray-200 text-[13px] text-gray-900 leading-relaxed font-sans flex flex-col justify-between mx-auto overflow-hidden"
+                  style={{
+                    width: '794px',
+                    height: '1123px',
+                    minHeight: '1123px',
+                    maxHeight: '1123px',
+                    boxSizing: 'border-box',
+                    paddingTop: `${topPaddingPx}px`,
+                    paddingBottom: `${bottomPaddingPx}px`,
+                    paddingLeft: `${leftPaddingPx}px`,
+                    paddingRight: `${rightPaddingPx}px`,
+                  }}
+                >
+                  {/* Top Letterhead & Main Content */}
+                  <div>
+                    {headerMode !== 'blank_header' ? (
+                      <div className="flex items-center justify-between border-b-2 border-gray-900 pb-3 mb-4">
+                        <div className="flex items-center gap-4">
+                          {logoDisplay === 'digital_logo' ? (
+                            /* eslint-disable-next-line @next/next/no-img-element */
+                            <img
+                              src="/logo.png"
+                              alt="MEP Logo"
+                              className="h-14 w-auto object-contain shrink-0"
+                            />
+                          ) : logoDisplay === 'blank_space' ? (
+                            <div className="h-14 w-20 shrink-0" aria-hidden="true" />
+                          ) : null}
+                          <div>
+                            <h2 className="text-xl font-extrabold uppercase tracking-wide text-gray-900">
+                              {formData.companyName}
+                            </h2>
+                            <p className="text-[11px] text-gray-600 leading-tight mt-0.5">
+                              {formData.companyAddress}
+                            </p>
+                            <p className="text-[11px] text-gray-500">
+                              Web: www.mepgroupbd.com | Email: hr@mepgroupbd.com
+                            </p>
+                          </div>
                         </div>
                       </div>
+                    ) : (
+                      <div className="h-4" aria-hidden="true" />
+                    )}
 
-                      {/* Document Title */}
-                      <div className="text-center my-4">
-                        <h3 className="text-base font-extrabold tracking-wider uppercase underline underline-offset-4 decoration-2 inline-block">
-                          MONTHLY SALARY CERTIFICATE
-                        </h3>
+                    {/* Ref and Date */}
+                    <div className="flex justify-between items-center text-xs font-semibold mb-4">
+                      <div>
+                        Ref: <span className="font-mono text-gray-800">{formData.refNo}</span>
                       </div>
+                      <div>
+                        Date: <span className="text-gray-800">{formData.date}</span>
+                      </div>
+                    </div>
 
-                      {/* Certification Text */}
-                      <p className="text-justify mb-4 text-gray-800 leading-relaxed text-[13px] whitespace-pre-line">
-                        {formData.certificationText
-                          .replace(/\[Name\]/gi, formData.name)
-                          .replace(/\[ID\]/gi, formData.workerId)
-                          .replace(/\[Designation\]/gi, formData.designation)
-                          .replace(/\[Department\]/gi, formData.department)
-                          .replace(/\[Company\]/gi, formData.companyName)
-                          .replace(/\[JoiningDate\]/gi, formData.joiningDate)}
-                      </p>
+                    {/* Document Title */}
+                    <div className="text-center my-3">
+                      <h3 className="text-base font-extrabold tracking-wider uppercase underline underline-offset-4 decoration-2 inline-block">
+                        MONTHLY SALARY CERTIFICATE
+                      </h3>
+                    </div>
 
-                      <p className="mb-4 text-gray-800 text-[13px]">
-                        As per official payroll records, his/her current monthly salary structure is detailed below:
-                      </p>
+                    {/* Certification Text */}
+                    <p className="text-justify mb-2.5 text-gray-800 leading-relaxed text-[12.5px] whitespace-pre-line">
+                      {formData.certificationText
+                        .replace(/\[Name\]/gi, formData.name)
+                        .replace(/\[ID\]/gi, formData.workerId)
+                        .replace(/\[Designation\]/gi, formData.designation)
+                        .replace(/\[Department\]/gi, formData.department)
+                        .replace(/\[Company\]/gi, formData.companyName)
+                        .replace(/\[JoiningDate\]/gi, formData.joiningDate)}
+                    </p>
+
+                    <p className="mb-2.5 text-gray-800 text-[12.5px]">
+                      As per official payroll records, his/her current monthly salary structure is detailed below:
+                    </p>
 
                     {/* Table of Monthly Salary Structure */}
                     <table className="w-full border-collapse border border-gray-900 text-xs mb-3">
                       <thead>
                         <tr className="bg-gray-100 font-bold border-b border-gray-900">
-                          <th className="border border-gray-900 py-2 px-3 text-left w-2/3">Salary Component</th>
-                          <th className="border border-gray-900 py-2 px-3 text-right w-1/3">
+                          <th className="border border-gray-900 py-1.5 px-3 text-left w-2/3">Salary Component</th>
+                          <th className="border border-gray-900 py-1.5 px-3 text-right w-1/3">
                             Monthly Amount (BDT)
                           </th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-800">
                         <tr>
-                          <td className="border border-gray-900 py-1.5 px-3">Basic</td>
-                          <td className="border border-gray-900 py-1.5 px-3 text-right">
+                          <td className="border border-gray-900 py-1 px-3">Basic</td>
+                          <td className="border border-gray-900 py-1 px-3 text-right">
                             {formData.structureBasic.toLocaleString()}
                           </td>
                         </tr>
                         <tr>
-                          <td className="border border-gray-900 py-1.5 px-3">House Rent</td>
-                          <td className="border border-gray-900 py-1.5 px-3 text-right">
+                          <td className="border border-gray-900 py-1 px-3">House Rent</td>
+                          <td className="border border-gray-900 py-1 px-3 text-right">
                             {formData.structureHouseRent.toLocaleString()}
                           </td>
                         </tr>
                         <tr>
-                          <td className="border border-gray-900 py-1.5 px-3">Medical Allowance</td>
-                          <td className="border border-gray-900 py-1.5 px-3 text-right">
+                          <td className="border border-gray-900 py-1 px-3">Medical Allowance</td>
+                          <td className="border border-gray-900 py-1 px-3 text-right">
                             {formData.structureMedical.toLocaleString()}
                           </td>
                         </tr>
                         <tr>
-                          <td className="border border-gray-900 py-1.5 px-3">Conveyance</td>
-                          <td className="border border-gray-900 py-1.5 px-3 text-right">
+                          <td className="border border-gray-900 py-1 px-3">Conveyance</td>
+                          <td className="border border-gray-900 py-1 px-3 text-right">
                             {formData.structureConveyance.toLocaleString()}
                           </td>
                         </tr>
                         <tr className="font-extrabold bg-gray-100 text-gray-950">
-                          <td className="border border-gray-900 py-2 px-3">Total Salary</td>
-                          <td className="border border-gray-900 py-2 px-3 text-right text-sm">
+                          <td className="border border-gray-900 py-1 px-3">Total Salary</td>
+                          <td className="border border-gray-900 py-1 px-3 text-right text-sm">
                             {formData.structureTotal.toLocaleString()} BDT
                           </td>
                         </tr>
@@ -1514,23 +1871,23 @@ export default function SalaryStatementClient() {
                     </table>
 
                     {/* Amount in Words */}
-                    <div className="text-xs mb-6 font-medium text-gray-900">
+                    <div className="text-xs mb-3 font-medium text-gray-900">
                       Amount in Words: <span className="font-bold underline">{formData.amountInWords}</span>
                     </div>
 
                     {/* Monthly Salary Details Box */}
-                    <div className="border border-gray-900 rounded-lg p-4 bg-gray-50/60 mb-6 space-y-2 text-xs">
-                      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-1 border-b border-gray-200 pb-1.5">
+                    <div className="border border-gray-900 rounded-lg p-3 bg-gray-50/60 mb-3 space-y-1.5 text-xs">
+                      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-1 border-b border-gray-200 pb-1">
                         <span className="font-semibold text-gray-700">Bank Details:</span>
                         <span className="font-bold text-gray-900">{formData.bankNameAndAcc}</span>
                       </div>
-                      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-1 border-b border-gray-200 pb-1.5">
+                      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-1 border-b border-gray-200 pb-1">
                         <span className="font-semibold text-gray-700">Monthly Net Payable Amount:</span>
                         <span className="font-extrabold text-gray-950 text-sm">
                           {formData.monthlyPayableAmount.toLocaleString()} BDT
                         </span>
                       </div>
-                      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-1 border-b border-gray-200 pb-1.5">
+                      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-1 border-b border-gray-200 pb-1">
                         <span className="font-semibold text-gray-700">Payable in Words:</span>
                         <span className="font-bold text-gray-900 italic">{formData.monthlyPayableInWords}</span>
                       </div>
@@ -1543,14 +1900,14 @@ export default function SalaryStatementClient() {
                     </div>
 
                     {/* Disclaimer */}
-                    <p className="text-justify text-xs text-gray-700 leading-relaxed mb-6">
+                    <p className="text-justify text-xs text-gray-700 leading-relaxed mb-3">
                       {formData.disclaimer}
                     </p>
                   </div>
 
                   {/* Signatory Section Bottom */}
-                  <div className="pt-8">
-                    <p className="text-xs mb-12">Sincerely yours,</p>
+                  <div className="pt-4">
+                    <p className="text-xs mb-8">Sincerely yours,</p>
                     <div className="inline-block border-t border-gray-900 pt-1.5 text-xs min-w-[200px]">
                       <div className="font-bold text-gray-900">{formData.signatoryName}</div>
                       <div className="text-gray-700">{formData.signatoryTitle}</div>
