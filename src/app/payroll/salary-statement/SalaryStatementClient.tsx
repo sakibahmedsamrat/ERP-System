@@ -400,6 +400,8 @@ export default function SalaryStatementClient() {
         width: 794,
         height: 1123,
         windowWidth: 1200,
+        scrollX: 0,
+        scrollY: 0,
         onclone: (clonedDoc) => {
           const container = clonedDoc.getElementById('printable-pages-container');
           if (container) {
@@ -423,6 +425,8 @@ export default function SalaryStatementClient() {
         width: 794,
         height: 1123,
         windowWidth: 1200,
+        scrollX: 0,
+        scrollY: 0,
         onclone: (clonedDoc) => {
           const container = clonedDoc.getElementById('printable-pages-container');
           if (container) {
@@ -451,47 +455,99 @@ export default function SalaryStatementClient() {
   };
 
   return (
-    <div className="min-h-screen bg-transparent print:bg-white text-slate-900 pb-16">
+    <div className="salary-statement-root min-h-screen bg-transparent print:bg-white text-slate-900 pb-16 print:p-0 print:m-0 print:min-h-0 print:pb-0">
       {/* Print CSS styles */}
       <style
         dangerouslySetInnerHTML={{
           __html: `
         @media print {
           @page {
-            size: A4 portrait;
-            margin: 0;
+            size: 210mm 297mm;
+            margin: 0 !important;
           }
-          body {
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 210mm !important;
+            height: auto !important;
             background: #ffffff !important;
             color: #000000 !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+            overflow: visible !important;
           }
-          .print\\:hidden, header, nav, aside {
+          .print\\:hidden, header, nav, aside, footer {
             display: none !important;
+          }
+          .salary-statement-root {
+            margin: 0 !important;
+            padding: 0 !important;
+            min-height: 0 !important;
+            background: #ffffff !important;
+          }
+          .salary-statement-container {
+            max-width: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 210mm !important;
+          }
+          .salary-statement-grid {
+            display: block !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            gap: 0 !important;
+          }
+          #printable-pages-container {
+            display: block !important;
+            position: static !important;
+            width: 210mm !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            left: auto !important;
+            top: auto !important;
+            opacity: 1 !important;
+          }
+          .salary-page-wrapper {
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+          .salary-doc-page-wrapper {
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: visible !important;
+            width: 210mm !important;
           }
           .salary-doc-page {
             width: 210mm !important;
+            min-width: 210mm !important;
+            max-width: 210mm !important;
+            height: 297mm !important;
             min-height: 297mm !important;
             max-height: 297mm !important;
-            height: 297mm !important;
-            margin: 0 auto !important;
+            margin: 0 !important;
             padding-top: ${padTopMargin}mm !important;
             padding-bottom: ${padBottomMargin}mm !important;
             padding-left: ${padLeftMargin}mm !important;
             padding-right: ${padRightMargin}mm !important;
             box-shadow: none !important;
             border: none !important;
-            page-break-after: always !important;
-            break-after: page !important;
-            page-break-inside: avoid !important;
+            border-radius: 0 !important;
             display: flex !important;
             flex-direction: column !important;
             justify-content: space-between !important;
             box-sizing: border-box !important;
             overflow: hidden !important;
+            background: #ffffff !important;
           }
-          .salary-doc-page:last-child {
+          .salary-doc-page-1 {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            page-break-after: always !important;
+            break-after: page !important;
+          }
+          .salary-doc-page-2 {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
             page-break-after: auto !important;
             break-after: auto !important;
           }
@@ -557,7 +613,7 @@ export default function SalaryStatementClient() {
             <div className="hidden xl:flex items-center gap-2 bg-amber-50/90 text-amber-800 border border-amber-200/80 px-3 py-1.5 rounded-xl text-xs font-semibold">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
               <span>
-                Office Pad Mode: <strong className="font-bold">{padTopMargin}mm Top</strong> / <strong className="font-bold">{padBottomMargin}mm Btm</strong>
+                Office Pad Mode: <strong className="font-bold">{padTopMargin}mm Top</strong> / <strong className="font-bold">{padBottomMargin}mm Btm</strong> ({logoDisplay === 'blank_space' ? (headerMode === 'blank_header' ? 'Blank Header' : 'Blank Logo') : logoDisplay === 'digital_logo' ? 'Digital Logo' : 'No Logo'})
               </span>
             </div>
 
@@ -588,7 +644,7 @@ export default function SalaryStatementClient() {
       </div>
 
       {/* Main Container */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+      <div className="salary-statement-container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 print:p-0 print:m-0 print:max-w-none print:w-full">
         {/* Worker Quick Search Bar */}
         <div className="glass-card p-4 rounded-3xl shadow-sm border border-white/70 mb-6 print:hidden relative">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -667,7 +723,7 @@ export default function SalaryStatementClient() {
 
         {/* Workspace Layout */}
         <div
-          className={`grid gap-8 ${
+          className={`salary-statement-grid grid gap-8 print:block print:m-0 print:p-0 print:gap-0 ${
             viewMode === 'split' ? 'grid-cols-1 lg:grid-cols-12' : 'grid-cols-1'
           }`}
         >
@@ -758,6 +814,59 @@ export default function SalaryStatementClient() {
                     <p className="text-xs text-slate-600 leading-relaxed">
                       Configure blank top and bottom clearance for printing on pre-printed office letterhead pads.
                     </p>
+
+                    {/* Quick Presets Bar */}
+                    <div className="flex flex-wrap items-center gap-2 pt-1 border-b border-amber-200/50 pb-3">
+                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Presets:</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPadTopMargin(38);
+                          setPadBottomMargin(28);
+                          setLogoDisplay('blank_space');
+                          setHeaderMode('company_info');
+                        }}
+                        className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition border ${
+                          padTopMargin === 38 && padBottomMargin === 28 && logoDisplay === 'blank_space' && headerMode === 'company_info'
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                            : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
+                        }`}
+                      >
+                        Official Pad (Blank Logo)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPadTopMargin(45);
+                          setPadBottomMargin(28);
+                          setLogoDisplay('blank_space');
+                          setHeaderMode('blank_header');
+                        }}
+                        className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition border ${
+                          padTopMargin === 45 && padBottomMargin === 28 && headerMode === 'blank_header'
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                            : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
+                        }`}
+                      >
+                        Pre-printed Pad (Blank Header)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPadTopMargin(16);
+                          setPadBottomMargin(16);
+                          setLogoDisplay('digital_logo');
+                          setHeaderMode('company_info');
+                        }}
+                        className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition border ${
+                          padTopMargin === 16 && padBottomMargin === 16 && logoDisplay === 'digital_logo' && headerMode === 'company_info'
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                            : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
+                        }`}
+                      >
+                        Plain Paper Mode
+                      </button>
+                    </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
@@ -1333,10 +1442,10 @@ export default function SalaryStatementClient() {
             id="printable-pages-container"
             className={
               viewMode === 'form'
-                ? 'fixed -left-[99999px] top-0 pointer-events-none print:static print:opacity-100 print:left-auto print:w-full space-y-6'
+                ? 'fixed -left-[99999px] top-0 pointer-events-none print:static print:opacity-100 print:left-auto print:w-full print:m-0 print:p-0 space-y-6 print:space-y-0'
                 : viewMode === 'preview'
-                ? 'max-w-4xl mx-auto space-y-6 w-full'
-                : 'lg:col-span-7 space-y-6'
+                ? 'max-w-4xl mx-auto space-y-6 w-full print:m-0 print:p-0 print:max-w-none print:w-full print:space-y-0'
+                : 'lg:col-span-7 space-y-6 print:w-full print:m-0 print:p-0 print:space-y-0'
             }
           >
             {/* Official Letterhead Pad Print Settings Control Panel */}
@@ -1361,7 +1470,7 @@ export default function SalaryStatementClient() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={() => {
@@ -1370,10 +1479,31 @@ export default function SalaryStatementClient() {
                       setLogoDisplay('blank_space');
                       setHeaderMode('company_info');
                     }}
-                    className="px-2.5 py-1 text-[11px] font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition"
-                    title="Reset to recommended office pad margins"
+                    className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition border ${
+                      padTopMargin === 38 && padBottomMargin === 28 && logoDisplay === 'blank_space' && headerMode === 'company_info'
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                    }`}
+                    title="Office pad with pre-printed logo space only (prints company info, leaves logo spot blank)"
                   >
-                    Reset Defaults
+                    Official Pad (Blank Logo)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPadTopMargin(45);
+                      setPadBottomMargin(28);
+                      setLogoDisplay('blank_space');
+                      setHeaderMode('blank_header');
+                    }}
+                    className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition border ${
+                      padTopMargin === 45 && padBottomMargin === 28 && headerMode === 'blank_header'
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                    }`}
+                    title="Office pad with full pre-printed header (hides digital header completely, generous top clearance)"
+                  >
+                    Pre-printed Pad (Blank Top Header)
                   </button>
                   <button
                     type="button"
@@ -1383,8 +1513,12 @@ export default function SalaryStatementClient() {
                       setLogoDisplay('digital_logo');
                       setHeaderMode('company_info');
                     }}
-                    className="px-2.5 py-1 text-[11px] font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition border border-slate-200"
-                    title="Switch to plain A4 paper print layout"
+                    className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition border ${
+                      padTopMargin === 16 && padBottomMargin === 16 && logoDisplay === 'digital_logo' && headerMode === 'company_info'
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                    }`}
+                    title="Switch to plain A4 paper print layout with digital MEP logo"
                   >
                     Plain Paper Mode
                   </button>
@@ -1498,16 +1632,16 @@ export default function SalaryStatementClient() {
             </div>
 
             {/* PAGE 1 CONTAINER */}
-            <div className="relative group">
+            <div className="salary-page-wrapper relative group print:m-0 print:p-0">
               <div className="flex items-center justify-between mb-2 px-1 text-xs font-semibold text-gray-500 print:hidden">
                 <span className="uppercase tracking-wider">Page 1 of 2: Past 3 Months Breakdown</span>
                 <span className="text-gray-400">Standard A4 Sheet (210mm x 297mm) • Office Pad Spacing</span>
               </div>
 
-              <div className="w-full overflow-x-auto pb-4">
+              <div className="salary-doc-page-wrapper w-full overflow-x-auto pb-4 print:p-0 print:m-0 print:overflow-visible">
                 <div
                   ref={page1Ref}
-                  className="salary-doc-page bg-white shadow-xl rounded-xl border border-gray-200 text-[13px] text-gray-900 leading-relaxed font-sans flex flex-col justify-between mx-auto overflow-hidden"
+                  className="salary-doc-page salary-doc-page-1 bg-white shadow-xl rounded-xl border border-gray-200 text-[13px] text-gray-900 leading-relaxed font-sans flex flex-col justify-between mx-auto overflow-hidden print:rounded-none print:border-none print:shadow-none print:m-0"
                   style={{
                     width: '794px',
                     height: '1123px',
@@ -1533,7 +1667,7 @@ export default function SalaryStatementClient() {
                               className="h-14 w-auto object-contain shrink-0"
                             />
                           ) : logoDisplay === 'blank_space' ? (
-                            <div className="h-14 w-20 shrink-0" aria-hidden="true" />
+                            <div className="h-14 w-[105px] shrink-0" aria-hidden="true" />
                           ) : null}
                           <div>
                             <h2 className="text-xl font-extrabold uppercase tracking-wide text-gray-900">
@@ -1548,9 +1682,7 @@ export default function SalaryStatementClient() {
                           </div>
                         </div>
                       </div>
-                    ) : (
-                      <div className="h-4" aria-hidden="true" />
-                    )}
+                    ) : null}
 
                     {/* Ref and Date */}
                     <div className="flex justify-between items-center text-xs font-semibold mb-4">
@@ -1740,16 +1872,16 @@ export default function SalaryStatementClient() {
             </div>
 
             {/* PAGE 2 CONTAINER */}
-            <div className="relative group">
+            <div className="salary-page-wrapper relative group print:m-0 print:p-0">
               <div className="flex items-center justify-between mb-2 px-1 text-xs font-semibold text-gray-500 print:hidden">
                 <span className="uppercase tracking-wider">Page 2 of 2: Monthly Salary Certificate</span>
                 <span className="text-gray-400">Standard A4 Sheet (210mm x 297mm) • Office Pad Spacing</span>
               </div>
 
-              <div className="w-full overflow-x-auto pb-4">
+              <div className="salary-doc-page-wrapper w-full overflow-x-auto pb-4 print:p-0 print:m-0 print:overflow-visible">
                 <div
                   ref={page2Ref}
-                  className="salary-doc-page bg-white shadow-xl rounded-xl border border-gray-200 text-[13px] text-gray-900 leading-relaxed font-sans flex flex-col justify-between mx-auto overflow-hidden"
+                  className="salary-doc-page salary-doc-page-2 bg-white shadow-xl rounded-xl border border-gray-200 text-[13px] text-gray-900 leading-relaxed font-sans flex flex-col justify-between mx-auto overflow-hidden print:rounded-none print:border-none print:shadow-none print:m-0"
                   style={{
                     width: '794px',
                     height: '1123px',
@@ -1775,7 +1907,7 @@ export default function SalaryStatementClient() {
                               className="h-14 w-auto object-contain shrink-0"
                             />
                           ) : logoDisplay === 'blank_space' ? (
-                            <div className="h-14 w-20 shrink-0" aria-hidden="true" />
+                            <div className="h-14 w-[105px] shrink-0" aria-hidden="true" />
                           ) : null}
                           <div>
                             <h2 className="text-xl font-extrabold uppercase tracking-wide text-gray-900">
@@ -1790,9 +1922,7 @@ export default function SalaryStatementClient() {
                           </div>
                         </div>
                       </div>
-                    ) : (
-                      <div className="h-4" aria-hidden="true" />
-                    )}
+                    ) : null}
 
                     {/* Ref and Date */}
                     <div className="flex justify-between items-center text-xs font-semibold mb-4">
