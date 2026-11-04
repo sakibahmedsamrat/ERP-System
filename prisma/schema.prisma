@@ -91,6 +91,7 @@ model Worker {
   complianceCertifications ComplianceCertification[]
   hostedVisitors           VisitorLog[]
   hiredApplicants          Applicant[] @relation("ApplicantWorker")
+  salaryStatements         SalaryStatement[]
 
   @@index([companyId])
   @@index([departmentId])
@@ -515,4 +516,26 @@ model Notification {
   @@index([userId, isRead])
   @@index([createdAt])
   @@index([userId, createdAt])
+}
+
+model SalaryStatement {
+  id            String   @id @default(cuid())
+  refNo         String
+  workerId      String?
+  workerDbId    String?
+  worker        Worker?  @relation(fields: [workerDbId], references: [id], onDelete: SetNull)
+  name          String
+  designation   String?
+  department    String?
+  statementDate String?
+  data          Json
+  createdById   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([refNo])
+  @@index([workerId])
+  @@index([name])
+  @@index([createdAt])
+  @@index([workerDbId])
 }

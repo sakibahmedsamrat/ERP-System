@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Search,
@@ -19,9 +19,26 @@ import {
   Sliders,
   Sparkles,
   RotateCcw,
-  Undo2
+  Undo2,
+  Save,
+  Bookmark,
+  Copy,
+  Trash2,
+  Edit3,
+  Plus,
+  X,
+  AlertCircle,
+  Check,
+  Calendar,
+  Clock,
+  RefreshCw,
 } from 'lucide-react';
 import { numberToWords, parseFlexibleDate } from '@/lib/formatDate';
+import {
+  saveSalaryStatement,
+  getSavedSalaryStatements,
+  deleteSalaryStatement,
+} from './actions';
 
 interface MonthBreakdown {
   monthName: string;
@@ -744,6 +761,24 @@ export default function SalaryStatementClient() {
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [selectedWorker, setSelectedWorker] = useState<any | null>(null);
 
+  // Saved Statements & Active Statement state
+  const [activeStatementId, setActiveStatementId] = useState<string | null>(null);
+  const [activeStatementRefNo, setActiveStatementRefNo] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
+  const [savedStatements, setSavedStatements] = useState<any[]>([]);
+  const [savedStatementsTotal, setSavedStatementsTotal] = useState<number>(0);
+  const [isLoadingSaved, setIsLoadingSaved] = useState<boolean>(false);
+  const [savedSearchQuery, setSavedSearchQuery] = useState<string>('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
+
   // View Mode: 'split', 'form', 'preview'
   const [viewMode, setViewMode] = useState<'split' | 'form' | 'preview'>('split');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
@@ -1133,6 +1168,186 @@ export default function SalaryStatementClient() {
     };
     initialDefaultsRef.current = structuredClone(standardDefault);
     setFormData(standardDefault);
+    setActiveStatementId(null);
+    setActiveStatementRefNo(null);
+  };
+
+  // Fetch saved statements from server action
+  const fetchSavedStatements = useCallback(async (searchQuery = '') => {
+    setIsLoadingSaved(true);
+    try {
+      const res = await getSavedSalaryStatements({
+        search: searchQuery.trim() || undefined,
+        limit: 50,
+      });
+      if (res.success) {
+        setSavedStatements(res.statements || []);
+        setSavedStatementsTotal(res.total || 0);
+      } else {
+        console.error('Failed to load saved statements:', res.error);
+      }
+    } catch (err) {
+      console.error('Failed to load saved statements:', err);
+    } finally {
+      setIsLoadingSaved(false);
+    }
+  }, []);
+
+  // Initial load of saved statements
+  useEffect(() => {
+    fetchSavedStatements('');
+  }, [fetchSavedStatements]);
+
+  // Search debounce when drawer is open
+  useEffect(() => {
+    if (!isDrawerOpen) return;
+    const timer = setTimeout(() => {
+      fetchSavedStatements(savedSearchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [savedSearchQuery, isDrawerOpen, fetchSavedStatements]);
+
+  // Save current statement (new copy or update existing)
+  const handleSave = async (asNewCopy = false) => {
+    if (!formData.refNo.trim()) {
+      showToast('Reference Number is required to save statement', 'error');
+      return;
+    }
+    if (!formData.name.trim()) {
+      showToast('Employee Name is required to save statement', 'error');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const targetId = asNewCopy ? undefined : activeStatementId || undefined;
+      const payload = {
+        id: targetId,
+        refNo: formData.refNo.trim(),
+        workerId: formData.workerId?.trim() || undefined,
+        name: formData.name.trim(),
+        designation: formData.designation?.trim() || undefined,
+        department: formData.department?.trim() || undefined,
+        statementDate: formData.date?.trim() || undefined,
+        data: {
+          formData: formData,
+          padSettings: {
+            padTopMargin,
+            padBottomMargin,
+            padLeftMargin,
+            padRightMargin,
+            logoDisplay,
+            headerMode,
+          },
+        },
+      };
+
+      const res = await saveSalaryStatement(payload);
+      if (res.success && res.statement) {
+        setActiveStatementId(res.statement.id);
+        setActiveStatementRefNo(res.statement.refNo);
+        showToast(
+          asNewCopy
+            ? `Statement saved as a new copy: ${res.statement.refNo}`
+            : targetId
+            ? `Statement updated successfully: ${res.statement.refNo}`
+            : `Statement saved successfully: ${res.statement.refNo}`,
+          'success'
+        );
+        fetchSavedStatements();
+      } else {
+        showToast(res.error || 'Failed to save salary statement', 'error');
+      }
+    } catch (err: any) {
+      console.error('Failed to save statement:', err);
+      showToast(err.message || 'An error occurred while saving', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Load a saved statement into the live editor and preview
+  const handleLoadStatement = (statement: any, autoPrint = false) => {
+    try {
+      const rawData = statement.data;
+      if (!rawData) {
+        showToast('No saved document data found in statement', 'error');
+        return;
+      }
+
+      let loadedFormData: StatementData;
+      let loadedPadSettings: any = null;
+
+      if (rawData.formData && rawData.formData.months) {
+        loadedFormData = rawData.formData;
+        loadedPadSettings = rawData.padSettings;
+      } else if (rawData.months) {
+        loadedFormData = rawData;
+        loadedPadSettings = rawData.padSettings;
+      } else {
+        showToast('Unrecognized statement data format', 'error');
+        return;
+      }
+
+      setFormData(loadedFormData);
+      initialDefaultsRef.current = structuredClone(loadedFormData);
+
+      if (loadedPadSettings) {
+        if (typeof loadedPadSettings.padTopMargin === 'number') setPadTopMargin(loadedPadSettings.padTopMargin);
+        if (typeof loadedPadSettings.padBottomMargin === 'number') setPadBottomMargin(loadedPadSettings.padBottomMargin);
+        if (typeof loadedPadSettings.padLeftMargin === 'number') setPadLeftMargin(loadedPadSettings.padLeftMargin);
+        if (typeof loadedPadSettings.padRightMargin === 'number') setPadRightMargin(loadedPadSettings.padRightMargin);
+        if (loadedPadSettings.logoDisplay) setLogoDisplay(loadedPadSettings.logoDisplay);
+        if (loadedPadSettings.headerMode) setHeaderMode(loadedPadSettings.headerMode);
+      }
+
+      setActiveStatementId(statement.id);
+      setActiveStatementRefNo(statement.refNo);
+      setIsDrawerOpen(false);
+
+      showToast(`Loaded statement "${statement.refNo}" for ${statement.name}.`, 'success');
+
+      if (autoPrint) {
+        setTimeout(() => {
+          handlePrint();
+        }, 300);
+      }
+    } catch (err: any) {
+      console.error('Failed to load statement:', err);
+      showToast('Failed to load salary statement data', 'error');
+    }
+  };
+
+  // Delete saved statement
+  const handleDeleteStatement = async (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setDeletingId(id);
+    try {
+      const res = await deleteSalaryStatement(id);
+      if (res.success) {
+        showToast('Salary statement deleted successfully', 'success');
+        if (activeStatementId === id) {
+          setActiveStatementId(null);
+          setActiveStatementRefNo(null);
+        }
+        setDeleteConfirmId(null);
+        fetchSavedStatements(savedSearchQuery);
+      } else {
+        showToast(res.error || 'Failed to delete salary statement', 'error');
+      }
+    } catch (err: any) {
+      console.error('Failed to delete statement:', err);
+      showToast(err.message || 'An error occurred while deleting', 'error');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  // Start fresh / new statement session
+  const handleStartNewStatement = () => {
+    setActiveStatementId(null);
+    setActiveStatementRefNo(null);
+    showToast('Switched to new unsaved statement session.', 'info');
   };
 
   // Recalculate Month row values
@@ -2018,6 +2233,63 @@ export default function SalaryStatementClient() {
               </span>
             </div>
 
+            {/* Saved Statements Drawer Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setIsDrawerOpen(true);
+                fetchSavedStatements();
+              }}
+              className="inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-800 border border-slate-200/90 px-3.5 py-2 rounded-xl text-xs font-bold shadow-xs transition hover:border-blue-400 group"
+              title="Open saved salary statements list"
+            >
+              <Bookmark size={15} className="text-blue-600 transition group-hover:scale-110" />
+              <span>Saved Statements</span>
+              {savedStatementsTotal > 0 && (
+                <span className="bg-blue-100 text-blue-700 font-extrabold px-1.5 py-0.5 rounded-full text-[10px]">
+                  {savedStatementsTotal}
+                </span>
+              )}
+            </button>
+
+            {/* Save / Update Button */}
+            {activeStatementId ? (
+              <div className="inline-flex items-center rounded-xl bg-emerald-600 p-0.5 shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => handleSave(false)}
+                  disabled={isSaving}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white hover:bg-emerald-700 transition disabled:opacity-50"
+                  title="Update currently loaded statement in database"
+                >
+                  {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                  <span>Update Statement</span>
+                </button>
+                <div className="w-px h-4 bg-emerald-500/80 mx-0.5" />
+                <button
+                  type="button"
+                  onClick={() => handleSave(true)}
+                  disabled={isSaving}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-emerald-100 hover:text-white hover:bg-emerald-700 transition disabled:opacity-50"
+                  title="Save current state as a new copy without overwriting"
+                >
+                  <Copy size={13} />
+                  <span className="hidden sm:inline">Save as Copy</span>
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => handleSave(false)}
+                disabled={isSaving}
+                className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow-xs shadow-emerald-600/20 transition disabled:opacity-50"
+                title="Save current statement to database"
+              >
+                {isSaving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+                <span>Save Statement</span>
+              </button>
+            )}
+
             <button
               onClick={handlePrint}
               className="inline-flex items-center gap-2 bg-white/80 hover:bg-white text-slate-800 border border-slate-200/80 px-3.5 py-2 rounded-xl text-xs font-bold shadow-xs transition hover:border-slate-300"
@@ -2043,6 +2315,50 @@ export default function SalaryStatementClient() {
           </div>
         </div>
       </div>
+
+      {/* Active Edit Session Indicator Banner */}
+      {activeStatementId && (
+        <div className="bg-gradient-to-r from-emerald-500/10 via-blue-500/10 to-indigo-500/10 border-b border-emerald-200/60 py-2 px-4 print:hidden">
+          <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 text-slate-800">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <span className="text-slate-600 font-medium">Currently Editing Saved Statement:</span>
+              <span className="font-mono font-extrabold text-slate-900 bg-white/90 px-2 py-0.5 rounded border border-emerald-300/80 shadow-xs">
+                Ref: {activeStatementRefNo || formData.refNo}
+              </span>
+              <span className="text-slate-600 font-medium truncate max-w-xs">({formData.name})</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleSave(false)}
+                disabled={isSaving}
+                className="inline-flex items-center gap-1 text-emerald-800 hover:text-emerald-950 font-bold bg-white px-2.5 py-1 rounded-lg border border-emerald-300 shadow-xs hover:bg-emerald-50 transition"
+                title="Update existing statement in database"
+              >
+                <Save size={13} /> Update
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSave(true)}
+                disabled={isSaving}
+                className="inline-flex items-center gap-1 text-blue-700 hover:text-blue-900 font-semibold bg-white px-2.5 py-1 rounded-lg border border-blue-200 shadow-xs hover:bg-blue-50 transition"
+                title="Save as a new copy"
+              >
+                <Copy size={13} /> Save as New Copy
+              </button>
+              <button
+                type="button"
+                onClick={handleStartNewStatement}
+                className="inline-flex items-center gap-1 text-slate-600 hover:text-slate-900 font-semibold bg-white/80 px-2.5 py-1 rounded-lg border border-slate-200 shadow-xs hover:bg-white transition"
+                title="Start a fresh unsaved document without modifying this record"
+              >
+                <Plus size={13} /> New Statement
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Container */}
       <div className="salary-statement-container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 print:p-0 print:m-0 print:max-w-none print:w-full">
@@ -3442,6 +3758,44 @@ export default function SalaryStatementClient() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-1">
+                  {/* Save or Update Statement */}
+                  {activeStatementId ? (
+                    <div className="inline-flex items-center rounded-xl bg-emerald-600 p-0.5 shadow-sm">
+                      <button
+                        type="button"
+                        onClick={() => handleSave(false)}
+                        disabled={isSaving}
+                        className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-bold text-white hover:bg-emerald-700 transition disabled:opacity-50"
+                        title="Update existing statement in database"
+                      >
+                        {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                        <span>Update Statement</span>
+                      </button>
+                      <div className="w-px h-6 bg-emerald-500/80 mx-1" />
+                      <button
+                        type="button"
+                        onClick={() => handleSave(true)}
+                        disabled={isSaving}
+                        className="inline-flex items-center gap-1.5 px-3 py-3 rounded-lg text-xs font-semibold text-emerald-100 hover:text-white hover:bg-emerald-700 transition disabled:opacity-50"
+                        title="Save as a new copy"
+                      >
+                        <Copy size={14} />
+                        <span className="hidden sm:inline">New Copy</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleSave(false)}
+                      disabled={isSaving}
+                      className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl text-sm font-bold shadow-sm shadow-emerald-600/20 transition disabled:opacity-50"
+                      title="Save this statement to database"
+                    >
+                      {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                      <span>Save Statement</span>
+                    </button>
+                  )}
+
                   <button
                     type="button"
                     onClick={handleDownloadPdf}
@@ -4948,6 +5302,268 @@ export default function SalaryStatementClient() {
           </div>
         </div>
       </div>
+
+      {/* Saved Statements Slide-Over Drawer */}
+      {isDrawerOpen && (
+        <div className="fixed inset-0 z-50 print:hidden overflow-hidden">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+            onClick={() => setIsDrawerOpen(false)}
+          />
+
+          <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
+            <div className="w-screen max-w-lg bg-white shadow-2xl flex flex-col border-l border-slate-200 animate-in slide-in-from-right duration-200">
+              {/* Drawer Header */}
+              <div className="p-4 sm:p-5 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+                    <Bookmark size={20} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base font-bold text-slate-900">Saved Statements</h3>
+                      <span className="bg-blue-100 text-blue-700 font-extrabold text-xs px-2 py-0.5 rounded-full">
+                        {savedStatementsTotal}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500">Search, load, print, or manage saved statements</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => fetchSavedStatements(savedSearchQuery)}
+                    disabled={isLoadingSaved}
+                    className="p-2 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition"
+                    title="Refresh statements list"
+                  >
+                    <RefreshCw size={17} className={isLoadingSaved ? 'animate-spin' : ''} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsDrawerOpen(false)}
+                    className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition"
+                    title="Close drawer"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Search Bar */}
+              <div className="p-4 border-b border-slate-100 bg-white">
+                <div className="relative">
+                  <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search by Ref No, Staff ID, Name, or Date..."
+                    value={savedSearchQuery}
+                    onChange={(e) => setSavedSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-8 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                  />
+                  {savedSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSavedSearchQuery('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* List of Statements */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/50">
+                {isLoadingSaved ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+                    <Loader2 size={32} className="animate-spin text-blue-500 mb-2" />
+                    <span className="text-xs font-semibold">Loading saved statements...</span>
+                  </div>
+                ) : savedStatements.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-center px-4">
+                    <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 mb-3">
+                      <FileText size={28} />
+                    </div>
+                    <h4 className="text-sm font-bold text-slate-700">No saved statements found</h4>
+                    <p className="text-xs text-slate-500 max-w-xs mt-1">
+                      {savedSearchQuery
+                        ? 'No statements matched your search criteria. Try a different query.'
+                        : 'You have not saved any salary statements yet. Click "Save Statement" to store the current statement.'}
+                    </p>
+                  </div>
+                ) : (
+                  savedStatements.map((stmt) => {
+                    const isCurrentlyActive = activeStatementId === stmt.id;
+                    const formattedSavedDate =
+                      stmt.statementDate ||
+                      (stmt.createdAt
+                        ? new Date(stmt.createdAt).toLocaleDateString('en-GB', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })
+                        : '');
+
+                    return (
+                      <div
+                        key={stmt.id}
+                        className={`bg-white rounded-2xl p-4 border transition-all shadow-xs hover:shadow-md ${
+                          isCurrentlyActive
+                            ? 'border-blue-500 ring-2 ring-blue-500/20 bg-blue-50/20'
+                            : 'border-slate-200 hover:border-slate-300'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2 mb-1.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-mono font-bold text-xs text-slate-900 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                              {stmt.refNo}
+                            </span>
+                            {isCurrentlyActive && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
+                                <Check size={11} /> Loaded
+                              </span>
+                            )}
+                          </div>
+                          {formattedSavedDate && (
+                            <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 shrink-0">
+                              <Calendar size={12} className="text-slate-400" />
+                              {formattedSavedDate}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="mb-3">
+                          <div className="font-bold text-sm text-slate-800">{stmt.name}</div>
+                          <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500 flex-wrap">
+                            {stmt.workerId && (
+                              <span className="font-semibold text-slate-700 bg-slate-100 px-1.5 py-0.2 rounded text-[11px]">
+                                ID: {stmt.workerId}
+                              </span>
+                            )}
+                            {stmt.designation && <span>{stmt.designation}</span>}
+                            {stmt.department && <span>• {stmt.department}</span>}
+                          </div>
+                          {stmt.updatedAt && (
+                            <div className="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
+                              <Clock size={10} />
+                              Last saved:{' '}
+                              {new Date(stmt.updatedAt).toLocaleDateString('en-GB', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleLoadStatement(stmt, false)}
+                              className="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1.5 rounded-lg text-xs font-bold transition shadow-xs"
+                              title="Load this statement into live editor"
+                            >
+                              <Edit3 size={12} />
+                              <span>Edit / Load</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleLoadStatement(stmt, true)}
+                              className="inline-flex items-center gap-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition"
+                              title="Load and immediately open print preview"
+                            >
+                              <Printer size={12} />
+                              <span>Print</span>
+                            </button>
+                          </div>
+
+                          <div>
+                            {deleteConfirmId === stmt.id ? (
+                              <div className="flex items-center gap-1">
+                                <span className="text-[11px] text-rose-600 font-bold">Delete?</span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleDeleteStatement(stmt.id, e)}
+                                  disabled={deletingId === stmt.id}
+                                  className="bg-rose-600 hover:bg-rose-700 text-white px-2 py-1 rounded text-[11px] font-bold transition"
+                                >
+                                  {deletingId === stmt.id ? <Loader2 size={11} className="animate-spin" /> : 'Yes'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setDeleteConfirmId(null)}
+                                  className="bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-1 rounded text-[11px] font-medium transition"
+                                >
+                                  No
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => setDeleteConfirmId(stmt.id)}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                                title="Delete this saved statement"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Drawer Footer */}
+              <div className="p-3 bg-slate-100/70 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
+                <span>
+                  Showing {savedStatements.length} of {savedStatementsTotal} statements
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsDrawerOpen(false)}
+                  className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 font-semibold border border-slate-300 rounded-lg transition"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Toast Notification */}
+      {toast && (
+        <div
+          className={`fixed bottom-6 right-6 z-50 print:hidden flex items-center gap-3 px-4 py-3 rounded-2xl shadow-xl border text-xs sm:text-sm font-semibold transition-all duration-300 animate-in fade-in slide-in-from-bottom-5 ${
+            toast.type === 'error'
+              ? 'bg-rose-600 text-white border-rose-700 shadow-rose-600/25'
+              : toast.type === 'info'
+              ? 'bg-blue-600 text-white border-blue-700 shadow-blue-600/25'
+              : 'bg-emerald-600 text-white border-emerald-700 shadow-emerald-600/25'
+          }`}
+        >
+          {toast.type === 'error' ? (
+            <AlertCircle size={18} className="shrink-0" />
+          ) : (
+            <CheckCircle2 size={18} className="shrink-0" />
+          )}
+          <span>{toast.message}</span>
+          <button
+            type="button"
+            onClick={() => setToast(null)}
+            className="ml-2 text-white/80 hover:text-white p-0.5 rounded transition"
+          >
+            <X size={15} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
