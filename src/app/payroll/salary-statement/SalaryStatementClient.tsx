@@ -652,9 +652,9 @@ function EditableInlineText({
             setTempVal(displayVal);
             setIsEditing(true);
           }}
-          className={`cursor-pointer ${isBold ? 'font-bold' : ''} ${isUnderline ? 'underline' : ''} ${
-            isMono ? 'font-mono' : ''
-          }`}
+          className={`cursor-pointer ${isBold ? 'font-bold' : ''} ${
+            isUnderline ? 'underline underline-offset-[5px] decoration-1' : ''
+          } ${isMono ? 'font-mono' : ''}`}
           title="Click to edit directly on sheet"
         >
           {renderDisplay ? renderDisplay(displayVal) : displayVal}
@@ -1822,6 +1822,19 @@ export default function SalaryStatementClient({
           input.parentNode?.replaceChild(span, input);
         });
 
+        // Fix underline rendering in html2canvas so descenders (y, g, p, q) are never sliced through
+        const underlinedElements = clonedDoc.querySelectorAll(
+          '.salary-doc-page .underline, .salary-doc-page [class*="underline"]'
+        );
+        underlinedElements.forEach((el: any) => {
+          el.style.textDecoration = 'none';
+          el.style.textDecorationLine = 'none';
+          el.style.borderBottom = '1.2px solid #000000';
+          el.style.paddingBottom = '3px';
+          el.style.display = 'inline-block';
+          el.style.lineHeight = 'normal';
+        });
+
         const grid = clonedDoc.querySelector('.salary-statement-grid');
         if (grid) {
           (grid as HTMLElement).style.display = 'block';
@@ -1859,15 +1872,15 @@ export default function SalaryStatementClient({
           p2.style.margin = '0';
         }
 
-        // Enforce clean table cell styling in html2canvas clone
+        // Enforce clean table cell styling in html2canvas clone with balanced vertical clearance
         const cells = clonedDoc.querySelectorAll('.salary-doc-page table th, .salary-doc-page table td');
         cells.forEach((cell: any) => {
           cell.style.verticalAlign = 'middle';
           cell.style.lineHeight = '1.35';
           cell.style.paddingTop = '6px';
           cell.style.paddingBottom = '6px';
-          cell.style.paddingLeft = '5px';
-          cell.style.paddingRight = '5px';
+          cell.style.paddingLeft = '6px';
+          cell.style.paddingRight = '6px';
           cell.style.boxSizing = 'border-box';
           cell.style.color = '#000000';
           cell.style.backgroundColor = 'transparent';
@@ -1876,21 +1889,22 @@ export default function SalaryStatementClient({
           cell.style.whiteSpace = 'normal';
         });
 
-        const allDocElements = clonedDoc.querySelectorAll(
-          '.salary-doc-page, .salary-doc-page *, .salary-doc-page table td *, .salary-doc-page table th *'
+        // Optimize font smoothing and legibility on document pages without expensive deep DOM walks
+        const docPages = clonedDoc.querySelectorAll('.salary-doc-page');
+        docPages.forEach((p: any) => {
+          p.style.textRendering = 'optimizeLegibility';
+          p.style.webkitFontSmoothing = 'antialiased';
+          p.style.mozOsxFontSmoothing = 'grayscale';
+          p.style.overflow = 'visible';
+        });
+
+        // Ensure nowrap amount and code labels preserve nowrap
+        const nowrapElements = clonedDoc.querySelectorAll(
+          '.salary-doc-page .whitespace-nowrap, .salary-doc-page .group\\/amount, .salary-doc-page .group\\/inline-amt'
         );
-        allDocElements.forEach((el: any) => {
-          el.style.textRendering = 'optimizeLegibility';
-          el.style.webkitFontSmoothing = 'antialiased';
-          el.style.mozOsxFontSmoothing = 'grayscale';
+        nowrapElements.forEach((el: any) => {
+          el.style.whiteSpace = 'nowrap';
           el.style.overflow = 'visible';
-          if (
-            el.classList?.contains('whitespace-nowrap') ||
-            el.classList?.contains('group/amount') ||
-            el.classList?.contains('group/inline-amt')
-          ) {
-            el.style.whiteSpace = 'nowrap';
-          }
         });
 
         // Hide any signature spacers in cloned doc to avoid unexpected flex spacing artifacts
@@ -1925,9 +1939,9 @@ export default function SalaryStatementClient({
         }
       };
 
-      // Render Page 1 with scale: 3.5 and crisp lossless PNG (336 DPI print quality)
+      // Render Page 1 with scale: 2 and high-quality JPEG 0.95 (crisp ~200 DPI vector-grade print)
       const canvas1 = await html2canvas(page1Ref.current, {
-        scale: 3.5,
+        scale: 2,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
@@ -1936,15 +1950,16 @@ export default function SalaryStatementClient({
         windowWidth: 1200,
         scrollX: 0,
         scrollY: 0,
+        removeContainer: true,
         onclone: cloneSetup,
       });
-      const img1 = canvas1.toDataURL('image/png');
-      pdf.addImage(img1, 'PNG', 0, 0, 210, 297, undefined, 'FAST');
+      const img1 = canvas1.toDataURL('image/jpeg', 0.95);
+      pdf.addImage(img1, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
 
-      // Render Page 2 with scale: 3.5 and crisp lossless PNG (336 DPI print quality)
+      // Render Page 2 with scale: 2 and high-quality JPEG 0.95 (crisp ~200 DPI vector-grade print)
       pdf.addPage('a4', 'portrait');
       const canvas2 = await html2canvas(page2Ref.current, {
-        scale: 3.5,
+        scale: 2,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
@@ -1953,10 +1968,11 @@ export default function SalaryStatementClient({
         windowWidth: 1200,
         scrollX: 0,
         scrollY: 0,
+        removeContainer: true,
         onclone: cloneSetup,
       });
-      const img2 = canvas2.toDataURL('image/png');
-      pdf.addImage(img2, 'PNG', 0, 0, 210, 297, undefined, 'FAST');
+      const img2 = canvas2.toDataURL('image/jpeg', 0.95);
+      pdf.addImage(img2, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
 
       const sanitizedName = formData.name.replace(/[^a-zA-Z0-9]/g, '_');
       pdf.save(`Salary_Statement_${formData.workerId}_${sanitizedName}.pdf`);
@@ -2028,6 +2044,11 @@ export default function SalaryStatementClient({
           padding-right: 8px !important;
           box-sizing: border-box !important;
           overflow: visible !important;
+        }
+        .salary-doc-page .underline,
+        .salary-doc-page [class*="underline"] {
+          text-underline-offset: 5px !important;
+          text-decoration-thickness: 1px !important;
         }
         .salary-doc-page-2 table td {
           padding-left: 10px !important;
@@ -2189,10 +2210,15 @@ export default function SalaryStatementClient({
             line-height: 1.35 !important;
             padding-top: 6px !important;
             padding-bottom: 6px !important;
-            padding-left: 5px !important;
-            padding-right: 5px !important;
+            padding-left: 6px !important;
+            padding-right: 6px !important;
             box-sizing: border-box !important;
             overflow: visible !important;
+          }
+          .salary-doc-page .underline,
+          .salary-doc-page [class*="underline"] {
+            text-underline-offset: 5px !important;
+            text-decoration-thickness: 1px !important;
           }
           .salary-doc-page-2 table td {
             padding-left: 10px !important;
@@ -2212,12 +2238,12 @@ export default function SalaryStatementClient({
           }
           .salary-doc-page table td span.whitespace-nowrap,
           .salary-doc-page table td [class*="whitespace-nowrap"],
-          .salary-doc-page table td .group\\/amount span {
+          .salary-doc-page table td .group\/amount span {
             white-space: nowrap !important;
           }
           .salary-signature-spacer {
             flex: 1 1 0% !important;
-            min-height: 72px !important;
+            min-height: 48px !important;
           }
           .salary-signature-block {
             margin-top: auto !important;
@@ -4423,7 +4449,7 @@ export default function SalaryStatementClient({
                     <tbody>
                       {/* Row 1: Gross Salary */}
                       <tr>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal w-[20%]">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal w-[20%]">
                           <EditableLabelCell
                             value={formData.months[0].grossLabel || 'Gross Salary'}
                             defaultValue="Gross Salary"
@@ -4431,14 +4457,14 @@ export default function SalaryStatementClient({
                             onReset={() => handleResetRowLabel(0, 'grossLabel')}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right w-[13.33%]">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal text-right w-[13.33%]">
                           <EditableAmountCell
                             value={formData.months[0].grossSalary}
                             onChange={(val) => handleMonthChange(0, 'grossSalary', val)}
                             onReset={() => handleResetMonthAmount(0, 'grossSalary')}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal w-[20%]">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal w-[20%]">
                           <EditableLabelCell
                             value={formData.months[1].grossLabel || 'Gross Salary'}
                             defaultValue="Gross Salary"
@@ -4446,14 +4472,14 @@ export default function SalaryStatementClient({
                             onReset={() => handleResetRowLabel(1, 'grossLabel')}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right w-[13.33%]">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal text-right w-[13.33%]">
                           <EditableAmountCell
                             value={formData.months[1].grossSalary}
                             onChange={(val) => handleMonthChange(1, 'grossSalary', val)}
                             onReset={() => handleResetMonthAmount(1, 'grossSalary')}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal w-[20%]">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal w-[20%]">
                           <EditableLabelCell
                             value={formData.months[2].grossLabel || 'Gross Salary'}
                             defaultValue="Gross Salary"
@@ -4461,7 +4487,7 @@ export default function SalaryStatementClient({
                             onReset={() => handleResetRowLabel(2, 'grossLabel')}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right w-[13.34%]">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal text-right w-[13.34%]">
                           <EditableAmountCell
                             value={formData.months[2].grossSalary}
                             onChange={(val) => handleMonthChange(2, 'grossSalary', val)}
@@ -4472,7 +4498,7 @@ export default function SalaryStatementClient({
 
                       {/* Row 2: Basic */}
                       <tr>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal">
                           <EditableLabelCell
                             value={formData.months[0].basicLabel || 'Basic'}
                             defaultValue="Basic"
@@ -4480,14 +4506,14 @@ export default function SalaryStatementClient({
                             onReset={() => handleResetRowLabel(0, 'basicLabel')}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal text-right">
                           <EditableAmountCell
                             value={formData.months[0].basicSalary}
                             onChange={(val) => handleMonthChange(0, 'basicSalary', val)}
                             onReset={() => handleResetMonthAmount(0, 'basicSalary')}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal">
                           <EditableLabelCell
                             value={formData.months[1].basicLabel || 'Basic'}
                             defaultValue="Basic"
@@ -4495,14 +4521,14 @@ export default function SalaryStatementClient({
                             onReset={() => handleResetRowLabel(1, 'basicLabel')}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal text-right">
                           <EditableAmountCell
                             value={formData.months[1].basicSalary}
                             onChange={(val) => handleMonthChange(1, 'basicSalary', val)}
                             onReset={() => handleResetMonthAmount(1, 'basicSalary')}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal">
                           <EditableLabelCell
                             value={formData.months[2].basicLabel || 'Basic'}
                             defaultValue="Basic"
@@ -4510,7 +4536,7 @@ export default function SalaryStatementClient({
                             onReset={() => handleResetRowLabel(2, 'basicLabel')}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal text-right">
                           <EditableAmountCell
                             value={formData.months[2].basicSalary}
                             onChange={(val) => handleMonthChange(2, 'basicSalary', val)}
@@ -4521,7 +4547,7 @@ export default function SalaryStatementClient({
 
                       {/* Row 3: House Rent */}
                       <tr>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal">
                           <EditableLabelCell
                             value={formData.months[0].houseRentLabel || 'House Rent'}
                             defaultValue="House Rent"
@@ -4529,14 +4555,14 @@ export default function SalaryStatementClient({
                             onReset={() => handleResetRowLabel(0, 'houseRentLabel')}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal text-right">
                           <EditableAmountCell
                             value={formData.months[0].houseRent}
                             onChange={(val) => handleMonthChange(0, 'houseRent', val)}
                             onReset={() => handleResetMonthAmount(0, 'houseRent')}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal">
                           <EditableLabelCell
                             value={formData.months[1].houseRentLabel || 'House Rent'}
                             defaultValue="House Rent"
@@ -4544,14 +4570,14 @@ export default function SalaryStatementClient({
                             onReset={() => handleResetRowLabel(1, 'houseRentLabel')}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal text-right">
                           <EditableAmountCell
                             value={formData.months[1].houseRent}
                             onChange={(val) => handleMonthChange(1, 'houseRent', val)}
                             onReset={() => handleResetMonthAmount(1, 'houseRent')}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal">
                           <EditableLabelCell
                             value={formData.months[2].houseRentLabel || 'House Rent'}
                             defaultValue="House Rent"
@@ -4559,7 +4585,7 @@ export default function SalaryStatementClient({
                             onReset={() => handleResetRowLabel(2, 'houseRentLabel')}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal text-right">
                           <EditableAmountCell
                             value={formData.months[2].houseRent}
                             onChange={(val) => handleMonthChange(2, 'houseRent', val)}
@@ -4570,7 +4596,7 @@ export default function SalaryStatementClient({
 
                       {/* Row 4: Medical */}
                       <tr>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal">
                           <EditableLabelCell
                             value={formData.months[0].medicalLabel || 'Medical'}
                             defaultValue="Medical"
@@ -4578,14 +4604,14 @@ export default function SalaryStatementClient({
                             onReset={() => handleResetRowLabel(0, 'medicalLabel')}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal text-right">
                           <EditableAmountCell
                             value={formData.months[0].medical}
                             onChange={(val) => handleMonthChange(0, 'medical', val)}
                             onReset={() => handleResetMonthAmount(0, 'medical')}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal">
                           <EditableLabelCell
                             value={formData.months[1].medicalLabel || 'Medical'}
                             defaultValue="Medical"
@@ -4593,14 +4619,14 @@ export default function SalaryStatementClient({
                             onReset={() => handleResetRowLabel(1, 'medicalLabel')}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal text-right">
                           <EditableAmountCell
                             value={formData.months[1].medical}
                             onChange={(val) => handleMonthChange(1, 'medical', val)}
                             onReset={() => handleResetMonthAmount(1, 'medical')}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal">
                           <EditableLabelCell
                             value={formData.months[2].medicalLabel || 'Medical'}
                             defaultValue="Medical"
@@ -4608,7 +4634,7 @@ export default function SalaryStatementClient({
                             onReset={() => handleResetRowLabel(2, 'medicalLabel')}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal text-right">
                           <EditableAmountCell
                             value={formData.months[2].medical}
                             onChange={(val) => handleMonthChange(2, 'medical', val)}
@@ -4619,7 +4645,7 @@ export default function SalaryStatementClient({
 
                       {/* Row 5: Conveyance */}
                       <tr>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal">
                           <EditableLabelCell
                             value={formData.months[0].conveyanceLabel || 'Conveyance'}
                             defaultValue="Conveyance"
@@ -4627,14 +4653,14 @@ export default function SalaryStatementClient({
                             onReset={() => handleResetRowLabel(0, 'conveyanceLabel')}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal text-right">
                           <EditableAmountCell
                             value={formData.months[0].conveyance}
                             onChange={(val) => handleMonthChange(0, 'conveyance', val)}
                             onReset={() => handleResetMonthAmount(0, 'conveyance')}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal">
                           <EditableLabelCell
                             value={formData.months[1].conveyanceLabel || 'Conveyance'}
                             defaultValue="Conveyance"
@@ -4642,14 +4668,14 @@ export default function SalaryStatementClient({
                             onReset={() => handleResetRowLabel(1, 'conveyanceLabel')}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal text-right">
                           <EditableAmountCell
                             value={formData.months[1].conveyance}
                             onChange={(val) => handleMonthChange(1, 'conveyance', val)}
                             onReset={() => handleResetMonthAmount(1, 'conveyance')}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal">
                           <EditableLabelCell
                             value={formData.months[2].conveyanceLabel || 'Conveyance'}
                             defaultValue="Conveyance"
@@ -4657,7 +4683,7 @@ export default function SalaryStatementClient({
                             onReset={() => handleResetRowLabel(2, 'conveyanceLabel')}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal text-right">
                           <EditableAmountCell
                             value={formData.months[2].conveyance}
                             onChange={(val) => handleMonthChange(2, 'conveyance', val)}
@@ -4668,7 +4694,7 @@ export default function SalaryStatementClient({
 
                       {/* Row 6: [RED-MARKED] Deduction 1 (Default: (Less) PF) */}
                       <tr>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal">
                           <EditableLabelCell
                             value={formData.months[0].pfLabel || '(Less) PF'}
                             defaultValue="(Less) PF"
@@ -4677,7 +4703,7 @@ export default function SalaryStatementClient({
                             highlight={true}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal text-right">
                           <EditableAmountCell
                             value={formData.months[0].pfDeduction}
                             onChange={(val) => handleMonthChange(0, 'pfDeduction', val)}
@@ -4685,7 +4711,7 @@ export default function SalaryStatementClient({
                             defaultValue={initialDefaultsRef.current.months[0].pfDeduction}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal">
                           <EditableLabelCell
                             value={formData.months[1].pfLabel || '(Less) PF'}
                             defaultValue="(Less) PF"
@@ -4694,7 +4720,7 @@ export default function SalaryStatementClient({
                             highlight={true}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal text-right">
                           <EditableAmountCell
                             value={formData.months[1].pfDeduction}
                             onChange={(val) => handleMonthChange(1, 'pfDeduction', val)}
@@ -4702,7 +4728,7 @@ export default function SalaryStatementClient({
                             defaultValue={initialDefaultsRef.current.months[1].pfDeduction}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal">
                           <EditableLabelCell
                             value={formData.months[2].pfLabel || '(Less) PF'}
                             defaultValue="(Less) PF"
@@ -4711,7 +4737,7 @@ export default function SalaryStatementClient({
                             highlight={true}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal text-right">
                           <EditableAmountCell
                             value={formData.months[2].pfDeduction}
                             onChange={(val) => handleMonthChange(2, 'pfDeduction', val)}
@@ -4723,7 +4749,7 @@ export default function SalaryStatementClient({
 
                       {/* Row 7: [RED-MARKED] Addition (Default: Over Time) */}
                       <tr>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal">
                           <EditableLabelCell
                             value={formData.months[0].overtimeLabel || 'Over Time'}
                             defaultValue="Over Time"
@@ -4732,7 +4758,7 @@ export default function SalaryStatementClient({
                             highlight={true}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal text-right">
                           <EditableAmountCell
                             value={formData.months[0].overtime}
                             onChange={(val) => handleMonthChange(0, 'overtime', val)}
@@ -4740,7 +4766,7 @@ export default function SalaryStatementClient({
                             defaultValue={initialDefaultsRef.current.months[0].overtime}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal">
                           <EditableLabelCell
                             value={formData.months[1].overtimeLabel || 'Over Time'}
                             defaultValue="Over Time"
@@ -4749,7 +4775,7 @@ export default function SalaryStatementClient({
                             highlight={true}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal text-right">
                           <EditableAmountCell
                             value={formData.months[1].overtime}
                             onChange={(val) => handleMonthChange(1, 'overtime', val)}
@@ -4757,7 +4783,7 @@ export default function SalaryStatementClient({
                             defaultValue={initialDefaultsRef.current.months[1].overtime}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal">
                           <EditableLabelCell
                             value={formData.months[2].overtimeLabel || 'Over Time'}
                             defaultValue="Over Time"
@@ -4766,7 +4792,7 @@ export default function SalaryStatementClient({
                             highlight={true}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal text-right">
                           <EditableAmountCell
                             value={formData.months[2].overtime}
                             onChange={(val) => handleMonthChange(2, 'overtime', val)}
@@ -4778,7 +4804,7 @@ export default function SalaryStatementClient({
 
                       {/* Row 8: [RED-MARKED] Deduction 2 (Default: Income Tax) */}
                       <tr>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal">
                           <EditableLabelCell
                             value={formData.months[0].incomeTaxLabel || 'Income Tax'}
                             defaultValue="Income Tax"
@@ -4787,7 +4813,7 @@ export default function SalaryStatementClient({
                             highlight={true}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal text-right">
                           <EditableAmountCell
                             value={formData.months[0].incomeTax}
                             onChange={(val) => handleMonthChange(0, 'incomeTax', val)}
@@ -4795,7 +4821,7 @@ export default function SalaryStatementClient({
                             defaultValue={initialDefaultsRef.current.months[0].incomeTax}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal">
                           <EditableLabelCell
                             value={formData.months[1].incomeTaxLabel || 'Income Tax'}
                             defaultValue="Income Tax"
@@ -4804,7 +4830,7 @@ export default function SalaryStatementClient({
                             highlight={true}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal text-right">
                           <EditableAmountCell
                             value={formData.months[1].incomeTax}
                             onChange={(val) => handleMonthChange(1, 'incomeTax', val)}
@@ -4812,7 +4838,7 @@ export default function SalaryStatementClient({
                             defaultValue={initialDefaultsRef.current.months[1].incomeTax}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal">
                           <EditableLabelCell
                             value={formData.months[2].incomeTaxLabel || 'Income Tax'}
                             defaultValue="Income Tax"
@@ -4821,7 +4847,7 @@ export default function SalaryStatementClient({
                             highlight={true}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal text-right">
                           <EditableAmountCell
                             value={formData.months[2].incomeTax}
                             onChange={(val) => handleMonthChange(2, 'incomeTax', val)}
@@ -4833,7 +4859,7 @@ export default function SalaryStatementClient({
 
                       {/* Row 9: Net Payable= */}
                       <tr className="font-bold">
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal">
                           <EditableLabelCell
                             value={formData.months[0].netPayableLabel || 'Net Payable='}
                             defaultValue="Net Payable="
@@ -4842,7 +4868,7 @@ export default function SalaryStatementClient({
                             isBold={true}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal text-right">
                           <EditableAmountCell
                             value={formData.months[0].netPayable}
                             onChange={(val) => handleMonthChange(0, 'netPayable', val)}
@@ -4851,7 +4877,7 @@ export default function SalaryStatementClient({
                             defaultValue={initialDefaultsRef.current.months[0].netPayable}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal">
                           <EditableLabelCell
                             value={formData.months[1].netPayableLabel || 'Net Payable='}
                             defaultValue="Net Payable="
@@ -4860,7 +4886,7 @@ export default function SalaryStatementClient({
                             isBold={true}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal text-right">
                           <EditableAmountCell
                             value={formData.months[1].netPayable}
                             onChange={(val) => handleMonthChange(1, 'netPayable', val)}
@@ -4869,7 +4895,7 @@ export default function SalaryStatementClient({
                             defaultValue={initialDefaultsRef.current.months[1].netPayable}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal">
                           <EditableLabelCell
                             value={formData.months[2].netPayableLabel || 'Net Payable='}
                             defaultValue="Net Payable="
@@ -4878,7 +4904,7 @@ export default function SalaryStatementClient({
                             isBold={true}
                           />
                         </td>
-                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                        <td className="border border-black py-1.5 px-2 align-middle leading-normal text-right">
                           <EditableAmountCell
                             value={formData.months[2].netPayable}
                             onChange={(val) => handleMonthChange(2, 'netPayable', val)}
@@ -4904,11 +4930,11 @@ export default function SalaryStatementClient({
                   </p>
 
                   {/* Spacer to push signature section gracefully down to the bottom of the letterhead page */}
-                  <div className="salary-signature-spacer flex-1 min-h-[72px]" />
+                  <div className="salary-signature-spacer flex-1 min-h-[48px]" />
 
                   {/* Signatory Section (Left aligned, with underline separator, positioned at lower portion) */}
                   <div className="salary-signature-block mt-auto pt-6 text-[14px] leading-snug shrink-0">
-                    <div className="w-52 border-b border-black mb-1.5" />
+                    <div className="w-52 border-b border-black mb-2" />
                     <div className="font-bold">
                       <EditableInlineText
                         value={formData.signatoryName}
@@ -5249,8 +5275,10 @@ export default function SalaryStatementClient({
                   </div>
 
                   {/* Monthly salary details heading */}
-                  <div className="font-bold underline text-[14px] mt-3 mb-2">
-                    Monthly salary details:
+                  <div className="mt-3 mb-2">
+                    <span className="font-bold underline underline-offset-[4px] decoration-1 text-[14px] inline-block">
+                      Monthly salary details:
+                    </span>
                   </div>
 
                   {/* Numbered Items List */}
@@ -5332,7 +5360,7 @@ export default function SalaryStatementClient({
 
                   {/* Signatory Section (Left aligned, with underline separator, positioned at lower portion) */}
                   <div className="salary-signature-block mt-auto pt-6 text-[14px] leading-snug shrink-0">
-                    <div className="w-52 border-b border-black mb-1.5" />
+                    <div className="w-52 border-b border-black mb-2" />
                     <div className="font-bold">
                       <EditableInlineText
                         value={formData.signatoryName}
