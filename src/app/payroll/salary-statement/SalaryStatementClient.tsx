@@ -653,7 +653,7 @@ function EditableInlineText({
             setIsEditing(true);
           }}
           className={`cursor-pointer ${isBold ? 'font-bold' : ''} ${
-            isUnderline ? 'underline underline-offset-[5px] decoration-1' : ''
+            isUnderline ? 'underline underline-offset-[5px] decoration-1 inline-block' : ''
           } ${isMono ? 'font-mono' : ''}`}
           title="Click to edit directly on sheet"
         >
@@ -1755,6 +1755,9 @@ export default function SalaryStatementClient({
   // Download 2-Page PDF
   const handleDownloadPdf = async () => {
     if (!page1Ref.current || !page2Ref.current) return;
+    if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
     setIsGeneratingPdf(true);
 
     // Reset horizontal scroll on page wrappers
@@ -1829,7 +1832,7 @@ export default function SalaryStatementClient({
         underlinedElements.forEach((el: any) => {
           el.style.textDecoration = 'none';
           el.style.textDecorationLine = 'none';
-          el.style.borderBottom = '1.2px solid #000000';
+          el.style.borderBottom = '1px solid #000000';
           el.style.paddingBottom = '3px';
           el.style.display = 'inline-block';
           el.style.lineHeight = 'normal';
@@ -1954,6 +1957,8 @@ export default function SalaryStatementClient({
         onclone: cloneSetup,
       });
       const img1 = canvas1.toDataURL('image/jpeg', 0.95);
+      canvas1.width = 0;
+      canvas1.height = 0;
       pdf.addImage(img1, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
 
       // Render Page 2 with scale: 2 and high-quality JPEG 0.95 (crisp ~200 DPI vector-grade print)
@@ -1972,6 +1977,8 @@ export default function SalaryStatementClient({
         onclone: cloneSetup,
       });
       const img2 = canvas2.toDataURL('image/jpeg', 0.95);
+      canvas2.width = 0;
+      canvas2.height = 0;
       pdf.addImage(img2, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
 
       const sanitizedName = formData.name.replace(/[^a-zA-Z0-9]/g, '_');
@@ -2040,8 +2047,8 @@ export default function SalaryStatementClient({
           line-height: 1.35 !important;
           padding-top: 6px !important;
           padding-bottom: 6px !important;
-          padding-left: 8px !important;
-          padding-right: 8px !important;
+          padding-left: 6px !important;
+          padding-right: 6px !important;
           box-sizing: border-box !important;
           overflow: visible !important;
         }
@@ -5276,7 +5283,7 @@ export default function SalaryStatementClient({
 
                   {/* Monthly salary details heading */}
                   <div className="mt-3 mb-2">
-                    <span className="font-bold underline underline-offset-[4px] decoration-1 text-[14px] inline-block">
+                    <span className="font-bold underline underline-offset-[5px] decoration-1 text-[14px] inline-block">
                       Monthly salary details:
                     </span>
                   </div>
