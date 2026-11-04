@@ -214,7 +214,7 @@ function EditableLabelCell({
             setTempVal(displayVal);
             setIsEditing(true);
           }}
-          className={`cursor-pointer flex-1 truncate select-none text-black ${
+          className={`cursor-pointer flex-1 whitespace-nowrap overflow-visible select-none text-black ${
             isBold ? 'font-bold' : ''
           }`}
           title={highlight ? 'Customizable particulars label - Click to edit' : 'Click to edit label directly'}
@@ -351,7 +351,7 @@ function EditableAmountCell({
             setTempVal(String(value ?? 0));
             setIsEditing(true);
           }}
-          className={`cursor-pointer select-none text-black ${isBold ? 'font-bold' : ''}`}
+          className={`cursor-pointer select-none text-black whitespace-nowrap overflow-visible ${isBold ? 'font-bold' : ''}`}
           title="Click to edit amount directly"
         >
           {formatted}
@@ -359,6 +359,120 @@ function EditableAmountCell({
         </span>
       )}
     </div>
+  );
+}
+
+interface EditableInlineAmountProps {
+  value: number;
+  onChange: (val: number) => void;
+  onReset?: () => void;
+  defaultValue?: number;
+  suffix?: string;
+  isBold?: boolean;
+  decimals?: number;
+  className?: string;
+}
+
+function EditableInlineAmount({
+  value,
+  onChange,
+  onReset,
+  defaultValue,
+  suffix = '/-',
+  isBold = false,
+  decimals = 0,
+  className = '',
+}: EditableInlineAmountProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [tempVal, setTempVal] = useState(String(value ?? 0));
+
+  useEffect(() => {
+    if (!isEditing) {
+      setTempVal(String(value ?? 0));
+    }
+  }, [value, isEditing]);
+
+  const formatted =
+    decimals > 0
+      ? Number(value || 0).toLocaleString('en-US', {
+          minimumFractionDigits: decimals,
+          maximumFractionDigits: decimals,
+        })
+      : Number(value || 0).toLocaleString('en-US');
+
+  const isModified =
+    defaultValue !== undefined &&
+    Math.round(Number(value || 0)) !== Math.round(Number(defaultValue || 0));
+
+  return (
+    <span
+      className={`relative inline-flex items-center group/inline-amt px-0.5 py-0.2 rounded hover:bg-blue-50/60 print:hover:bg-transparent transition align-baseline ${className}`}
+    >
+      {isEditing ? (
+        <span className="inline-flex items-center">
+          <input
+            type="text"
+            autoFocus
+            value={tempVal}
+            onChange={(e) => {
+              const raw = e.target.value.replace(/[^0-9.]/g, '');
+              setTempVal(raw);
+              const num = parseFloat(raw);
+              onChange(isNaN(num) ? 0 : num);
+            }}
+            onBlur={() => {
+              setIsEditing(false);
+              const num = parseFloat(tempVal.replace(/[^0-9.]/g, ''));
+              onChange(isNaN(num) ? 0 : num);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                setIsEditing(false);
+              } else if (e.key === 'Escape') {
+                setTempVal(String(value ?? 0));
+                setIsEditing(false);
+              }
+            }}
+            style={{ width: `${Math.max(5, tempVal.length + 2)}ch` }}
+            className={`bg-white border border-blue-500 rounded px-1 py-0.5 text-inherit outline-none shadow-xs text-slate-900 ${
+              isBold ? 'font-bold' : ''
+            }`}
+          />
+          {suffix && <span className="ml-0.5 text-black shrink-0">{suffix}</span>}
+        </span>
+      ) : (
+        <span
+          onClick={() => {
+            setTempVal(String(value ?? 0));
+            setIsEditing(true);
+          }}
+          className={`cursor-pointer select-none text-black whitespace-nowrap overflow-visible ${isBold ? 'font-bold' : ''}`}
+          title="Click to edit amount directly"
+        >
+          {formatted}{suffix}
+        </span>
+      )}
+
+      {onReset && (
+        <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onReset();
+            setIsEditing(false);
+          }}
+          className={`inline-reset-btn print:hidden p-0.5 rounded transition ml-1 shrink-0 ${
+            isModified
+              ? 'text-amber-700 hover:text-amber-900 bg-amber-100 hover:bg-amber-200 opacity-90'
+              : 'opacity-0 group-hover/inline-amt:opacity-100 text-slate-400 hover:text-blue-600 hover:bg-blue-100/80'
+          }`}
+          title="Reset amount to default"
+        >
+          <RotateCcw size={10} />
+        </button>
+      )}
+    </span>
   );
 }
 
@@ -1477,12 +1591,53 @@ export default function SalaryStatementClient() {
           cell.style.boxSizing = 'border-box';
           cell.style.color = '#000000';
           cell.style.backgroundColor = 'transparent';
+          cell.style.border = '1px solid #000000';
+          cell.style.overflow = 'visible';
+          cell.style.whiteSpace = 'normal';
         });
+
+        const allDocElements = clonedDoc.querySelectorAll('.salary-doc-page, .salary-doc-page *');
+        allDocElements.forEach((el: any) => {
+          el.style.textRendering = 'optimizeLegibility';
+          el.style.webkitFontSmoothing = 'antialiased';
+          el.style.mozOsxFontSmoothing = 'grayscale';
+          if (el.tagName?.toLowerCase() === 'span' || el.classList?.contains('group/cell') || el.classList?.contains('group/amount') || el.classList?.contains('group/inline-amt')) {
+            el.style.overflow = 'visible';
+          }
+        });
+
+        // Hide any signature spacers in cloned doc to avoid unexpected flex spacing artifacts
+        const spacers = clonedDoc.querySelectorAll('.salary-signature-spacer');
+        spacers.forEach((s: any) => {
+          (s as HTMLElement).style.display = 'none';
+        });
+
+        // Accurately position signature blocks at the lower portion in cloned doc for html2canvas
+        if (p1) {
+          const clonedSig1 = p1.querySelector('.salary-signature-block') as HTMLElement;
+          if (clonedSig1) {
+            p1.style.position = 'relative';
+            clonedSig1.style.position = 'absolute';
+            clonedSig1.style.bottom = `${bottomPaddingPx}px`;
+            clonedSig1.style.left = `${leftPaddingPx}px`;
+            clonedSig1.style.width = `calc(100% - ${leftPaddingPx + rightPaddingPx}px)`;
+          }
+        }
+        if (p2) {
+          const clonedSig2 = p2.querySelector('.salary-signature-block') as HTMLElement;
+          if (clonedSig2) {
+            p2.style.position = 'relative';
+            clonedSig2.style.position = 'absolute';
+            clonedSig2.style.bottom = `${bottomPaddingPx}px`;
+            clonedSig2.style.left = `${leftPaddingPx}px`;
+            clonedSig2.style.width = `calc(100% - ${leftPaddingPx + rightPaddingPx}px)`;
+          }
+        }
       };
 
-      // Render Page 1
+      // Render Page 1 with scale: 3 and crisp lossless PNG
       const canvas1 = await html2canvas(page1Ref.current, {
-        scale: 2,
+        scale: 3,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
@@ -1493,13 +1648,13 @@ export default function SalaryStatementClient() {
         scrollY: 0,
         onclone: cloneSetup,
       });
-      const img1 = canvas1.toDataURL('image/jpeg', 0.98);
-      pdf.addImage(img1, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+      const img1 = canvas1.toDataURL('image/png');
+      pdf.addImage(img1, 'PNG', 0, 0, 210, 297, undefined, 'FAST');
 
-      // Render Page 2
+      // Render Page 2 with scale: 3 and crisp lossless PNG
       pdf.addPage('a4', 'portrait');
       const canvas2 = await html2canvas(page2Ref.current, {
-        scale: 2,
+        scale: 3,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
@@ -1510,8 +1665,8 @@ export default function SalaryStatementClient() {
         scrollY: 0,
         onclone: cloneSetup,
       });
-      const img2 = canvas2.toDataURL('image/jpeg', 0.98);
-      pdf.addImage(img2, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+      const img2 = canvas2.toDataURL('image/png');
+      pdf.addImage(img2, 'PNG', 0, 0, 210, 297, undefined, 'FAST');
 
       const sanitizedName = formData.name.replace(/[^a-zA-Z0-9]/g, '_');
       pdf.save(`Salary_Statement_${formData.workerId}_${sanitizedName}.pdf`);
@@ -1580,10 +1735,15 @@ export default function SalaryStatementClient() {
           padding-left: 8px !important;
           padding-right: 8px !important;
           box-sizing: border-box !important;
+          overflow: visible !important;
         }
         .salary-doc-page-2 table td {
           padding-left: 10px !important;
           padding-right: 10px !important;
+        }
+        .salary-doc-page table td *,
+        .salary-doc-page table th * {
+          overflow: visible !important;
         }
 
         @media print {
@@ -1593,6 +1753,8 @@ export default function SalaryStatementClient() {
           }
           *, *::before, *::after {
             box-sizing: border-box !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
           html, body {
             margin: 0 !important;
@@ -1605,8 +1767,11 @@ export default function SalaryStatementClient() {
             print-color-adjust: exact !important;
             overflow: visible !important;
             font-family: 'Times New Roman', Times, Georgia, serif !important;
+            -webkit-font-smoothing: antialiased !important;
+            -moz-osx-font-smoothing: grayscale !important;
+            text-rendering: optimizeLegibility !important;
           }
-          .print\\:hidden, header, nav, aside, footer {
+          .print\\:hidden, header, nav, aside, footer, .on-sheet-toolbar, .inline-reset-btn, .sheet-reset-btn {
             display: none !important;
           }
           /* Reset all app layout wrappers and flex containers for print to eliminate margin clipping */
@@ -1700,21 +1865,34 @@ export default function SalaryStatementClient() {
             display: flex !important;
             flex-direction: column !important;
             justify-content: flex-start !important;
+            position: relative !important;
             box-sizing: border-box !important;
             overflow: hidden !important;
             background: #ffffff !important;
+            color: #000000 !important;
             font-family: 'Times New Roman', Times, Georgia, serif !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
+            -webkit-font-smoothing: antialiased !important;
+            -moz-osx-font-smoothing: grayscale !important;
+            text-rendering: optimizeLegibility !important;
+          }
+          .salary-doc-page * {
+            color: #000000 !important;
+            -webkit-font-smoothing: antialiased !important;
+            -moz-osx-font-smoothing: grayscale !important;
+            text-rendering: optimizeLegibility !important;
           }
           .salary-doc-page table {
             border-collapse: collapse !important;
             border-spacing: 0 !important;
             width: 100% !important;
+            border: 1px solid #000000 !important;
           }
           .salary-doc-page table th,
           .salary-doc-page table td {
             border: 1px solid #000000 !important;
+            color: #000000 !important;
             vertical-align: middle !important;
             line-height: 1.35 !important;
             padding-top: 6px !important;
@@ -1722,10 +1900,26 @@ export default function SalaryStatementClient() {
             padding-left: 8px !important;
             padding-right: 8px !important;
             box-sizing: border-box !important;
+            overflow: visible !important;
+            white-space: normal !important;
           }
           .salary-doc-page-2 table td {
             padding-left: 10px !important;
             padding-right: 10px !important;
+          }
+          .salary-doc-page table td span,
+          .salary-doc-page table td div,
+          .salary-doc-page table th span,
+          .salary-doc-page table th div {
+            overflow: visible !important;
+            white-space: normal !important;
+            color: #000000 !important;
+          }
+          .salary-signature-spacer {
+            flex: 1 1 0% !important;
+          }
+          .salary-signature-block {
+            margin-top: auto !important;
           }
           .salary-doc-page-1 {
             page-break-inside: avoid !important;
@@ -4269,8 +4463,11 @@ export default function SalaryStatementClient() {
                     , for which Company or undersigned has no responsibility or liability at all.
                   </p>
 
-                  {/* Signatory Section (Left aligned, with underline separator) */}
-                  <div className="mt-6 text-[14px] leading-snug">
+                  {/* Spacer to push signature section gracefully down to the bottom of the letterhead page */}
+                  <div className="salary-signature-spacer flex-1 min-h-[48px]" />
+
+                  {/* Signatory Section (Left aligned, with underline separator, positioned at lower portion) */}
+                  <div className="salary-signature-block mt-auto pt-6 text-[14px] leading-snug shrink-0">
                     <div className="w-52 border-b border-black mb-1.5" />
                     <div className="font-bold">
                       <EditableInlineText
@@ -4618,15 +4815,15 @@ export default function SalaryStatementClient() {
 
                   {/* Numbered Items List */}
                   <div className="space-y-2 text-[14px] leading-relaxed">
-                    <p className="flex items-center gap-1 flex-wrap">
-                      <span>1.</span>
+                    <p className="leading-relaxed">
+                      <span>1. </span>
                       <EditableInlineText
                         value={formData.bankName}
                         defaultValue={initialDefaultsRef.current.bankName}
                         onChange={(val) => setFormData((prev) => ({ ...prev, bankName: val }))}
                         onReset={() => handleResetField('bankName')}
                       />
-                      <span>(A/C No.</span>
+                      <span> (A/C No. </span>
                       <EditableInlineText
                         value={formData.bankAccountNo}
                         defaultValue={initialDefaultsRef.current.bankAccountNo}
@@ -4634,8 +4831,8 @@ export default function SalaryStatementClient() {
                         onReset={() => handleResetField('bankAccountNo')}
                         isMono={true}
                       />
-                      <span>) payable amount:</span>
-                      <EditableAmountCell
+                      <span>) payable amount: </span>
+                      <EditableInlineAmount
                         value={formData.monthlyPayableAmount}
                         onChange={(val) =>
                           setFormData((prev) => ({
@@ -4646,8 +4843,9 @@ export default function SalaryStatementClient() {
                         }
                         onReset={() => handleResetField('monthlyPayableAmount')}
                         defaultValue={initialDefaultsRef.current.monthlyPayableAmount}
+                        suffix="/-"
                       />
-                      <span>(In Word: -</span>
+                      <span> (In Word: - </span>
                       <EditableInlineText
                         value={(formData.monthlyPayableInWords || '').replace(/^\(?In Word:\s*-?\s*/i, '').replace(/\)?\s*$/, '').trim()}
                         defaultValue={initialDefaultsRef.current.monthlyPayableInWords}
@@ -4656,19 +4854,21 @@ export default function SalaryStatementClient() {
                       />
                       <span>)</span>
                     </p>
-                    <p className="flex items-center gap-1 flex-wrap">
-                      <span>2.</span>
+                    <p className="leading-relaxed">
+                      <span>2. </span>
                       <EditableInlineText
                         value={formData.p2Item2Label || 'Total deduction amount (PF purpose Tk.'}
                         defaultValue="Total deduction amount (PF purpose Tk."
                         onChange={(val) => setFormData((prev) => ({ ...prev, p2Item2Label: val }))}
                         onReset={() => handleResetField('p2Item2Label')}
                       />
-                      <EditableAmountCell
+                      {' '}
+                      <EditableInlineAmount
                         value={formData.pfDeductionPage2}
                         onChange={(val) => handlePage2PfChange(val)}
                         onReset={() => handleResetField('pfDeductionPage2')}
                         defaultValue={initialDefaultsRef.current.pfDeductionPage2}
+                        suffix="/-"
                       />
                       <span>)</span>
                     </p>
@@ -4687,8 +4887,11 @@ export default function SalaryStatementClient() {
                     </div>
                   </div>
 
-                  {/* Signatory Section (Left aligned, with underline separator) */}
-                  <div className="mt-10 text-[14px] leading-snug">
+                  {/* Spacer to push signature section gracefully down to the bottom of the letterhead page */}
+                  <div className="salary-signature-spacer flex-1 min-h-[36px]" />
+
+                  {/* Signatory Section (Left aligned, with underline separator, positioned at lower portion) */}
+                  <div className="salary-signature-block mt-auto pt-6 text-[14px] leading-snug shrink-0">
                     <div className="w-52 border-b border-black mb-1.5" />
                     <div className="font-bold">
                       <EditableInlineText
