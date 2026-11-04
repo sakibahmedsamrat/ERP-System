@@ -36,10 +36,13 @@ interface MonthBreakdown {
   conveyanceLabel?: string;
   conveyance: number;
   pfLabel?: string;
+  pfType?: 'deduction' | 'addition';
   pfDeduction: number;
   overtimeLabel?: string;
+  overtimeType?: 'deduction' | 'addition';
   overtime: number;
   incomeTaxLabel?: string;
+  incomeTaxType?: 'deduction' | 'addition';
   incomeTax: number;
   netPayableLabel?: string;
   netPayable: number;
@@ -60,16 +63,22 @@ interface StatementData {
   purpose: string;
   months: [MonthBreakdown, MonthBreakdown, MonthBreakdown];
   // Page 2 specific
+  structureBasicLabel?: string;
   structureBasic: number;
+  structureHouseRentLabel?: string;
   structureHouseRent: number;
+  structureMedicalLabel?: string;
   structureMedical: number;
+  structureConveyanceLabel?: string;
   structureConveyance: number;
+  structureTotalLabel?: string;
   structureTotal: number;
   amountInWords: string;
   bankName: string;
   bankAccountNo: string;
   monthlyPayableAmount: number;
   monthlyPayableInWords: string;
+  p2Item2Label?: string;
   pfDeductionPage2: number;
   disclaimer: string;
   // Signatory
@@ -79,10 +88,56 @@ interface StatementData {
   signatoryOrg: string;
   // Optional custom freeform paragraph overrides
   p1Title?: string;
+  p1IntroText?: string;
   p1CustomParagraph?: string;
   p1CustomClosing?: string;
   p2Title?: string;
   p2CustomParagraph?: string;
+}
+
+function getRowMultiplier(
+  explicitType?: 'deduction' | 'addition',
+  defaultType: 'deduction' | 'addition' = 'deduction',
+  label?: string
+): number {
+  if (explicitType === 'addition') return 1;
+  if (explicitType === 'deduction') return -1;
+  const l = (label || '').toLowerCase();
+  if (
+    l.includes('(less)') ||
+    l.includes('less') ||
+    l.includes('deduct') ||
+    l.includes('tax') ||
+    l.includes('loan') ||
+    l.includes('advance') ||
+    l.includes('stamp') ||
+    l.includes('fine')
+  ) {
+    return -1;
+  }
+  if (
+    l.includes('bonus') ||
+    l.includes('over time') ||
+    l.includes('overtime') ||
+    l.includes('allowance') ||
+    l.includes('arrear') ||
+    l.includes('incentive') ||
+    l.includes('reward')
+  ) {
+    return 1;
+  }
+  return defaultType === 'addition' ? 1 : -1;
+}
+
+function calculateMonthNetPayable(month: MonthBreakdown): number {
+  const gross = Number(month.grossSalary) || 0;
+  const pf = Number(month.pfDeduction) || 0;
+  const overtime = Number(month.overtime) || 0;
+  const incomeTax = Number(month.incomeTax) || 0;
+  const pfMult = getRowMultiplier(month.pfType, 'deduction', month.pfLabel);
+  const otMult = getRowMultiplier(month.overtimeType, 'addition', month.overtimeLabel);
+  const itMult = getRowMultiplier(month.incomeTaxType, 'deduction', month.incomeTaxLabel);
+  return Math.max(0, gross + pfMult * pf + otMult * overtime + itMult * incomeTax);
 }
 
 interface EditableLabelCellProps {
@@ -92,6 +147,7 @@ interface EditableLabelCellProps {
   onReset: () => void;
   highlight?: boolean;
   isBold?: boolean;
+  align?: 'left' | 'right' | 'center';
 }
 
 function EditableLabelCell({
@@ -101,6 +157,7 @@ function EditableLabelCell({
   onReset,
   highlight = false,
   isBold = false,
+  align = 'left',
 }: EditableLabelCellProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [tempVal, setTempVal] = useState(value || defaultValue);
@@ -116,9 +173,11 @@ function EditableLabelCell({
 
   return (
     <div
-      className={`relative group/cell flex items-center justify-between w-full min-h-[22px] px-1 py-0.5 rounded transition ${
+      className={`relative group/cell flex items-center w-full min-h-[20px] px-1 py-0.5 rounded transition ${
+        align === 'right' ? 'justify-end' : align === 'center' ? 'justify-center' : 'justify-between'
+      } ${
         highlight
-          ? 'custom-row-highlight bg-rose-50/60 hover:bg-rose-100/60 print:bg-transparent'
+          ? 'custom-row-highlight bg-rose-50/40 hover:bg-rose-100/50 print:bg-transparent border-l-2 border-rose-400 print:border-l-0'
           : 'hover:bg-blue-50/50 print:hover:bg-transparent'
       }`}
     >
@@ -140,6 +199,9 @@ function EditableLabelCell({
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               setIsEditing(false);
+            } else if (e.key === 'Escape') {
+              setTempVal(displayVal);
+              setIsEditing(false);
             }
           }}
           className={`w-full bg-white border border-blue-500 rounded px-1 py-0.5 text-xs outline-none text-slate-900 shadow-inner ${
@@ -152,32 +214,37 @@ function EditableLabelCell({
             setTempVal(displayVal);
             setIsEditing(true);
           }}
-          className={`cursor-pointer flex-1 truncate select-none ${
+          className={`cursor-pointer flex-1 truncate select-none text-black ${
             isBold ? 'font-bold' : ''
-          } ${highlight ? 'text-rose-950 font-medium' : ''}`}
-          title="Click to edit label directly"
+          }`}
+          title={highlight ? 'Customizable particulars label - Click to edit' : 'Click to edit label directly'}
         >
           {displayVal}
         </span>
       )}
 
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onReset();
-          setTempVal(defaultValue);
-          setIsEditing(false);
-        }}
-        className={`inline-reset-btn print:hidden p-0.5 rounded transition ml-1 shrink-0 ${
-          isModified
-            ? 'text-amber-700 hover:text-amber-900 bg-amber-100 hover:bg-amber-200 opacity-90'
-            : 'opacity-0 group-hover/cell:opacity-100 text-slate-400 hover:text-blue-600 hover:bg-blue-100/80'
-        }`}
-        title={`Reset label to "${defaultValue}"`}
-      >
-        <RotateCcw size={10} />
-      </button>
+      {onReset && (
+        <button
+          type="button"
+          onMouseDown={(e) => {
+            e.preventDefault();
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onReset();
+            setTempVal(defaultValue);
+            setIsEditing(false);
+          }}
+          className={`inline-reset-btn print:hidden p-0.5 rounded transition ml-1 shrink-0 ${
+            isModified
+              ? 'text-amber-700 hover:text-amber-900 bg-amber-100 hover:bg-amber-200 opacity-90'
+              : 'opacity-0 group-hover/cell:opacity-100 text-slate-400 hover:text-blue-600 hover:bg-blue-100/80'
+          }`}
+          title={`Reset label to "${defaultValue}"`}
+        >
+          <RotateCcw size={10} />
+        </button>
+      )}
     </div>
   );
 }
@@ -186,6 +253,7 @@ interface EditableAmountCellProps {
   value: number;
   onChange: (val: number) => void;
   onReset?: () => void;
+  defaultValue?: number;
   suffix?: string;
   isBold?: boolean;
   decimals?: number;
@@ -195,6 +263,7 @@ function EditableAmountCell({
   value,
   onChange,
   onReset,
+  defaultValue,
   suffix = '/-',
   isBold = false,
   decimals = 0,
@@ -208,14 +277,45 @@ function EditableAmountCell({
     }
   }, [value, isEditing]);
 
-  const formatted = decimals > 0
-    ? Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
-    : Number(value || 0).toLocaleString('en-US');
+  const formatted =
+    decimals > 0
+      ? Number(value || 0).toLocaleString('en-US', {
+          minimumFractionDigits: decimals,
+          maximumFractionDigits: decimals,
+        })
+      : Number(value || 0).toLocaleString('en-US');
+
+  const isModified =
+    defaultValue !== undefined &&
+    Math.round(Number(value || 0)) !== Math.round(Number(defaultValue || 0));
 
   return (
-    <div className="relative group/amount flex items-center justify-end w-full min-h-[22px] px-1 py-0.5 rounded hover:bg-blue-50/50 print:hover:bg-transparent transition">
+    <div className="relative group/amount flex items-center justify-end w-full min-h-[20px] px-1 py-0.5 rounded hover:bg-blue-50/50 print:hover:bg-transparent transition">
+      {/* Position reset button on the LEFT so it NEVER shifts the right-aligned amount when hovered */}
+      {onReset && (
+        <button
+          type="button"
+          onMouseDown={(e) => {
+            e.preventDefault();
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onReset();
+            setIsEditing(false);
+          }}
+          className={`inline-reset-btn print:hidden p-0.5 rounded transition mr-auto shrink-0 ${
+            isModified
+              ? 'text-amber-700 hover:text-amber-900 bg-amber-100 hover:bg-amber-200 opacity-90'
+              : 'opacity-0 group-hover/amount:opacity-100 text-slate-400 hover:text-blue-600 hover:bg-blue-100/80'
+          }`}
+          title="Reset amount to default"
+        >
+          <RotateCcw size={10} />
+        </button>
+      )}
+
       {isEditing ? (
-        <div className="flex items-center justify-end w-full">
+        <div className="flex items-center justify-end w-full max-w-[85px]">
           <input
             type="text"
             autoFocus
@@ -234,13 +334,16 @@ function EditableAmountCell({
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 setIsEditing(false);
+              } else if (e.key === 'Escape') {
+                setTempVal(String(value ?? 0));
+                setIsEditing(false);
               }
             }}
-            className={`w-24 text-right bg-white border border-blue-500 rounded px-1 py-0.5 text-xs outline-none text-slate-900 shadow-inner ${
+            className={`w-full text-right bg-white border border-blue-500 rounded px-1 py-0.5 text-xs outline-none text-slate-900 shadow-inner ${
               isBold ? 'font-bold' : ''
             }`}
           />
-          <span className="ml-0.5">{suffix}</span>
+          {suffix && <span className="ml-0.5 text-black shrink-0">{suffix}</span>}
         </div>
       ) : (
         <span
@@ -248,26 +351,12 @@ function EditableAmountCell({
             setTempVal(String(value ?? 0));
             setIsEditing(true);
           }}
-          className={`cursor-pointer select-none ${isBold ? 'font-bold' : ''}`}
+          className={`cursor-pointer select-none text-black ${isBold ? 'font-bold' : ''}`}
           title="Click to edit amount directly"
         >
-          {formatted}{suffix}
+          {formatted}
+          {suffix}
         </span>
-      )}
-
-      {onReset && (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onReset();
-            setIsEditing(false);
-          }}
-          className="inline-reset-btn print:hidden opacity-0 group-hover/amount:opacity-100 text-slate-400 hover:text-blue-600 hover:bg-blue-100/80 p-0.5 rounded transition ml-1 shrink-0"
-          title="Reset amount to default"
-        >
-          <RotateCcw size={10} />
-        </button>
       )}
     </div>
   );
@@ -283,6 +372,8 @@ interface EditableInlineTextProps {
   isMono?: boolean;
   placeholder?: string;
   className?: string;
+  multiline?: boolean;
+  renderDisplay?: (val: string) => React.ReactNode;
 }
 
 function EditableInlineText({
@@ -295,6 +386,8 @@ function EditableInlineText({
   isMono = false,
   placeholder = 'Click to edit...',
   className = '',
+  multiline = false,
+  renderDisplay,
 }: EditableInlineTextProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [tempVal, setTempVal] = useState(value || defaultValue);
@@ -308,8 +401,88 @@ function EditableInlineText({
   const displayVal = value || defaultValue;
   const isModified = displayVal !== defaultValue;
 
+  if (multiline) {
+    return (
+      <div
+        className={`relative group/multi w-full rounded p-1 hover:bg-blue-50/50 print:hover:bg-transparent transition ${className}`}
+      >
+        {isEditing ? (
+          <div className="w-full space-y-1">
+            <textarea
+              autoFocus
+              rows={3}
+              value={tempVal}
+              placeholder={placeholder}
+              onChange={(e) => {
+                setTempVal(e.target.value);
+                onChange(e.target.value);
+              }}
+              onBlur={() => {
+                setIsEditing(false);
+                if (!tempVal.trim() && defaultValue) {
+                  onChange(defaultValue);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  setTempVal(displayVal);
+                  setIsEditing(false);
+                }
+              }}
+              className="w-full bg-white border border-blue-500 rounded p-1.5 text-xs outline-none text-slate-900 shadow-inner leading-relaxed"
+            />
+            <div className="flex justify-end gap-1 text-[10px] print:hidden">
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => setIsEditing(false)}
+                className="px-2 py-0.5 bg-blue-600 text-white rounded font-bold hover:bg-blue-700"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div
+            onClick={() => {
+              setTempVal(displayVal);
+              setIsEditing(true);
+            }}
+            className="cursor-pointer text-justify leading-relaxed"
+            title="Click to edit text directly on sheet"
+          >
+            {renderDisplay ? renderDisplay(displayVal) : displayVal}
+          </div>
+        )}
+
+        {onReset && (
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={(e) => {
+              e.stopPropagation();
+              onReset();
+              setTempVal(defaultValue);
+              setIsEditing(false);
+            }}
+            className={`sheet-reset-btn print:hidden absolute top-1 right-1 p-1 rounded transition shadow-xs ${
+              isModified
+                ? 'text-amber-800 bg-amber-100 hover:bg-amber-200 opacity-90'
+                : 'opacity-0 group-hover/multi:opacity-100 text-slate-400 hover:text-blue-600 bg-white/90 border border-slate-200'
+            }`}
+            title="Reset text to default"
+          >
+            <RotateCcw size={11} />
+          </button>
+        )}
+      </div>
+    );
+  }
+
   return (
-    <span className={`relative inline-flex items-center group/inline px-0.5 py-0.2 rounded hover:bg-blue-50/60 print:hover:bg-transparent transition ${className}`}>
+    <span
+      className={`relative inline-flex items-center group/inline px-0.5 py-0.2 rounded hover:bg-blue-50/60 print:hover:bg-transparent transition ${className}`}
+    >
       {isEditing ? (
         <input
           type="text"
@@ -329,12 +502,15 @@ function EditableInlineText({
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               setIsEditing(false);
+            } else if (e.key === 'Escape') {
+              setTempVal(displayVal);
+              setIsEditing(false);
             }
           }}
-          className={`bg-white border border-blue-500 rounded px-1.5 py-0.5 text-inherit outline-none shadow-xs text-slate-900 ${
+          className={`bg-white border border-blue-500 rounded px-1.5 py-0.5 text-inherit outline-none shadow-xs text-slate-900 max-w-full ${
             isBold ? 'font-bold' : ''
           } ${isMono ? 'font-mono' : ''}`}
-          style={{ width: `${Math.max(8, tempVal.length + 2)}ch` }}
+          style={{ width: `${Math.min(50, Math.max(6, tempVal.length + 2))}ch` }}
         />
       ) : (
         <span
@@ -347,13 +523,14 @@ function EditableInlineText({
           }`}
           title="Click to edit directly on sheet"
         >
-          {displayVal}
+          {renderDisplay ? renderDisplay(displayVal) : displayVal}
         </span>
       )}
 
       {onReset && (
         <button
           type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={(e) => {
             e.stopPropagation();
             onReset();
@@ -556,16 +733,22 @@ export default function SalaryStatementClient() {
       },
     ],
     // Page 2 specific
+    structureBasicLabel: 'Basic',
     structureBasic: 22000,
+    structureHouseRentLabel: 'House Rent',
     structureHouseRent: 13200,
+    structureMedicalLabel: 'Medical Allowance',
     structureMedical: 4400,
+    structureConveyanceLabel: 'Conveyance',
     structureConveyance: 4400,
+    structureTotalLabel: 'Total Salary',
     structureTotal: 44000,
     amountInWords: 'Forty-Four Thousand Taka Only.',
     bankName: 'Prime Bank',
     bankAccountNo: '2111212026612',
     monthlyPayableAmount: 41735,
     monthlyPayableInWords: 'Forty- One Thousand Seven Hundred Thirty-Five Taka Only.',
+    p2Item2Label: 'Total deduction amount (PF purpose Tk.',
     pfDeductionPage2: 417,
     disclaimer:
       'This certificate is issued at the request of the mentioned employee with no responsibility borne either on the signatory or the company for any kind of financial transactions.',
@@ -642,11 +825,17 @@ export default function SalaryStatementClient() {
       joiningDate: joinDateFormatted,
       bankName,
       bankAccountNo: accountNo,
+      p2Item2Label: 'Total deduction amount (PF purpose Tk.',
       pfDeductionPage2: pfDeduct,
+      structureBasicLabel: 'Basic',
       structureBasic: basic,
+      structureHouseRentLabel: 'House Rent',
       structureHouseRent: houseRent,
+      structureMedicalLabel: 'Medical Allowance',
       structureMedical: medical,
+      structureConveyanceLabel: 'Conveyance',
       structureConveyance: conveyance,
+      structureTotalLabel: 'Total Salary',
       structureTotal: totalStructure,
       amountInWords: words,
       monthlyPayableAmount: netPayable,
@@ -802,16 +991,22 @@ export default function SalaryStatementClient() {
           netPayable: 46135,
         },
       ],
+      structureBasicLabel: 'Basic',
       structureBasic: 22000,
+      structureHouseRentLabel: 'House Rent',
       structureHouseRent: 13200,
+      structureMedicalLabel: 'Medical Allowance',
       structureMedical: 4400,
+      structureConveyanceLabel: 'Conveyance',
       structureConveyance: 4400,
+      structureTotalLabel: 'Total Salary',
       structureTotal: 44000,
       amountInWords: 'Forty-Four Thousand Taka Only.',
       bankName: 'Prime Bank',
       bankAccountNo: '2111212026612',
       monthlyPayableAmount: 41735,
       monthlyPayableInWords: 'Forty- One Thousand Seven Hundred Thirty-Five Taka Only.',
+      p2Item2Label: 'Total deduction amount (PF purpose Tk.',
       pfDeductionPage2: 417,
       disclaimer:
         'This certificate is issued at the request of the mentioned employee with no responsibility borne either on the signatory or the company for any kind of financial transactions.',
@@ -828,7 +1023,7 @@ export default function SalaryStatementClient() {
   const handleMonthChange = (
     index: 0 | 1 | 2,
     field: keyof MonthBreakdown,
-    val: string | number
+    val: string | number | undefined
   ) => {
     setFormData((prev) => {
       const updatedMonths = [...prev.months] as [MonthBreakdown, MonthBreakdown, MonthBreakdown];
@@ -842,15 +1037,41 @@ export default function SalaryStatementClient() {
           (Number(currentMonth.conveyance) || 0);
       }
 
-      if (field !== 'netPayable' && !field.endsWith('Label') && field !== 'monthName') {
-        const gross = Number(currentMonth.grossSalary) || 0;
-        const pf = Number(currentMonth.pfDeduction) || 0;
-        const overtime = Number(currentMonth.overtime) || 0;
-        const incomeTax = Number(currentMonth.incomeTax) || 0;
-        currentMonth.netPayable = Math.max(0, gross - pf + overtime - incomeTax);
+      if (field !== 'netPayable' && field !== 'monthName' && field !== 'netPayableLabel') {
+        currentMonth.netPayable = calculateMonthNetPayable(currentMonth);
       }
 
       updatedMonths[index] = currentMonth;
+      return { ...prev, months: updatedMonths };
+    });
+  };
+
+  // Toggle custom row type between addition and deduction
+  const handleToggleRowType = (
+    monthIdx: 0 | 1 | 2,
+    typeField: 'pfType' | 'overtimeType' | 'incomeTaxType',
+    defaultType: 'deduction' | 'addition'
+  ) => {
+    setFormData((prev) => {
+      const updatedMonths = [...prev.months] as [MonthBreakdown, MonthBreakdown, MonthBreakdown];
+      const currentMonth = { ...updatedMonths[monthIdx] };
+      const currentType = currentMonth[typeField] || defaultType;
+      const nextType = currentType === 'deduction' ? 'addition' : 'deduction';
+      currentMonth[typeField] = nextType;
+      currentMonth.netPayable = calculateMonthNetPayable(currentMonth);
+      updatedMonths[monthIdx] = currentMonth;
+      return { ...prev, months: updatedMonths };
+    });
+  };
+
+  // Reset Net Payable to calculated value
+  const handleResetNetPayable = (monthIdx: 0 | 1 | 2) => {
+    setFormData((prev) => {
+      const updatedMonths = [...prev.months] as [MonthBreakdown, MonthBreakdown, MonthBreakdown];
+      const currentMonth = { ...updatedMonths[monthIdx] };
+      currentMonth.netPayable = calculateMonthNetPayable(currentMonth);
+      currentMonth.netPayableLabel = 'Net Payable=';
+      updatedMonths[monthIdx] = currentMonth;
       return { ...prev, months: updatedMonths };
     });
   };
@@ -910,8 +1131,20 @@ export default function SalaryStatementClient() {
       months: prev.months.map((m) => ({
         ...m,
         pfLabel: '(Less) PF',
+        pfType: 'deduction',
         overtimeLabel: 'Over Time',
+        overtimeType: 'addition',
         incomeTaxLabel: 'Income Tax',
+        incomeTaxType: 'deduction',
+        netPayable: calculateMonthNetPayable({
+          ...m,
+          pfLabel: '(Less) PF',
+          pfType: 'deduction',
+          overtimeLabel: 'Over Time',
+          overtimeType: 'addition',
+          incomeTaxLabel: 'Income Tax',
+          incomeTaxType: 'deduction',
+        }),
       })) as [MonthBreakdown, MonthBreakdown, MonthBreakdown],
     }));
   };
@@ -921,16 +1154,26 @@ export default function SalaryStatementClient() {
     setFormData((prev) => {
       const src = prev.months[fromIndex];
       const pfLabel = src.pfLabel || '(Less) PF';
+      const pfType = src.pfType || 'deduction';
       const overtimeLabel = src.overtimeLabel || 'Over Time';
+      const overtimeType = src.overtimeType || 'addition';
       const incomeTaxLabel = src.incomeTaxLabel || 'Income Tax';
+      const incomeTaxType = src.incomeTaxType || 'deduction';
       return {
         ...prev,
-        months: prev.months.map((m) => ({
-          ...m,
-          pfLabel,
-          overtimeLabel,
-          incomeTaxLabel,
-        })) as [MonthBreakdown, MonthBreakdown, MonthBreakdown],
+        months: prev.months.map((m) => {
+          const updated = {
+            ...m,
+            pfLabel,
+            pfType,
+            overtimeLabel,
+            overtimeType,
+            incomeTaxLabel,
+            incomeTaxType,
+          };
+          updated.netPayable = calculateMonthNetPayable(updated);
+          return updated;
+        }) as [MonthBreakdown, MonthBreakdown, MonthBreakdown],
       };
     });
   };
@@ -1018,7 +1261,9 @@ export default function SalaryStatementClient() {
         companyName: init.companyName,
         companyAddress: init.companyAddress,
         joiningDate: init.joiningDate,
+        p1IntroText: undefined,
         p1CustomParagraph: undefined,
+        p1CustomClosing: undefined,
         p2CustomParagraph: undefined,
       }));
     }
@@ -1030,17 +1275,48 @@ export default function SalaryStatementClient() {
       const init = initialDefaultsRef.current;
       setFormData((prev) => ({
         ...prev,
+        structureBasicLabel: init.structureBasicLabel || 'Basic',
         structureBasic: init.structureBasic,
+        structureHouseRentLabel: init.structureHouseRentLabel || 'House Rent',
         structureHouseRent: init.structureHouseRent,
+        structureMedicalLabel: init.structureMedicalLabel || 'Medical Allowance',
         structureMedical: init.structureMedical,
+        structureConveyanceLabel: init.structureConveyanceLabel || 'Conveyance',
         structureConveyance: init.structureConveyance,
+        structureTotalLabel: init.structureTotalLabel || 'Total Salary',
         structureTotal: init.structureTotal,
         amountInWords: init.amountInWords,
         monthlyPayableAmount: init.monthlyPayableAmount,
         monthlyPayableInWords: init.monthlyPayableInWords,
         pfDeductionPage2: init.pfDeductionPage2,
+        p2Item2Label: init.p2Item2Label || 'Total deduction amount (PF purpose Tk.',
       }));
     }
+  };
+
+  // Reset individual Page 2 structure row
+  const handleResetStructureRow = (
+    labelField: 'structureBasicLabel' | 'structureHouseRentLabel' | 'structureMedicalLabel' | 'structureConveyanceLabel' | 'structureTotalLabel',
+    defaultLabel: string,
+    amountField?: 'structureBasic' | 'structureHouseRent' | 'structureMedical' | 'structureConveyance' | 'structureTotal'
+  ) => {
+    setFormData((prev) => {
+      const next = { ...prev, [labelField]: defaultLabel };
+      if (amountField && initialDefaultsRef.current) {
+        (next as any)[amountField] = (initialDefaultsRef.current as any)[amountField];
+        const total =
+          Number(next.structureBasic || 0) +
+          Number(next.structureHouseRent || 0) +
+          Number(next.structureMedical || 0) +
+          Number(next.structureConveyance || 0);
+        next.structureTotal = total;
+        next.amountInWords = formatWordsOnly(total);
+        const net = Math.max(0, total - Number(next.pfDeductionPage2 || 0));
+        next.monthlyPayableAmount = net;
+        next.monthlyPayableInWords = formatWordsOnly(net);
+      }
+      return next;
+    });
   };
 
   // Reset Bank Details
@@ -1051,6 +1327,7 @@ export default function SalaryStatementClient() {
         ...prev,
         bankName: init.bankName,
         bankAccountNo: init.bankAccountNo,
+        p2Item2Label: init.p2Item2Label || 'Total deduction amount (PF purpose Tk.',
       }));
     }
   };
@@ -1111,17 +1388,19 @@ export default function SalaryStatementClient() {
       const cloneSetup = (clonedDoc: Document) => {
         // Hide non-printable elements in cloned doc
         const nonPrintables = clonedDoc.querySelectorAll(
-          '.print\\:hidden, header, nav, aside, footer, .on-sheet-toolbar, .inline-reset-btn'
+          '.print\\:hidden, header, nav, aside, footer, .on-sheet-toolbar, .inline-reset-btn, .sheet-reset-btn'
         );
         nonPrintables.forEach((el: any) => {
           el.style.display = 'none';
         });
 
-        // Remove any custom row highlight backgrounds in cloned doc
+        // Remove any custom row highlight backgrounds or borders in cloned doc
         const highlights = clonedDoc.querySelectorAll('.custom-row-highlight');
         highlights.forEach((el: any) => {
           el.style.backgroundColor = 'transparent';
           el.style.border = 'none';
+          el.style.borderLeft = 'none';
+          el.style.paddingLeft = '0';
         });
 
         // Convert any active inputs / textareas in doc pages to plain spans
@@ -1136,9 +1415,18 @@ export default function SalaryStatementClient() {
           span.style.color = '#000000';
           span.style.border = 'none';
           span.style.background = 'transparent';
-          span.style.display = 'inline-block';
-          span.style.width = '100%';
           span.style.lineHeight = '1.35';
+          if (input.tagName.toLowerCase() === 'textarea' || input.classList.contains('w-full')) {
+            span.style.display = 'block';
+            span.style.width = '100%';
+            span.style.whiteSpace = 'pre-wrap';
+          } else if (input.closest('td')) {
+            span.style.display = 'inline-block';
+            span.style.width = '100%';
+          } else {
+            span.style.display = 'inline';
+            span.style.width = 'auto';
+          }
           input.parentNode?.replaceChild(span, input);
         });
 
@@ -1187,6 +1475,8 @@ export default function SalaryStatementClient() {
           cell.style.paddingTop = '6px';
           cell.style.paddingBottom = '6px';
           cell.style.boxSizing = 'border-box';
+          cell.style.color = '#000000';
+          cell.style.backgroundColor = 'transparent';
         });
       };
 
@@ -2200,9 +2490,23 @@ export default function SalaryStatementClient() {
 
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
                               <div>
-                                <label className="block text-[11px] font-medium text-rose-900 mb-0.5">
-                                  Deduction 1 Label (Default: (Less) PF)
-                                </label>
+                                <div className="flex items-center justify-between mb-0.5">
+                                  <label className="text-[11px] font-medium text-rose-900">
+                                    Row 6 (Red Box 1)
+                                  </label>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleRowType(mIdx, 'pfType', 'deduction')}
+                                    className={`text-[9px] px-1.5 py-0.5 rounded font-bold border transition ${
+                                      (m.pfType || 'deduction') === 'addition'
+                                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                        : 'bg-rose-100 text-rose-800 border-rose-300'
+                                    }`}
+                                    title="Click to toggle between Deduction (-) and Addition (+)"
+                                  >
+                                    {(m.pfType || 'deduction') === 'addition' ? '+ Addition' : '- Deduction'}
+                                  </button>
+                                </div>
                                 <div className="flex items-center gap-1">
                                   <input
                                     type="text"
@@ -2223,9 +2527,23 @@ export default function SalaryStatementClient() {
                               </div>
 
                               <div>
-                                <label className="block text-[11px] font-medium text-rose-900 mb-0.5">
-                                  Addition Label (Default: Over Time)
-                                </label>
+                                <div className="flex items-center justify-between mb-0.5">
+                                  <label className="text-[11px] font-medium text-rose-900">
+                                    Row 7 (Red Box 2)
+                                  </label>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleRowType(mIdx, 'overtimeType', 'addition')}
+                                    className={`text-[9px] px-1.5 py-0.5 rounded font-bold border transition ${
+                                      (m.overtimeType || 'addition') === 'deduction'
+                                        ? 'bg-rose-100 text-rose-800 border-rose-300'
+                                        : 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                    }`}
+                                    title="Click to toggle between Addition (+) and Deduction (-)"
+                                  >
+                                    {(m.overtimeType || 'addition') === 'deduction' ? '- Deduction' : '+ Addition'}
+                                  </button>
+                                </div>
                                 <div className="flex items-center gap-1">
                                   <input
                                     type="text"
@@ -2246,9 +2564,23 @@ export default function SalaryStatementClient() {
                               </div>
 
                               <div>
-                                <label className="block text-[11px] font-medium text-rose-900 mb-0.5">
-                                  Deduction 2 Label (Default: Income Tax)
-                                </label>
+                                <div className="flex items-center justify-between mb-0.5">
+                                  <label className="text-[11px] font-medium text-rose-900">
+                                    Row 8 (Red Box 3)
+                                  </label>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleRowType(mIdx, 'incomeTaxType', 'deduction')}
+                                    className={`text-[9px] px-1.5 py-0.5 rounded font-bold border transition ${
+                                      (m.incomeTaxType || 'deduction') === 'addition'
+                                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                        : 'bg-rose-100 text-rose-800 border-rose-300'
+                                    }`}
+                                    title="Click to toggle between Deduction (-) and Addition (+)"
+                                  >
+                                    {(m.incomeTaxType || 'deduction') === 'addition' ? '+ Addition' : '- Deduction'}
+                                  </button>
+                                </div>
                                 <div className="flex items-center gap-1">
                                   <input
                                     type="text"
@@ -2446,6 +2778,14 @@ export default function SalaryStatementClient() {
                               </button>
                             </div>
                             <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => handleResetNetPayable(mIdx)}
+                                className="p-1 text-emerald-600 hover:text-emerald-800 rounded transition shrink-0"
+                                title="Recalculate & Reset Net Payable"
+                              >
+                                <RotateCcw size={11} />
+                              </button>
                               <input
                                 type="number"
                                 value={m.netPayable}
@@ -2656,22 +2996,34 @@ export default function SalaryStatementClient() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                       <div>
                         <div className="flex items-center justify-between mb-1">
-                          <label className="font-semibold text-gray-600">Total Deduction (PF purpose Tk.)</label>
+                          <label className="font-semibold text-gray-600">Item 2 Deduction Label & Amount</label>
                           <button
                             type="button"
-                            onClick={() => handleResetField('pfDeductionPage2')}
+                            onClick={() => {
+                              handleResetField('p2Item2Label');
+                              handleResetField('pfDeductionPage2');
+                            }}
                             className="text-[11px] text-slate-400 hover:text-blue-600 flex items-center gap-1 font-medium transition"
                             title="Reset PF Deduction"
                           >
                             <RotateCcw size={10} /> Reset
                           </button>
                         </div>
-                        <input
-                          type="number"
-                          value={formData.pfDeductionPage2}
-                          onChange={(e) => handlePage2PfChange(Number(e.target.value))}
-                          className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
-                        />
+                        <div className="space-y-1.5">
+                          <input
+                            type="text"
+                            value={formData.p2Item2Label || 'Total deduction amount (PF purpose Tk.'}
+                            onChange={(e) => setFormData({ ...formData, p2Item2Label: e.target.value })}
+                            placeholder="Total deduction amount (PF purpose Tk."
+                            className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs"
+                          />
+                          <input
+                            type="number"
+                            value={formData.pfDeductionPage2}
+                            onChange={(e) => handlePage2PfChange(Number(e.target.value))}
+                            className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
+                          />
+                        </div>
                       </div>
                       <div>
                         <div className="flex items-center justify-between mb-1">
@@ -3342,6 +3694,7 @@ export default function SalaryStatementClient() {
                       defaultValue={initialDefaultsRef.current.joiningDate}
                       onChange={(val) => setFormData((prev) => ({ ...prev, joiningDate: val }))}
                       onReset={() => handleResetField('joiningDate')}
+                      renderDisplay={(val) => renderOrdinalDateText(val)}
                     />
                     .{' '}
                     <EditableInlineText
@@ -3364,12 +3717,32 @@ export default function SalaryStatementClient() {
                       onChange={(val) => setFormData((prev) => ({ ...prev, department: val }))}
                       onReset={() => handleResetField('department')}
                     />{' '}
-                    Department. {formData.genderPronoun} is a permanent employee of MEP GROUP.
+                    Department.{' '}
+                    <EditableInlineText
+                      value={formData.genderPronoun}
+                      defaultValue={initialDefaultsRef.current.genderPronoun}
+                      onChange={(val) => setFormData((prev) => ({ ...prev, genderPronoun: val as any }))}
+                      onReset={() => handleResetField('genderPronoun')}
+                    />{' '}
+                    is a permanent employee of MEP GROUP.
                   </p>
 
                   {/* Intro line before table */}
                   <p className="mb-3 text-[14px]">
-                    The details of {getPossessivePronoun(formData.genderPronoun)} gross monthly salary for the past three months are as follows:
+                    <EditableInlineText
+                      value={
+                        formData.p1IntroText ||
+                        `The details of ${getPossessivePronoun(formData.genderPronoun)} gross monthly salary for the past three months are as follows:`
+                      }
+                      defaultValue={`The details of ${getPossessivePronoun(formData.genderPronoun)} gross monthly salary for the past three months are as follows:`}
+                      onChange={(val) => setFormData((prev) => ({ ...prev, p1IntroText: val }))}
+                      onReset={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          p1IntroText: `The details of ${getPossessivePronoun(formData.genderPronoun)} gross monthly salary for the past three months are as follows:`,
+                        }))
+                      }
+                    />
                   </p>
 
                   {/* Past 3 Months Table (6 Columns: Month 1 | Month 2 | Month 3) */}
@@ -3675,6 +4048,7 @@ export default function SalaryStatementClient() {
                             value={formData.months[0].pfDeduction}
                             onChange={(val) => handleMonthChange(0, 'pfDeduction', val)}
                             onReset={() => handleResetMonthAmount(0, 'pfDeduction')}
+                            defaultValue={initialDefaultsRef.current.months[0].pfDeduction}
                           />
                         </td>
                         <td className="border border-black py-1 px-1.5 align-middle leading-normal">
@@ -3691,6 +4065,7 @@ export default function SalaryStatementClient() {
                             value={formData.months[1].pfDeduction}
                             onChange={(val) => handleMonthChange(1, 'pfDeduction', val)}
                             onReset={() => handleResetMonthAmount(1, 'pfDeduction')}
+                            defaultValue={initialDefaultsRef.current.months[1].pfDeduction}
                           />
                         </td>
                         <td className="border border-black py-1 px-1.5 align-middle leading-normal">
@@ -3707,6 +4082,7 @@ export default function SalaryStatementClient() {
                             value={formData.months[2].pfDeduction}
                             onChange={(val) => handleMonthChange(2, 'pfDeduction', val)}
                             onReset={() => handleResetMonthAmount(2, 'pfDeduction')}
+                            defaultValue={initialDefaultsRef.current.months[2].pfDeduction}
                           />
                         </td>
                       </tr>
@@ -3727,6 +4103,7 @@ export default function SalaryStatementClient() {
                             value={formData.months[0].overtime}
                             onChange={(val) => handleMonthChange(0, 'overtime', val)}
                             onReset={() => handleResetMonthAmount(0, 'overtime')}
+                            defaultValue={initialDefaultsRef.current.months[0].overtime}
                           />
                         </td>
                         <td className="border border-black py-1 px-1.5 align-middle leading-normal">
@@ -3743,6 +4120,7 @@ export default function SalaryStatementClient() {
                             value={formData.months[1].overtime}
                             onChange={(val) => handleMonthChange(1, 'overtime', val)}
                             onReset={() => handleResetMonthAmount(1, 'overtime')}
+                            defaultValue={initialDefaultsRef.current.months[1].overtime}
                           />
                         </td>
                         <td className="border border-black py-1 px-1.5 align-middle leading-normal">
@@ -3759,6 +4137,7 @@ export default function SalaryStatementClient() {
                             value={formData.months[2].overtime}
                             onChange={(val) => handleMonthChange(2, 'overtime', val)}
                             onReset={() => handleResetMonthAmount(2, 'overtime')}
+                            defaultValue={initialDefaultsRef.current.months[2].overtime}
                           />
                         </td>
                       </tr>
@@ -3779,6 +4158,7 @@ export default function SalaryStatementClient() {
                             value={formData.months[0].incomeTax}
                             onChange={(val) => handleMonthChange(0, 'incomeTax', val)}
                             onReset={() => handleResetMonthAmount(0, 'incomeTax')}
+                            defaultValue={initialDefaultsRef.current.months[0].incomeTax}
                           />
                         </td>
                         <td className="border border-black py-1 px-1.5 align-middle leading-normal">
@@ -3795,6 +4175,7 @@ export default function SalaryStatementClient() {
                             value={formData.months[1].incomeTax}
                             onChange={(val) => handleMonthChange(1, 'incomeTax', val)}
                             onReset={() => handleResetMonthAmount(1, 'incomeTax')}
+                            defaultValue={initialDefaultsRef.current.months[1].incomeTax}
                           />
                         </td>
                         <td className="border border-black py-1 px-1.5 align-middle leading-normal">
@@ -3811,6 +4192,7 @@ export default function SalaryStatementClient() {
                             value={formData.months[2].incomeTax}
                             onChange={(val) => handleMonthChange(2, 'incomeTax', val)}
                             onReset={() => handleResetMonthAmount(2, 'incomeTax')}
+                            defaultValue={initialDefaultsRef.current.months[2].incomeTax}
                           />
                         </td>
                       </tr>
@@ -3830,8 +4212,9 @@ export default function SalaryStatementClient() {
                           <EditableAmountCell
                             value={formData.months[0].netPayable}
                             onChange={(val) => handleMonthChange(0, 'netPayable', val)}
-                            onReset={() => handleResetMonthAmount(0, 'netPayable')}
+                            onReset={() => handleResetNetPayable(0)}
                             isBold={true}
+                            defaultValue={initialDefaultsRef.current.months[0].netPayable}
                           />
                         </td>
                         <td className="border border-black py-1 px-1.5 align-middle leading-normal">
@@ -3847,8 +4230,9 @@ export default function SalaryStatementClient() {
                           <EditableAmountCell
                             value={formData.months[1].netPayable}
                             onChange={(val) => handleMonthChange(1, 'netPayable', val)}
-                            onReset={() => handleResetMonthAmount(1, 'netPayable')}
+                            onReset={() => handleResetNetPayable(1)}
                             isBold={true}
+                            defaultValue={initialDefaultsRef.current.months[1].netPayable}
                           />
                         </td>
                         <td className="border border-black py-1 px-1.5 align-middle leading-normal">
@@ -3864,8 +4248,9 @@ export default function SalaryStatementClient() {
                           <EditableAmountCell
                             value={formData.months[2].netPayable}
                             onChange={(val) => handleMonthChange(2, 'netPayable', val)}
-                            onReset={() => handleResetMonthAmount(2, 'netPayable')}
+                            onReset={() => handleResetNetPayable(2)}
                             isBold={true}
+                            defaultValue={initialDefaultsRef.current.months[2].netPayable}
                           />
                         </td>
                       </tr>
@@ -4051,6 +4436,7 @@ export default function SalaryStatementClient() {
                       defaultValue={initialDefaultsRef.current.joiningDate}
                       onChange={(val) => setFormData((prev) => ({ ...prev, joiningDate: val }))}
                       onReset={() => handleResetField('joiningDate')}
+                      renderDisplay={(val) => renderOrdinalDateText(val)}
                     />
                     .{' '}
                     <EditableInlineText
@@ -4073,12 +4459,32 @@ export default function SalaryStatementClient() {
                       onChange={(val) => setFormData((prev) => ({ ...prev, department: val }))}
                       onReset={() => handleResetField('department')}
                     />{' '}
-                    Department. {formData.genderPronoun} is a permanent employee of MEP GROUP.
+                    Department.{' '}
+                    <EditableInlineText
+                      value={formData.genderPronoun}
+                      defaultValue={initialDefaultsRef.current.genderPronoun}
+                      onChange={(val) => setFormData((prev) => ({ ...prev, genderPronoun: val as any }))}
+                      onReset={() => handleResetField('genderPronoun')}
+                    />{' '}
+                    is a permanent employee of MEP GROUP.
                   </p>
 
                   {/* Intro line before table */}
                   <p className="mb-3 text-[14px]">
-                    Details of {getPossessivePronoun(formData.genderPronoun)} monthly salary & allowance are as follows:
+                    <EditableInlineText
+                      value={
+                        formData.p2CustomParagraph ||
+                        `Details of ${getPossessivePronoun(formData.genderPronoun)} monthly salary & allowance are as follows:`
+                      }
+                      defaultValue={`Details of ${getPossessivePronoun(formData.genderPronoun)} monthly salary & allowance are as follows:`}
+                      onChange={(val) => setFormData((prev) => ({ ...prev, p2CustomParagraph: val }))}
+                      onReset={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          p2CustomParagraph: `Details of ${getPossessivePronoun(formData.genderPronoun)} monthly salary & allowance are as follows:`,
+                        }))
+                      }
+                    />
                   </p>
 
                   {/* 2-Column Monthly Salary & Allowance Table */}
@@ -4089,58 +4495,104 @@ export default function SalaryStatementClient() {
                     </colgroup>
                     <tbody>
                       <tr>
-                        <td className="border border-black py-1.5 px-3 align-middle leading-normal w-[65%]">Basic</td>
+                        <td className="border border-black py-1.5 px-3 align-middle leading-normal w-[65%]">
+                          <EditableLabelCell
+                            value={formData.structureBasicLabel || 'Basic'}
+                            defaultValue="Basic"
+                            onChange={(val) => setFormData((prev) => ({ ...prev, structureBasicLabel: val }))}
+                            onReset={() => handleResetStructureRow('structureBasicLabel', 'Basic')}
+                          />
+                        </td>
                         <td className="border border-black py-1.5 px-3 align-middle leading-normal text-right w-[35%]">
                           <EditableAmountCell
                             value={formData.structureBasic}
                             onChange={(val) => handleStructureChange('structureBasic', val)}
-                            onReset={() => handleResetField('structureBasic')}
+                            onReset={() => handleResetStructureRow('structureBasicLabel', 'Basic', 'structureBasic')}
+                            defaultValue={initialDefaultsRef.current.structureBasic}
                             decimals={2}
+                            suffix=""
                           />
                         </td>
                       </tr>
                       <tr>
-                        <td className="border border-black py-1.5 px-3 align-middle leading-normal">House Rent</td>
+                        <td className="border border-black py-1.5 px-3 align-middle leading-normal">
+                          <EditableLabelCell
+                            value={formData.structureHouseRentLabel || 'House Rent'}
+                            defaultValue="House Rent"
+                            onChange={(val) => setFormData((prev) => ({ ...prev, structureHouseRentLabel: val }))}
+                            onReset={() => handleResetStructureRow('structureHouseRentLabel', 'House Rent')}
+                          />
+                        </td>
                         <td className="border border-black py-1.5 px-3 align-middle leading-normal text-right">
                           <EditableAmountCell
                             value={formData.structureHouseRent}
                             onChange={(val) => handleStructureChange('structureHouseRent', val)}
-                            onReset={() => handleResetField('structureHouseRent')}
+                            onReset={() => handleResetStructureRow('structureHouseRentLabel', 'House Rent', 'structureHouseRent')}
+                            defaultValue={initialDefaultsRef.current.structureHouseRent}
                             decimals={2}
+                            suffix=""
                           />
                         </td>
                       </tr>
                       <tr>
-                        <td className="border border-black py-1.5 px-3 align-middle leading-normal">Medical Allowance</td>
+                        <td className="border border-black py-1.5 px-3 align-middle leading-normal">
+                          <EditableLabelCell
+                            value={formData.structureMedicalLabel || 'Medical Allowance'}
+                            defaultValue="Medical Allowance"
+                            onChange={(val) => setFormData((prev) => ({ ...prev, structureMedicalLabel: val }))}
+                            onReset={() => handleResetStructureRow('structureMedicalLabel', 'Medical Allowance')}
+                          />
+                        </td>
                         <td className="border border-black py-1.5 px-3 align-middle leading-normal text-right">
                           <EditableAmountCell
                             value={formData.structureMedical}
                             onChange={(val) => handleStructureChange('structureMedical', val)}
-                            onReset={() => handleResetField('structureMedical')}
+                            onReset={() => handleResetStructureRow('structureMedicalLabel', 'Medical Allowance', 'structureMedical')}
+                            defaultValue={initialDefaultsRef.current.structureMedical}
                             decimals={2}
+                            suffix=""
                           />
                         </td>
                       </tr>
                       <tr>
-                        <td className="border border-black py-1.5 px-3 align-middle leading-normal">Conveyance</td>
+                        <td className="border border-black py-1.5 px-3 align-middle leading-normal">
+                          <EditableLabelCell
+                            value={formData.structureConveyanceLabel || 'Conveyance'}
+                            defaultValue="Conveyance"
+                            onChange={(val) => setFormData((prev) => ({ ...prev, structureConveyanceLabel: val }))}
+                            onReset={() => handleResetStructureRow('structureConveyanceLabel', 'Conveyance')}
+                          />
+                        </td>
                         <td className="border border-black py-1.5 px-3 align-middle leading-normal text-right">
                           <EditableAmountCell
                             value={formData.structureConveyance}
                             onChange={(val) => handleStructureChange('structureConveyance', val)}
-                            onReset={() => handleResetField('structureConveyance')}
+                            onReset={() => handleResetStructureRow('structureConveyanceLabel', 'Conveyance', 'structureConveyance')}
+                            defaultValue={initialDefaultsRef.current.structureConveyance}
                             decimals={2}
+                            suffix=""
                           />
                         </td>
                       </tr>
                       <tr className="font-bold">
-                        <td className="border border-black py-1.5 px-3 align-middle leading-normal">Total Salary</td>
+                        <td className="border border-black py-1.5 px-3 align-middle leading-normal">
+                          <EditableLabelCell
+                            value={formData.structureTotalLabel || 'Total Salary'}
+                            defaultValue="Total Salary"
+                            onChange={(val) => setFormData((prev) => ({ ...prev, structureTotalLabel: val }))}
+                            onReset={() => handleResetStructureRow('structureTotalLabel', 'Total Salary')}
+                            isBold={true}
+                          />
+                        </td>
                         <td className="border border-black py-1.5 px-3 align-middle leading-normal text-right">
                           <EditableAmountCell
                             value={formData.structureTotal}
                             onChange={(val) => setFormData((prev) => ({ ...prev, structureTotal: val }))}
                             onReset={handleResetSalaryStructure}
                             isBold={true}
+                            defaultValue={initialDefaultsRef.current.structureTotal}
                             decimals={2}
+                            suffix=""
                           />
                         </td>
                       </tr>
@@ -4193,6 +4645,7 @@ export default function SalaryStatementClient() {
                           }))
                         }
                         onReset={() => handleResetField('monthlyPayableAmount')}
+                        defaultValue={initialDefaultsRef.current.monthlyPayableAmount}
                       />
                       <span>(In Word: -</span>
                       <EditableInlineText
@@ -4204,26 +4657,34 @@ export default function SalaryStatementClient() {
                       <span>)</span>
                     </p>
                     <p className="flex items-center gap-1 flex-wrap">
-                      <span>2. Total deduction amount (PF purpose Tk.</span>
+                      <span>2.</span>
+                      <EditableInlineText
+                        value={formData.p2Item2Label || 'Total deduction amount (PF purpose Tk.'}
+                        defaultValue="Total deduction amount (PF purpose Tk."
+                        onChange={(val) => setFormData((prev) => ({ ...prev, p2Item2Label: val }))}
+                        onReset={() => handleResetField('p2Item2Label')}
+                      />
                       <EditableAmountCell
                         value={formData.pfDeductionPage2}
                         onChange={(val) => handlePage2PfChange(val)}
                         onReset={() => handleResetField('pfDeductionPage2')}
+                        defaultValue={initialDefaultsRef.current.pfDeductionPage2}
                       />
                       <span>)</span>
                     </p>
-                    <p className="flex items-start gap-1">
-                      <span className="shrink-0">3.</span>
-                      <span className="flex-1">
+                    <div className="flex items-start gap-1">
+                      <span className="shrink-0 mt-0.5">3.</span>
+                      <div className="flex-1 min-w-0">
                         <EditableInlineText
                           value={formData.disclaimer}
                           defaultValue={initialDefaultsRef.current.disclaimer}
                           onChange={(val) => setFormData((prev) => ({ ...prev, disclaimer: val }))}
                           onReset={() => handleResetField('disclaimer')}
+                          multiline={true}
                           className="w-full"
                         />
-                      </span>
-                    </p>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Signatory Section (Left aligned, with underline separator) */}
