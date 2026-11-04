@@ -406,10 +406,10 @@ function EditableInlineAmount({
 
   return (
     <span
-      className={`relative inline-flex items-center group/inline-amt px-0.5 py-0.2 rounded hover:bg-blue-50/60 print:hover:bg-transparent transition align-baseline ${className}`}
+      className={`relative inline group/inline-amt px-0.5 rounded hover:bg-blue-50/60 print:hover:bg-transparent transition align-baseline ${className}`}
     >
       {isEditing ? (
-        <span className="inline-flex items-center">
+        <span className="inline-flex items-center align-baseline">
           <input
             type="text"
             autoFocus
@@ -462,7 +462,7 @@ function EditableInlineAmount({
             onReset();
             setIsEditing(false);
           }}
-          className={`inline-reset-btn print:hidden p-0.5 rounded transition ml-1 shrink-0 ${
+          className={`inline-reset-btn print:hidden inline-flex items-center align-middle p-0.5 rounded transition ml-1 shrink-0 ${
             isModified
               ? 'text-amber-700 hover:text-amber-900 bg-amber-100 hover:bg-amber-200 opacity-90'
               : 'opacity-0 group-hover/inline-amt:opacity-100 text-slate-400 hover:text-blue-600 hover:bg-blue-100/80'
@@ -595,37 +595,39 @@ function EditableInlineText({
 
   return (
     <span
-      className={`relative inline-flex items-center group/inline px-0.5 py-0.2 rounded hover:bg-blue-50/60 print:hover:bg-transparent transition ${className}`}
+      className={`relative inline group/inline px-0.5 rounded hover:bg-blue-50/60 print:hover:bg-transparent transition align-baseline ${className}`}
     >
       {isEditing ? (
-        <input
-          type="text"
-          autoFocus
-          value={tempVal}
-          placeholder={placeholder}
-          onChange={(e) => {
-            setTempVal(e.target.value);
-            onChange(e.target.value);
-          }}
-          onBlur={() => {
-            setIsEditing(false);
-            if (!tempVal.trim() && defaultValue) {
-              onChange(defaultValue);
-            }
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
+        <span className="inline-flex items-center align-baseline">
+          <input
+            type="text"
+            autoFocus
+            value={tempVal}
+            placeholder={placeholder}
+            onChange={(e) => {
+              setTempVal(e.target.value);
+              onChange(e.target.value);
+            }}
+            onBlur={() => {
               setIsEditing(false);
-            } else if (e.key === 'Escape') {
-              setTempVal(displayVal);
-              setIsEditing(false);
-            }
-          }}
-          className={`bg-white border border-blue-500 rounded px-1.5 py-0.5 text-inherit outline-none shadow-xs text-slate-900 max-w-full ${
-            isBold ? 'font-bold' : ''
-          } ${isMono ? 'font-mono' : ''}`}
-          style={{ width: `${Math.min(50, Math.max(6, tempVal.length + 2))}ch` }}
-        />
+              if (!tempVal.trim() && defaultValue) {
+                onChange(defaultValue);
+              }
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                setIsEditing(false);
+              } else if (e.key === 'Escape') {
+                setTempVal(displayVal);
+                setIsEditing(false);
+              }
+            }}
+            className={`bg-white border border-blue-500 rounded px-1.5 py-0.5 text-inherit outline-none shadow-xs text-slate-900 max-w-full ${
+              isBold ? 'font-bold' : ''
+            } ${isMono ? 'font-mono' : ''}`}
+            style={{ width: `${Math.min(50, Math.max(6, tempVal.length + 2))}ch` }}
+          />
+        </span>
       ) : (
         <span
           onClick={() => {
@@ -651,7 +653,7 @@ function EditableInlineText({
             setTempVal(defaultValue);
             setIsEditing(false);
           }}
-          className={`inline-reset-btn print:hidden p-0.5 rounded transition ml-1 shrink-0 ${
+          className={`inline-reset-btn print:hidden inline-flex items-center align-middle p-0.5 rounded transition ml-1 shrink-0 ${
             isModified
               ? 'text-amber-700 hover:text-amber-900 bg-amber-100 hover:bg-amber-200 opacity-90'
               : 'opacity-0 group-hover/inline:opacity-100 text-slate-400 hover:text-blue-600 hover:bg-blue-100/80'
@@ -1588,6 +1590,8 @@ export default function SalaryStatementClient() {
           cell.style.lineHeight = '1.35';
           cell.style.paddingTop = '6px';
           cell.style.paddingBottom = '6px';
+          cell.style.paddingLeft = '5px';
+          cell.style.paddingRight = '5px';
           cell.style.boxSizing = 'border-box';
           cell.style.color = '#000000';
           cell.style.backgroundColor = 'transparent';
@@ -1596,13 +1600,20 @@ export default function SalaryStatementClient() {
           cell.style.whiteSpace = 'normal';
         });
 
-        const allDocElements = clonedDoc.querySelectorAll('.salary-doc-page, .salary-doc-page *');
+        const allDocElements = clonedDoc.querySelectorAll(
+          '.salary-doc-page, .salary-doc-page *, .salary-doc-page table td *, .salary-doc-page table th *'
+        );
         allDocElements.forEach((el: any) => {
           el.style.textRendering = 'optimizeLegibility';
           el.style.webkitFontSmoothing = 'antialiased';
           el.style.mozOsxFontSmoothing = 'grayscale';
-          if (el.tagName?.toLowerCase() === 'span' || el.classList?.contains('group/cell') || el.classList?.contains('group/amount') || el.classList?.contains('group/inline-amt')) {
-            el.style.overflow = 'visible';
+          el.style.overflow = 'visible';
+          if (
+            el.classList?.contains('whitespace-nowrap') ||
+            el.classList?.contains('group/amount') ||
+            el.classList?.contains('group/inline-amt')
+          ) {
+            el.style.whiteSpace = 'nowrap';
           }
         });
 
@@ -1613,6 +1624,7 @@ export default function SalaryStatementClient() {
         });
 
         // Accurately position signature blocks at the lower portion in cloned doc for html2canvas
+        const contentWidthPx = 794 - leftPaddingPx - rightPaddingPx;
         if (p1) {
           const clonedSig1 = p1.querySelector('.salary-signature-block') as HTMLElement;
           if (clonedSig1) {
@@ -1620,7 +1632,8 @@ export default function SalaryStatementClient() {
             clonedSig1.style.position = 'absolute';
             clonedSig1.style.bottom = `${bottomPaddingPx}px`;
             clonedSig1.style.left = `${leftPaddingPx}px`;
-            clonedSig1.style.width = `calc(100% - ${leftPaddingPx + rightPaddingPx}px)`;
+            clonedSig1.style.right = `${rightPaddingPx}px`;
+            clonedSig1.style.width = `${contentWidthPx}px`;
           }
         }
         if (p2) {
@@ -1630,14 +1643,15 @@ export default function SalaryStatementClient() {
             clonedSig2.style.position = 'absolute';
             clonedSig2.style.bottom = `${bottomPaddingPx}px`;
             clonedSig2.style.left = `${leftPaddingPx}px`;
-            clonedSig2.style.width = `calc(100% - ${leftPaddingPx + rightPaddingPx}px)`;
+            clonedSig2.style.right = `${rightPaddingPx}px`;
+            clonedSig2.style.width = `${contentWidthPx}px`;
           }
         }
       };
 
-      // Render Page 1 with scale: 3 and crisp lossless PNG
+      // Render Page 1 with scale: 3.5 and crisp lossless PNG (336 DPI print quality)
       const canvas1 = await html2canvas(page1Ref.current, {
-        scale: 3,
+        scale: 3.5,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
@@ -1651,10 +1665,10 @@ export default function SalaryStatementClient() {
       const img1 = canvas1.toDataURL('image/png');
       pdf.addImage(img1, 'PNG', 0, 0, 210, 297, undefined, 'FAST');
 
-      // Render Page 2 with scale: 3 and crisp lossless PNG
+      // Render Page 2 with scale: 3.5 and crisp lossless PNG (336 DPI print quality)
       pdf.addPage('a4', 'portrait');
       const canvas2 = await html2canvas(page2Ref.current, {
-        scale: 3,
+        scale: 3.5,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
@@ -1897,11 +1911,10 @@ export default function SalaryStatementClient() {
             line-height: 1.35 !important;
             padding-top: 6px !important;
             padding-bottom: 6px !important;
-            padding-left: 8px !important;
-            padding-right: 8px !important;
+            padding-left: 5px !important;
+            padding-right: 5px !important;
             box-sizing: border-box !important;
             overflow: visible !important;
-            white-space: normal !important;
           }
           .salary-doc-page-2 table td {
             padding-left: 10px !important;
@@ -1912,11 +1925,21 @@ export default function SalaryStatementClient() {
           .salary-doc-page table th span,
           .salary-doc-page table th div {
             overflow: visible !important;
-            white-space: normal !important;
             color: #000000 !important;
+          }
+          .salary-doc-page table td div,
+          .salary-doc-page table th div {
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+          }
+          .salary-doc-page table td span.whitespace-nowrap,
+          .salary-doc-page table td [class*="whitespace-nowrap"],
+          .salary-doc-page table td .group\\/amount span {
+            white-space: nowrap !important;
           }
           .salary-signature-spacer {
             flex: 1 1 0% !important;
+            min-height: 72px !important;
           }
           .salary-signature-block {
             margin-top: auto !important;
@@ -4464,7 +4487,7 @@ export default function SalaryStatementClient() {
                   </p>
 
                   {/* Spacer to push signature section gracefully down to the bottom of the letterhead page */}
-                  <div className="salary-signature-spacer flex-1 min-h-[48px]" />
+                  <div className="salary-signature-spacer flex-1 min-h-[72px]" />
 
                   {/* Signatory Section (Left aligned, with underline separator, positioned at lower portion) */}
                   <div className="salary-signature-block mt-auto pt-6 text-[14px] leading-snug shrink-0">
@@ -4888,7 +4911,7 @@ export default function SalaryStatementClient() {
                   </div>
 
                   {/* Spacer to push signature section gracefully down to the bottom of the letterhead page */}
-                  <div className="salary-signature-spacer flex-1 min-h-[36px]" />
+                  <div className="salary-signature-spacer flex-1 min-h-[54px]" />
 
                   {/* Signatory Section (Left aligned, with underline separator, positioned at lower portion) */}
                   <div className="salary-signature-block mt-auto pt-6 text-[14px] leading-snug shrink-0">
