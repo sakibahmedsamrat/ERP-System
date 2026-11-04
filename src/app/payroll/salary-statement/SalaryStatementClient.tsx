@@ -37,6 +37,7 @@ import { numberToWords, parseFlexibleDate } from '@/lib/formatDate';
 import {
   saveSalaryStatement,
   getSavedSalaryStatements,
+  getSalaryStatementById,
   deleteSalaryStatement,
 } from './actions';
 
@@ -751,7 +752,11 @@ function renderOrdinalDateText(text: string): React.ReactNode {
   return text;
 }
 
-export default function SalaryStatementClient() {
+export default function SalaryStatementClient({
+  initialStatementId,
+}: {
+  initialStatementId?: string;
+} = {}) {
   const [defaultMonths] = useState<[string, string, string]>(getDefault3Months());
 
   // Search state
@@ -769,15 +774,18 @@ export default function SalaryStatementClient() {
   const [savedStatements, setSavedStatements] = useState<any[]>([]);
   const [savedStatementsTotal, setSavedStatementsTotal] = useState<number>(0);
   const [isLoadingSaved, setIsLoadingSaved] = useState<boolean>(false);
+  const [loadingStatementId, setLoadingStatementId] = useState<string | null>(null);
   const [savedSearchQuery, setSavedSearchQuery] = useState<string>('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
-  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
-  };
+  }, []);
+
+  const handlePrintRef = useRef<() => void>(() => {});
 
   // View Mode: 'split', 'form', 'preview'
   const [viewMode, setViewMode] = useState<'split' | 'form' | 'preview'>('split');
@@ -1060,6 +1068,11 @@ export default function SalaryStatementClient() {
 
     initialDefaultsRef.current = structuredClone(newWorkerData);
     setFormData(newWorkerData);
+    if (activeStatementId) {
+      showToast(`Started new unsaved statement session for ${worker.name}.`, 'info');
+    }
+    setActiveStatementId(null);
+    setActiveStatementRefNo(null);
   };
 
   const handleClearSelectedWorker = () => {
@@ -1170,6 +1183,12 @@ export default function SalaryStatementClient() {
     setFormData(standardDefault);
     setActiveStatementId(null);
     setActiveStatementRefNo(null);
+    setPadTopMargin(38);
+    setPadBottomMargin(28);
+    setPadLeftMargin(20);
+    setPadRightMargin(20);
+    setLogoDisplay('blank_space');
+    setHeaderMode('blank_header');
   };
 
   // Fetch saved statements from server action
@@ -1206,6 +1225,100 @@ export default function SalaryStatementClient() {
     }, 300);
     return () => clearTimeout(timer);
   }, [savedSearchQuery, isDrawerOpen, fetchSavedStatements]);
+
+  // Load a saved statement into the live editor and preview
+  const handleLoadStatement = useCallback(async (statement: any, autoPrint = false) => {
+    try {
+      setLoadingStatementId(statement.id);
+      let rawData = statement.data;
+
+      // If statement summary from list does not include raw data, fetch full document by id
+      if (!rawData) {
+        const fetchRes = await getSalaryStatementById(statement.id);
+        if (!fetchRes.success || !fetchRes.statement) {
+          showToast(fetchRes.error || 'Failed to retrieve statement details', 'error');
+          return;
+        }
+        rawData = fetchRes.statement.data;
+      }
+
+      if (!rawData) {
+        showToast('No saved document data found in statement', 'error');
+        return;
+      }
+
+      let parsedFormData: any;
+      let loadedPadSettings: any = null;
+
+      if (rawData.formData && rawData.formData.months) {
+        parsedFormData = rawData.formData;
+        loadedPadSettings = rawData.padSettings;
+      } else if (rawData.months) {
+        parsedFormData = rawData;
+        loadedPadSettings = rawData.padSettings;
+      } else {
+        showToast('Unrecognized statement data format', 'error');
+        return;
+      }
+
+      setFormData((prev) => {
+        const nextMonths =
+          Array.isArray(parsedFormData.months) && parsedFormData.months.length === 3
+            ? parsedFormData.months
+            : prev.months;
+        const merged: StatementData = {
+          ...prev,
+          ...parsedFormData,
+          months: nextMonths,
+        };
+        initialDefaultsRef.current = structuredClone(merged);
+        return merged;
+      });
+
+      if (loadedPadSettings) {
+        if (typeof loadedPadSettings.padTopMargin === 'number') setPadTopMargin(loadedPadSettings.padTopMargin);
+        if (typeof loadedPadSettings.padBottomMargin === 'number') setPadBottomMargin(loadedPadSettings.padBottomMargin);
+        if (typeof loadedPadSettings.padLeftMargin === 'number') setPadLeftMargin(loadedPadSettings.padLeftMargin);
+        if (typeof loadedPadSettings.padRightMargin === 'number') setPadRightMargin(loadedPadSettings.padRightMargin);
+        if (loadedPadSettings.logoDisplay) setLogoDisplay(loadedPadSettings.logoDisplay);
+        if (loadedPadSettings.headerMode) setHeaderMode(loadedPadSettings.headerMode);
+      }
+
+      setActiveStatementId(statement.id);
+      setActiveStatementRefNo(statement.refNo);
+      setIsDrawerOpen(false);
+
+      showToast(`Loaded statement "${statement.refNo}" for ${statement.name}.`, 'success');
+
+      if (autoPrint) {
+        setTimeout(() => {
+          handlePrintRef.current();
+        }, 300);
+      }
+    } catch (err: any) {
+      console.error('Failed to load statement:', err);
+      showToast('Failed to load salary statement data', 'error');
+    } finally {
+      setLoadingStatementId(null);
+    }
+  }, [showToast]);
+
+  // Auto-load statement if initialStatementId was provided via route/query param
+  useEffect(() => {
+    if (initialStatementId) {
+      const loadInitial = async () => {
+        try {
+          const res = await getSalaryStatementById(initialStatementId);
+          if (res.success && res.statement) {
+            handleLoadStatement(res.statement);
+          }
+        } catch (err) {
+          console.error('Failed to auto-load statement from ID:', err);
+        }
+      };
+      loadInitial();
+    }
+  }, [initialStatementId, handleLoadStatement]);
 
   // Save current statement (new copy or update existing)
   const handleSave = async (asNewCopy = false) => {
@@ -1254,7 +1367,7 @@ export default function SalaryStatementClient() {
             : `Statement saved successfully: ${res.statement.refNo}`,
           'success'
         );
-        fetchSavedStatements();
+        fetchSavedStatements(savedSearchQuery);
       } else {
         showToast(res.error || 'Failed to save salary statement', 'error');
       }
@@ -1263,58 +1376,6 @@ export default function SalaryStatementClient() {
       showToast(err.message || 'An error occurred while saving', 'error');
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  // Load a saved statement into the live editor and preview
-  const handleLoadStatement = (statement: any, autoPrint = false) => {
-    try {
-      const rawData = statement.data;
-      if (!rawData) {
-        showToast('No saved document data found in statement', 'error');
-        return;
-      }
-
-      let loadedFormData: StatementData;
-      let loadedPadSettings: any = null;
-
-      if (rawData.formData && rawData.formData.months) {
-        loadedFormData = rawData.formData;
-        loadedPadSettings = rawData.padSettings;
-      } else if (rawData.months) {
-        loadedFormData = rawData;
-        loadedPadSettings = rawData.padSettings;
-      } else {
-        showToast('Unrecognized statement data format', 'error');
-        return;
-      }
-
-      setFormData(loadedFormData);
-      initialDefaultsRef.current = structuredClone(loadedFormData);
-
-      if (loadedPadSettings) {
-        if (typeof loadedPadSettings.padTopMargin === 'number') setPadTopMargin(loadedPadSettings.padTopMargin);
-        if (typeof loadedPadSettings.padBottomMargin === 'number') setPadBottomMargin(loadedPadSettings.padBottomMargin);
-        if (typeof loadedPadSettings.padLeftMargin === 'number') setPadLeftMargin(loadedPadSettings.padLeftMargin);
-        if (typeof loadedPadSettings.padRightMargin === 'number') setPadRightMargin(loadedPadSettings.padRightMargin);
-        if (loadedPadSettings.logoDisplay) setLogoDisplay(loadedPadSettings.logoDisplay);
-        if (loadedPadSettings.headerMode) setHeaderMode(loadedPadSettings.headerMode);
-      }
-
-      setActiveStatementId(statement.id);
-      setActiveStatementRefNo(statement.refNo);
-      setIsDrawerOpen(false);
-
-      showToast(`Loaded statement "${statement.refNo}" for ${statement.name}.`, 'success');
-
-      if (autoPrint) {
-        setTimeout(() => {
-          handlePrint();
-        }, 300);
-      }
-    } catch (err: any) {
-      console.error('Failed to load statement:', err);
-      showToast('Failed to load salary statement data', 'error');
     }
   };
 
@@ -1928,7 +1989,7 @@ export default function SalaryStatementClient() {
     };
   }, []);
 
-  const handlePrint = () => {
+  const handlePrint = useCallback(() => {
     // Reset horizontal scroll on page wrappers before opening print dialog
     if (page1Ref.current?.parentElement) {
       page1Ref.current.parentElement.scrollLeft = 0;
@@ -1940,7 +2001,9 @@ export default function SalaryStatementClient() {
       (el as HTMLElement).scrollLeft = 0;
     });
     window.print();
-  };
+  }, []);
+
+  handlePrintRef.current = handlePrint;
 
   return (
     <div className="salary-statement-root min-h-screen bg-transparent print:bg-white text-slate-900 pb-16 print:p-0 print:m-0 print:min-h-0 print:pb-0">
@@ -2238,7 +2301,7 @@ export default function SalaryStatementClient() {
               type="button"
               onClick={() => {
                 setIsDrawerOpen(true);
-                fetchSavedStatements();
+                fetchSavedStatements(savedSearchQuery);
               }}
               className="inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-800 border border-slate-200/90 px-3.5 py-2 rounded-xl text-xs font-bold shadow-xs transition hover:border-blue-400 group"
               title="Open saved salary statements list"
@@ -2274,7 +2337,7 @@ export default function SalaryStatementClient() {
                   title="Save current state as a new copy without overwriting"
                 >
                   <Copy size={13} />
-                  <span className="hidden sm:inline">Save as Copy</span>
+                  <span className="hidden sm:inline">Save as New Copy</span>
                 </button>
               </div>
             ) : (
@@ -3780,7 +3843,7 @@ export default function SalaryStatementClient() {
                         title="Save as a new copy"
                       >
                         <Copy size={14} />
-                        <span className="hidden sm:inline">New Copy</span>
+                        <span className="hidden sm:inline">Save as New Copy</span>
                       </button>
                     </div>
                   ) : (
@@ -5437,11 +5500,9 @@ export default function SalaryStatementClient() {
                         <div className="mb-3">
                           <div className="font-bold text-sm text-slate-800">{stmt.name}</div>
                           <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500 flex-wrap">
-                            {stmt.workerId && (
-                              <span className="font-semibold text-slate-700 bg-slate-100 px-1.5 py-0.2 rounded text-[11px]">
-                                ID: {stmt.workerId}
-                              </span>
-                            )}
+                            <span className="font-semibold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded text-[11px]">
+                              Staff ID: {stmt.workerId || 'N/A'}
+                            </span>
                             {stmt.designation && <span>{stmt.designation}</span>}
                             {stmt.department && <span>• {stmt.department}</span>}
                           </div>
@@ -5465,19 +5526,29 @@ export default function SalaryStatementClient() {
                             <button
                               type="button"
                               onClick={() => handleLoadStatement(stmt, false)}
-                              className="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1.5 rounded-lg text-xs font-bold transition shadow-xs"
+                              disabled={loadingStatementId === stmt.id}
+                              className="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1.5 rounded-lg text-xs font-bold transition shadow-xs disabled:opacity-50"
                               title="Load this statement into live editor"
                             >
-                              <Edit3 size={12} />
+                              {loadingStatementId === stmt.id ? (
+                                <Loader2 size={12} className="animate-spin" />
+                              ) : (
+                                <Edit3 size={12} />
+                              )}
                               <span>Edit / Load</span>
                             </button>
                             <button
                               type="button"
                               onClick={() => handleLoadStatement(stmt, true)}
-                              className="inline-flex items-center gap-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition"
+                              disabled={loadingStatementId === stmt.id}
+                              className="inline-flex items-center gap-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition disabled:opacity-50"
                               title="Load and immediately open print preview"
                             >
-                              <Printer size={12} />
+                              {loadingStatementId === stmt.id ? (
+                                <Loader2 size={12} className="animate-spin" />
+                              ) : (
+                                <Printer size={12} />
+                              )}
                               <span>Print</span>
                             </button>
                           </div>
@@ -5506,10 +5577,11 @@ export default function SalaryStatementClient() {
                               <button
                                 type="button"
                                 onClick={() => setDeleteConfirmId(stmt.id)}
-                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                                className="inline-flex items-center gap-1 bg-white hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200 hover:border-rose-200 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition"
                                 title="Delete this saved statement"
                               >
-                                <Trash2 size={14} />
+                                <Trash2 size={12} />
+                                <span>Delete</span>
                               </button>
                             )}
                           </div>

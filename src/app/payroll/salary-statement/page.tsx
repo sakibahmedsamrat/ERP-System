@@ -8,7 +8,11 @@ export const metadata = {
 
 export const dynamic = 'force-dynamic';
 
-export default async function SalaryStatementPage() {
+export default async function SalaryStatementPage({
+  searchParams,
+}: {
+  searchParams?: { id?: string };
+}) {
   const session = await getSession();
   const user = session?.user;
 
@@ -27,5 +31,5 @@ export default async function SalaryStatementPage() {
     redirect('/');
   }
 
-  return <SalaryStatementClient />;
+  return <SalaryStatementClient initialStatementId={searchParams?.id} />;
 }

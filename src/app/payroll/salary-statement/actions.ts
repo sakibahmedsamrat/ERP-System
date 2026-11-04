@@ -48,8 +48,14 @@ export async function saveSalaryStatement(input: SaveSalaryStatementInput) {
       return { success: false, error: auth.error };
     }
 
-    if (!input.refNo || !input.name) {
-      return { success: false, error: 'Reference Number and Employee Name are required.' };
+    if (!input.refNo || !input.refNo.trim()) {
+      return { success: false, error: 'Reference Number is required.' };
+    }
+    if (!input.name || !input.name.trim()) {
+      return { success: false, error: 'Employee Name is required.' };
+    }
+    if (!input.data || typeof input.data !== 'object') {
+      return { success: false, error: 'Statement document data is required.' };
     }
 
     let workerDbId: string | null = null;
@@ -160,14 +166,29 @@ export async function getSavedSalaryStatements(params?: {
 
     const whereClause: any = {};
     if (search) {
-      whereClause.OR = [
-        { refNo: { contains: search, mode: 'insensitive' } },
-        { workerId: { contains: search, mode: 'insensitive' } },
-        { name: { contains: search, mode: 'insensitive' } },
-        { designation: { contains: search, mode: 'insensitive' } },
-        { department: { contains: search, mode: 'insensitive' } },
-        { statementDate: { contains: search, mode: 'insensitive' } },
-      ];
+      const terms = search.split(/\s+/).filter(Boolean);
+      if (terms.length === 1) {
+        const term = terms[0];
+        whereClause.OR = [
+          { refNo: { contains: term, mode: 'insensitive' } },
+          { workerId: { contains: term, mode: 'insensitive' } },
+          { name: { contains: term, mode: 'insensitive' } },
+          { designation: { contains: term, mode: 'insensitive' } },
+          { department: { contains: term, mode: 'insensitive' } },
+          { statementDate: { contains: term, mode: 'insensitive' } },
+        ];
+      } else if (terms.length > 1) {
+        whereClause.AND = terms.map((term) => ({
+          OR: [
+            { refNo: { contains: term, mode: 'insensitive' } },
+            { workerId: { contains: term, mode: 'insensitive' } },
+            { name: { contains: term, mode: 'insensitive' } },
+            { designation: { contains: term, mode: 'insensitive' } },
+            { department: { contains: term, mode: 'insensitive' } },
+            { statementDate: { contains: term, mode: 'insensitive' } },
+          ],
+        }));
+      }
     }
 
     const [total, statements] = await Promise.all([
@@ -188,7 +209,6 @@ export async function getSavedSalaryStatements(params?: {
           statementDate: true,
           createdAt: true,
           updatedAt: true,
-          data: true,
         },
       }),
     ]);
@@ -220,8 +240,12 @@ export async function getSalaryStatementById(id: string) {
       return { success: false, error: auth.error, statement: null };
     }
 
+    if (!id || typeof id !== 'string' || !id.trim()) {
+      return { success: false, error: 'Valid statement ID is required', statement: null };
+    }
+
     const statement = await prisma.salaryStatement.findUnique({
-      where: { id },
+      where: { id: id.trim() },
     });
 
     if (!statement) {
@@ -246,8 +270,13 @@ export async function deleteSalaryStatement(id: string) {
       return { success: false, error: auth.error };
     }
 
+    if (!id || typeof id !== 'string' || !id.trim()) {
+      return { success: false, error: 'Valid statement ID is required' };
+    }
+
+    const cleanId = id.trim();
     const existing = await prisma.salaryStatement.findUnique({
-      where: { id },
+      where: { id: cleanId },
       select: { id: true, refNo: true, name: true },
     });
 
@@ -256,13 +285,13 @@ export async function deleteSalaryStatement(id: string) {
     }
 
     await prisma.salaryStatement.delete({
-      where: { id },
+      where: { id: cleanId },
     });
 
     await logAction(
-      'PAYROLL',
-      'DELETE_SALARY_STATEMENT',
-      `Deleted salary statement Ref: ${existing.refNo} for ${existing.name}`
+        'PAYROLL',
+        'DELETE_SALARY_STATEMENT',
+        `Deleted salary statement Ref: ${existing.refNo} for ${existing.name}`
     );
 
     revalidatePath('/payroll/salary-statement');
