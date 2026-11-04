@@ -17,20 +17,31 @@ import {
   ArrowLeft,
   Loader2,
   Sliders,
-  Sparkles
+  Sparkles,
+  RotateCcw,
+  Undo2
 } from 'lucide-react';
 import { numberToWords, parseFlexibleDate } from '@/lib/formatDate';
 
 interface MonthBreakdown {
   monthName: string;
+  grossLabel?: string;
   grossSalary: number;
+  basicLabel?: string;
   basicSalary: number;
+  houseRentLabel?: string;
   houseRent: number;
+  medicalLabel?: string;
   medical: number;
+  conveyanceLabel?: string;
   conveyance: number;
+  pfLabel?: string;
   pfDeduction: number;
+  overtimeLabel?: string;
   overtime: number;
+  incomeTaxLabel?: string;
   incomeTax: number;
+  netPayableLabel?: string;
   netPayable: number;
 }
 
@@ -66,6 +77,301 @@ interface StatementData {
   signatoryTitle: string;
   signatoryDepartment: string;
   signatoryOrg: string;
+  // Optional custom freeform paragraph overrides
+  p1Title?: string;
+  p1CustomParagraph?: string;
+  p1CustomClosing?: string;
+  p2Title?: string;
+  p2CustomParagraph?: string;
+}
+
+interface EditableLabelCellProps {
+  value: string;
+  defaultValue: string;
+  onChange: (val: string) => void;
+  onReset: () => void;
+  highlight?: boolean;
+  isBold?: boolean;
+}
+
+function EditableLabelCell({
+  value,
+  defaultValue,
+  onChange,
+  onReset,
+  highlight = false,
+  isBold = false,
+}: EditableLabelCellProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [tempVal, setTempVal] = useState(value || defaultValue);
+
+  useEffect(() => {
+    if (!isEditing) {
+      setTempVal(value || defaultValue);
+    }
+  }, [value, defaultValue, isEditing]);
+
+  const displayVal = value || defaultValue;
+  const isModified = displayVal !== defaultValue;
+
+  return (
+    <div
+      className={`relative group/cell flex items-center justify-between w-full min-h-[22px] px-1 py-0.5 rounded transition ${
+        highlight
+          ? 'custom-row-highlight bg-rose-50/60 hover:bg-rose-100/60 print:bg-transparent'
+          : 'hover:bg-blue-50/50 print:hover:bg-transparent'
+      }`}
+    >
+      {isEditing ? (
+        <input
+          type="text"
+          autoFocus
+          value={tempVal}
+          onChange={(e) => {
+            setTempVal(e.target.value);
+            onChange(e.target.value);
+          }}
+          onBlur={() => {
+            setIsEditing(false);
+            if (!tempVal.trim()) {
+              onChange(defaultValue);
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              setIsEditing(false);
+            }
+          }}
+          className={`w-full bg-white border border-blue-500 rounded px-1 py-0.5 text-xs outline-none text-slate-900 shadow-inner ${
+            isBold ? 'font-bold' : ''
+          }`}
+        />
+      ) : (
+        <span
+          onClick={() => {
+            setTempVal(displayVal);
+            setIsEditing(true);
+          }}
+          className={`cursor-pointer flex-1 truncate select-none ${
+            isBold ? 'font-bold' : ''
+          } ${highlight ? 'text-rose-950 font-medium' : ''}`}
+          title="Click to edit label directly"
+        >
+          {displayVal}
+        </span>
+      )}
+
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onReset();
+          setTempVal(defaultValue);
+          setIsEditing(false);
+        }}
+        className={`inline-reset-btn print:hidden p-0.5 rounded transition ml-1 shrink-0 ${
+          isModified
+            ? 'text-amber-700 hover:text-amber-900 bg-amber-100 hover:bg-amber-200 opacity-90'
+            : 'opacity-0 group-hover/cell:opacity-100 text-slate-400 hover:text-blue-600 hover:bg-blue-100/80'
+        }`}
+        title={`Reset label to "${defaultValue}"`}
+      >
+        <RotateCcw size={10} />
+      </button>
+    </div>
+  );
+}
+
+interface EditableAmountCellProps {
+  value: number;
+  onChange: (val: number) => void;
+  onReset?: () => void;
+  suffix?: string;
+  isBold?: boolean;
+  decimals?: number;
+}
+
+function EditableAmountCell({
+  value,
+  onChange,
+  onReset,
+  suffix = '/-',
+  isBold = false,
+  decimals = 0,
+}: EditableAmountCellProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [tempVal, setTempVal] = useState(String(value ?? 0));
+
+  useEffect(() => {
+    if (!isEditing) {
+      setTempVal(String(value ?? 0));
+    }
+  }, [value, isEditing]);
+
+  const formatted = decimals > 0
+    ? Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
+    : Number(value || 0).toLocaleString('en-US');
+
+  return (
+    <div className="relative group/amount flex items-center justify-end w-full min-h-[22px] px-1 py-0.5 rounded hover:bg-blue-50/50 print:hover:bg-transparent transition">
+      {isEditing ? (
+        <div className="flex items-center justify-end w-full">
+          <input
+            type="text"
+            autoFocus
+            value={tempVal}
+            onChange={(e) => {
+              const raw = e.target.value.replace(/[^0-9.]/g, '');
+              setTempVal(raw);
+              const num = parseFloat(raw);
+              onChange(isNaN(num) ? 0 : num);
+            }}
+            onBlur={() => {
+              setIsEditing(false);
+              const num = parseFloat(tempVal.replace(/[^0-9.]/g, ''));
+              onChange(isNaN(num) ? 0 : num);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                setIsEditing(false);
+              }
+            }}
+            className={`w-24 text-right bg-white border border-blue-500 rounded px-1 py-0.5 text-xs outline-none text-slate-900 shadow-inner ${
+              isBold ? 'font-bold' : ''
+            }`}
+          />
+          <span className="ml-0.5">{suffix}</span>
+        </div>
+      ) : (
+        <span
+          onClick={() => {
+            setTempVal(String(value ?? 0));
+            setIsEditing(true);
+          }}
+          className={`cursor-pointer select-none ${isBold ? 'font-bold' : ''}`}
+          title="Click to edit amount directly"
+        >
+          {formatted}{suffix}
+        </span>
+      )}
+
+      {onReset && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onReset();
+            setIsEditing(false);
+          }}
+          className="inline-reset-btn print:hidden opacity-0 group-hover/amount:opacity-100 text-slate-400 hover:text-blue-600 hover:bg-blue-100/80 p-0.5 rounded transition ml-1 shrink-0"
+          title="Reset amount to default"
+        >
+          <RotateCcw size={10} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+interface EditableInlineTextProps {
+  value: string;
+  defaultValue: string;
+  onChange: (val: string) => void;
+  onReset?: () => void;
+  isBold?: boolean;
+  isUnderline?: boolean;
+  isMono?: boolean;
+  placeholder?: string;
+  className?: string;
+}
+
+function EditableInlineText({
+  value,
+  defaultValue,
+  onChange,
+  onReset,
+  isBold = false,
+  isUnderline = false,
+  isMono = false,
+  placeholder = 'Click to edit...',
+  className = '',
+}: EditableInlineTextProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [tempVal, setTempVal] = useState(value || defaultValue);
+
+  useEffect(() => {
+    if (!isEditing) {
+      setTempVal(value || defaultValue);
+    }
+  }, [value, defaultValue, isEditing]);
+
+  const displayVal = value || defaultValue;
+  const isModified = displayVal !== defaultValue;
+
+  return (
+    <span className={`relative inline-flex items-center group/inline px-0.5 py-0.2 rounded hover:bg-blue-50/60 print:hover:bg-transparent transition ${className}`}>
+      {isEditing ? (
+        <input
+          type="text"
+          autoFocus
+          value={tempVal}
+          placeholder={placeholder}
+          onChange={(e) => {
+            setTempVal(e.target.value);
+            onChange(e.target.value);
+          }}
+          onBlur={() => {
+            setIsEditing(false);
+            if (!tempVal.trim() && defaultValue) {
+              onChange(defaultValue);
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              setIsEditing(false);
+            }
+          }}
+          className={`bg-white border border-blue-500 rounded px-1.5 py-0.5 text-inherit outline-none shadow-xs text-slate-900 ${
+            isBold ? 'font-bold' : ''
+          } ${isMono ? 'font-mono' : ''}`}
+          style={{ width: `${Math.max(8, tempVal.length + 2)}ch` }}
+        />
+      ) : (
+        <span
+          onClick={() => {
+            setTempVal(displayVal);
+            setIsEditing(true);
+          }}
+          className={`cursor-pointer ${isBold ? 'font-bold' : ''} ${isUnderline ? 'underline' : ''} ${
+            isMono ? 'font-mono' : ''
+          }`}
+          title="Click to edit directly on sheet"
+        >
+          {displayVal}
+        </span>
+      )}
+
+      {onReset && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onReset();
+            setTempVal(defaultValue);
+            setIsEditing(false);
+          }}
+          className={`inline-reset-btn print:hidden p-0.5 rounded transition ml-1 shrink-0 ${
+            isModified
+              ? 'text-amber-700 hover:text-amber-900 bg-amber-100 hover:bg-amber-200 opacity-90'
+              : 'opacity-0 group-hover/inline:opacity-100 text-slate-400 hover:text-blue-600 hover:bg-blue-100/80'
+          }`}
+          title={`Reset to "${defaultValue}"`}
+        >
+          <RotateCcw size={10} />
+        </button>
+      )}
+    </span>
+  );
 }
 
 function getDefault3Months(): [string, string, string] {
@@ -171,7 +477,7 @@ export default function SalaryStatementClient() {
   const currentYear = new Date().getFullYear();
   const todayFormatted = formatDocDate(new Date());
 
-  const [formData, setFormData] = useState<StatementData>({
+  const initialDefaultsRef = useRef<StatementData>({
     refNo: `MEPG/HR&ADMIN/309/${currentYear}`,
     date: todayFormatted,
     workerId: '4917',
@@ -187,38 +493,65 @@ export default function SalaryStatementClient() {
     months: [
       {
         monthName: defaultMonths[0],
+        grossLabel: 'Gross Salary',
         grossSalary: 44000,
+        basicLabel: 'Basic',
         basicSalary: 22000,
+        houseRentLabel: 'House Rent',
         houseRent: 13200,
+        medicalLabel: 'Medical',
         medical: 4400,
+        conveyanceLabel: 'Conveyance',
         conveyance: 4400,
+        pfLabel: '(Less) PF',
         pfDeduction: 1848,
+        overtimeLabel: 'Over Time',
         overtime: 2933,
+        incomeTaxLabel: 'Income Tax',
         incomeTax: 1000,
+        netPayableLabel: 'Net Payable=',
         netPayable: 44085,
       },
       {
         monthName: defaultMonths[1],
+        grossLabel: 'Gross Salary',
         grossSalary: 44000,
+        basicLabel: 'Basic',
         basicSalary: 22000,
+        houseRentLabel: 'House Rent',
         houseRent: 13200,
+        medicalLabel: 'Medical',
         medical: 4400,
+        conveyanceLabel: 'Conveyance',
         conveyance: 4400,
+        pfLabel: '(Less) PF',
         pfDeduction: 1848,
+        overtimeLabel: 'Over Time',
         overtime: 14986,
+        incomeTaxLabel: 'Income Tax',
         incomeTax: 1000,
+        netPayableLabel: 'Net Payable=',
         netPayable: 56138,
       },
       {
         monthName: defaultMonths[2],
+        grossLabel: 'Gross Salary',
         grossSalary: 44000,
+        basicLabel: 'Basic',
         basicSalary: 22000,
+        houseRentLabel: 'House Rent',
         houseRent: 13200,
+        medicalLabel: 'Medical',
         medical: 4400,
+        conveyanceLabel: 'Conveyance',
         conveyance: 4400,
+        pfLabel: '(Less) PF',
         pfDeduction: 1848,
+        overtimeLabel: 'Over Time',
         overtime: 4400,
+        incomeTaxLabel: 'Income Tax',
         incomeTax: 417,
+        netPayableLabel: 'Net Payable=',
         netPayable: 46135,
       },
     ],
@@ -242,6 +575,8 @@ export default function SalaryStatementClient() {
     signatoryDepartment: 'HR & Admin',
     signatoryOrg: 'MEP Group.',
   });
+
+  const [formData, setFormData] = useState<StatementData>(structuredClone(initialDefaultsRef.current));
 
   // Search workers via API
   useEffect(() => {
@@ -295,13 +630,13 @@ export default function SalaryStatementClient() {
     const netPayable = Math.max(0, totalStructure - pfDeduct);
     const payableWords = formatWordsOnly(netPayable);
 
-    setFormData((prev) => ({
-      ...prev,
-      workerId: worker.workerId || prev.workerId,
-      name: worker.name || prev.name,
+    const newWorkerData: StatementData = {
+      ...formData,
+      workerId: worker.workerId || formData.workerId,
+      name: worker.name || formData.name,
       salutation,
       genderPronoun: pronoun,
-      designation: worker.designation || prev.designation,
+      designation: worker.designation || formData.designation,
       department: deptName,
       companyName: compName,
       joiningDate: joinDateFormatted,
@@ -318,43 +653,175 @@ export default function SalaryStatementClient() {
       monthlyPayableInWords: payableWords,
       months: [
         {
-          monthName: prev.months[0].monthName,
+          monthName: formData.months[0].monthName,
+          grossLabel: 'Gross Salary',
           grossSalary: totalStructure,
+          basicLabel: 'Basic',
           basicSalary: basic,
+          houseRentLabel: 'House Rent',
           houseRent: houseRent,
+          medicalLabel: 'Medical',
           medical: medical,
+          conveyanceLabel: 'Conveyance',
           conveyance: conveyance,
+          pfLabel: '(Less) PF',
           pfDeduction: pfDeduct,
+          overtimeLabel: 'Over Time',
           overtime: 0,
+          incomeTaxLabel: 'Income Tax',
           incomeTax: 0,
+          netPayableLabel: 'Net Payable=',
           netPayable: Math.max(0, totalStructure - pfDeduct),
         },
         {
-          monthName: prev.months[1].monthName,
+          monthName: formData.months[1].monthName,
+          grossLabel: 'Gross Salary',
           grossSalary: totalStructure,
+          basicLabel: 'Basic',
           basicSalary: basic,
+          houseRentLabel: 'House Rent',
           houseRent: houseRent,
+          medicalLabel: 'Medical',
           medical: medical,
+          conveyanceLabel: 'Conveyance',
           conveyance: conveyance,
+          pfLabel: '(Less) PF',
           pfDeduction: pfDeduct,
+          overtimeLabel: 'Over Time',
           overtime: 0,
+          incomeTaxLabel: 'Income Tax',
           incomeTax: 0,
+          netPayableLabel: 'Net Payable=',
           netPayable: Math.max(0, totalStructure - pfDeduct),
         },
         {
-          monthName: prev.months[2].monthName,
+          monthName: formData.months[2].monthName,
+          grossLabel: 'Gross Salary',
           grossSalary: totalStructure,
+          basicLabel: 'Basic',
           basicSalary: basic,
+          houseRentLabel: 'House Rent',
           houseRent: houseRent,
+          medicalLabel: 'Medical',
           medical: medical,
+          conveyanceLabel: 'Conveyance',
           conveyance: conveyance,
+          pfLabel: '(Less) PF',
           pfDeduction: pfDeduct,
+          overtimeLabel: 'Over Time',
           overtime: 0,
+          incomeTaxLabel: 'Income Tax',
           incomeTax: 0,
+          netPayableLabel: 'Net Payable=',
           netPayable: Math.max(0, totalStructure - pfDeduct),
         },
       ],
-    }));
+    };
+
+    initialDefaultsRef.current = structuredClone(newWorkerData);
+    setFormData(newWorkerData);
+  };
+
+  const handleClearSelectedWorker = () => {
+    setSelectedWorker(null);
+    const standardDefault: StatementData = {
+      refNo: `MEPG/HR&ADMIN/309/${currentYear}`,
+      date: todayFormatted,
+      workerId: '4917',
+      name: 'Sakib Ahmed Samrat',
+      salutation: 'Mr.',
+      genderPronoun: 'He',
+      designation: 'Executive',
+      department: 'HR & Admin',
+      companyName: 'Mohammadi Electric Wires and Multi Products (MEP) Limited',
+      companyAddress: 'Head Office: MEP Group, 161 Sadar Road, Barishal, Bangladesh.',
+      joiningDate: '14th June 2009',
+      purpose: 'personal loan from Bank',
+      months: [
+        {
+          monthName: defaultMonths[0],
+          grossLabel: 'Gross Salary',
+          grossSalary: 44000,
+          basicLabel: 'Basic',
+          basicSalary: 22000,
+          houseRentLabel: 'House Rent',
+          houseRent: 13200,
+          medicalLabel: 'Medical',
+          medical: 4400,
+          conveyanceLabel: 'Conveyance',
+          conveyance: 4400,
+          pfLabel: '(Less) PF',
+          pfDeduction: 1848,
+          overtimeLabel: 'Over Time',
+          overtime: 2933,
+          incomeTaxLabel: 'Income Tax',
+          incomeTax: 1000,
+          netPayableLabel: 'Net Payable=',
+          netPayable: 44085,
+        },
+        {
+          monthName: defaultMonths[1],
+          grossLabel: 'Gross Salary',
+          grossSalary: 44000,
+          basicLabel: 'Basic',
+          basicSalary: 22000,
+          houseRentLabel: 'House Rent',
+          houseRent: 13200,
+          medicalLabel: 'Medical',
+          medical: 4400,
+          conveyanceLabel: 'Conveyance',
+          conveyance: 4400,
+          pfLabel: '(Less) PF',
+          pfDeduction: 1848,
+          overtimeLabel: 'Over Time',
+          overtime: 14986,
+          incomeTaxLabel: 'Income Tax',
+          incomeTax: 1000,
+          netPayableLabel: 'Net Payable=',
+          netPayable: 56138,
+        },
+        {
+          monthName: defaultMonths[2],
+          grossLabel: 'Gross Salary',
+          grossSalary: 44000,
+          basicLabel: 'Basic',
+          basicSalary: 22000,
+          houseRentLabel: 'House Rent',
+          houseRent: 13200,
+          medicalLabel: 'Medical',
+          medical: 4400,
+          conveyanceLabel: 'Conveyance',
+          conveyance: 4400,
+          pfLabel: '(Less) PF',
+          pfDeduction: 1848,
+          overtimeLabel: 'Over Time',
+          overtime: 4400,
+          incomeTaxLabel: 'Income Tax',
+          incomeTax: 417,
+          netPayableLabel: 'Net Payable=',
+          netPayable: 46135,
+        },
+      ],
+      structureBasic: 22000,
+      structureHouseRent: 13200,
+      structureMedical: 4400,
+      structureConveyance: 4400,
+      structureTotal: 44000,
+      amountInWords: 'Forty-Four Thousand Taka Only.',
+      bankName: 'Prime Bank',
+      bankAccountNo: '2111212026612',
+      monthlyPayableAmount: 41735,
+      monthlyPayableInWords: 'Forty- One Thousand Seven Hundred Thirty-Five Taka Only.',
+      pfDeductionPage2: 417,
+      disclaimer:
+        'This certificate is issued at the request of the mentioned employee with no responsibility borne either on the signatory or the company for any kind of financial transactions.',
+      signatoryName: 'Md Touhiduzzaman',
+      signatoryTitle: 'Assistant Manager',
+      signatoryDepartment: 'HR & Admin',
+      signatoryOrg: 'MEP Group.',
+    };
+    initialDefaultsRef.current = structuredClone(standardDefault);
+    setFormData(standardDefault);
   };
 
   // Recalculate Month row values
@@ -375,7 +842,7 @@ export default function SalaryStatementClient() {
           (Number(currentMonth.conveyance) || 0);
       }
 
-      if (field !== 'netPayable' && field !== 'monthName') {
+      if (field !== 'netPayable' && !field.endsWith('Label') && field !== 'monthName') {
         const gross = Number(currentMonth.grossSalary) || 0;
         const pf = Number(currentMonth.pfDeduction) || 0;
         const overtime = Number(currentMonth.overtime) || 0;
@@ -436,6 +903,179 @@ export default function SalaryStatementClient() {
     });
   };
 
+  // Reset all 3 custom row labels ((Less) PF, Over Time, Income Tax)
+  const handleResetAllCustomLabels = () => {
+    setFormData((prev) => ({
+      ...prev,
+      months: prev.months.map((m) => ({
+        ...m,
+        pfLabel: '(Less) PF',
+        overtimeLabel: 'Over Time',
+        incomeTaxLabel: 'Income Tax',
+      })) as [MonthBreakdown, MonthBreakdown, MonthBreakdown],
+    }));
+  };
+
+  // Sync custom labels from Month 1 to Months 2 and 3
+  const handleSyncCustomLabels = (fromIndex: 0 | 1 | 2 = 0) => {
+    setFormData((prev) => {
+      const src = prev.months[fromIndex];
+      const pfLabel = src.pfLabel || '(Less) PF';
+      const overtimeLabel = src.overtimeLabel || 'Over Time';
+      const incomeTaxLabel = src.incomeTaxLabel || 'Income Tax';
+      return {
+        ...prev,
+        months: prev.months.map((m) => ({
+          ...m,
+          pfLabel,
+          overtimeLabel,
+          incomeTaxLabel,
+        })) as [MonthBreakdown, MonthBreakdown, MonthBreakdown],
+      };
+    });
+  };
+
+  // Reset a specific row label in a specific month
+  const handleResetRowLabel = (
+    monthIdx: 0 | 1 | 2,
+    field:
+      | 'pfLabel'
+      | 'overtimeLabel'
+      | 'incomeTaxLabel'
+      | 'grossLabel'
+      | 'basicLabel'
+      | 'houseRentLabel'
+      | 'medicalLabel'
+      | 'conveyanceLabel'
+      | 'netPayableLabel'
+  ) => {
+    const defaults: Record<string, string> = {
+      pfLabel: '(Less) PF',
+      overtimeLabel: 'Over Time',
+      incomeTaxLabel: 'Income Tax',
+      grossLabel: 'Gross Salary',
+      basicLabel: 'Basic',
+      houseRentLabel: 'House Rent',
+      medicalLabel: 'Medical',
+      conveyanceLabel: 'Conveyance',
+      netPayableLabel: 'Net Payable=',
+    };
+    handleMonthChange(monthIdx, field as any, defaults[field] || '');
+  };
+
+  // Reset a specific amount for a month
+  const handleResetMonthAmount = (monthIdx: 0 | 1 | 2, field: keyof MonthBreakdown) => {
+    const initial = initialDefaultsRef.current?.months[monthIdx][field];
+    if (initial !== undefined) {
+      handleMonthChange(monthIdx, field, initial);
+    }
+  };
+
+  // Reset an entire single month (labels and amounts)
+  const handleResetMonth = (monthIdx: 0 | 1 | 2) => {
+    const initial = initialDefaultsRef.current?.months[monthIdx];
+    if (initial) {
+      setFormData((prev) => {
+        const next = [...prev.months] as [MonthBreakdown, MonthBreakdown, MonthBreakdown];
+        next[monthIdx] = { ...initial };
+        return { ...prev, months: next };
+      });
+    }
+  };
+
+  // Reset all 3 months table
+  const handleResetAllTable = () => {
+    if (initialDefaultsRef.current) {
+      setFormData((prev) => ({
+        ...prev,
+        months: structuredClone(initialDefaultsRef.current.months),
+      }));
+    }
+  };
+
+  // Reset a single field on StatementData
+  const handleResetField = (field: keyof StatementData) => {
+    if (initialDefaultsRef.current) {
+      setFormData((prev) => ({
+        ...prev,
+        [field]: initialDefaultsRef.current[field],
+      }));
+    }
+  };
+
+  // Reset all employee particulars
+  const handleResetEmployeeParticulars = () => {
+    if (initialDefaultsRef.current) {
+      const init = initialDefaultsRef.current;
+      setFormData((prev) => ({
+        ...prev,
+        name: init.name,
+        workerId: init.workerId,
+        salutation: init.salutation,
+        genderPronoun: init.genderPronoun,
+        designation: init.designation,
+        department: init.department,
+        companyName: init.companyName,
+        companyAddress: init.companyAddress,
+        joiningDate: init.joiningDate,
+        p1CustomParagraph: undefined,
+        p2CustomParagraph: undefined,
+      }));
+    }
+  };
+
+  // Reset Page 2 structure
+  const handleResetSalaryStructure = () => {
+    if (initialDefaultsRef.current) {
+      const init = initialDefaultsRef.current;
+      setFormData((prev) => ({
+        ...prev,
+        structureBasic: init.structureBasic,
+        structureHouseRent: init.structureHouseRent,
+        structureMedical: init.structureMedical,
+        structureConveyance: init.structureConveyance,
+        structureTotal: init.structureTotal,
+        amountInWords: init.amountInWords,
+        monthlyPayableAmount: init.monthlyPayableAmount,
+        monthlyPayableInWords: init.monthlyPayableInWords,
+        pfDeductionPage2: init.pfDeductionPage2,
+      }));
+    }
+  };
+
+  // Reset Bank Details
+  const handleResetBankDetails = () => {
+    if (initialDefaultsRef.current) {
+      const init = initialDefaultsRef.current;
+      setFormData((prev) => ({
+        ...prev,
+        bankName: init.bankName,
+        bankAccountNo: init.bankAccountNo,
+      }));
+    }
+  };
+
+  // Reset Signatory Details
+  const handleResetSignatory = () => {
+    if (initialDefaultsRef.current) {
+      const init = initialDefaultsRef.current;
+      setFormData((prev) => ({
+        ...prev,
+        signatoryName: init.signatoryName,
+        signatoryTitle: init.signatoryTitle,
+        signatoryDepartment: init.signatoryDepartment,
+        signatoryOrg: init.signatoryOrg,
+      }));
+    }
+  };
+
+  // Reset entire document to initial defaults
+  const handleResetEntireDocument = () => {
+    if (initialDefaultsRef.current) {
+      setFormData(structuredClone(initialDefaultsRef.current));
+    }
+  };
+
   // Helper for possessive pronoun
   const getPossessivePronoun = (pronoun: 'He' | 'She' | 'He/She'): string => {
     if (pronoun === 'He') return 'his';
@@ -470,9 +1110,36 @@ export default function SalaryStatementClient() {
 
       const cloneSetup = (clonedDoc: Document) => {
         // Hide non-printable elements in cloned doc
-        const nonPrintables = clonedDoc.querySelectorAll('.print\\:hidden, header, nav, aside, footer');
+        const nonPrintables = clonedDoc.querySelectorAll(
+          '.print\\:hidden, header, nav, aside, footer, .on-sheet-toolbar, .inline-reset-btn'
+        );
         nonPrintables.forEach((el: any) => {
           el.style.display = 'none';
+        });
+
+        // Remove any custom row highlight backgrounds in cloned doc
+        const highlights = clonedDoc.querySelectorAll('.custom-row-highlight');
+        highlights.forEach((el: any) => {
+          el.style.backgroundColor = 'transparent';
+          el.style.border = 'none';
+        });
+
+        // Convert any active inputs / textareas in doc pages to plain spans
+        const formInputs = clonedDoc.querySelectorAll('.salary-doc-page input, .salary-doc-page textarea');
+        formInputs.forEach((input: any) => {
+          const span = clonedDoc.createElement('span');
+          span.textContent = input.value;
+          span.style.fontFamily = "'Times New Roman', Times, Georgia, serif";
+          span.style.fontSize = window.getComputedStyle(input).fontSize || '13px';
+          span.style.fontWeight = window.getComputedStyle(input).fontWeight || 'normal';
+          span.style.textAlign = window.getComputedStyle(input).textAlign || 'left';
+          span.style.color = '#000000';
+          span.style.border = 'none';
+          span.style.background = 'transparent';
+          span.style.display = 'inline-block';
+          span.style.width = '100%';
+          span.style.lineHeight = '1.35';
+          input.parentNode?.replaceChild(span, input);
         });
 
         const grid = clonedDoc.querySelector('.salary-statement-grid');
@@ -996,7 +1663,17 @@ export default function SalaryStatementClient() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs font-semibold text-gray-600 mb-1">Reference No.</label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-xs font-semibold text-gray-600">Reference No.</label>
+                          <button
+                            type="button"
+                            onClick={() => handleResetField('refNo')}
+                            className="text-[11px] text-slate-400 hover:text-blue-600 flex items-center gap-1 font-medium transition"
+                            title="Reset Reference Number"
+                          >
+                            <RotateCcw size={10} /> Reset
+                          </button>
+                        </div>
                         <input
                           type="text"
                           value={formData.refNo}
@@ -1005,7 +1682,17 @@ export default function SalaryStatementClient() {
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-semibold text-gray-600 mb-1">Date</label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-xs font-semibold text-gray-600">Date</label>
+                          <button
+                            type="button"
+                            onClick={() => handleResetField('date')}
+                            className="text-[11px] text-slate-400 hover:text-blue-600 flex items-center gap-1 font-medium transition"
+                            title="Reset Date"
+                          >
+                            <RotateCcw size={10} /> Reset
+                          </button>
+                        </div>
                         <input
                           type="text"
                           value={formData.date}
@@ -1016,7 +1703,17 @@ export default function SalaryStatementClient() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-gray-600 mb-1">Certificate Purpose (Page 1 Closing)</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-semibold text-gray-600">Certificate Purpose (Page 1 Closing)</label>
+                        <button
+                          type="button"
+                          onClick={() => handleResetField('purpose')}
+                          className="text-[11px] text-slate-400 hover:text-blue-600 flex items-center gap-1 font-medium transition"
+                          title="Reset Purpose"
+                        >
+                          <RotateCcw size={10} /> Reset
+                        </button>
+                      </div>
                       <input
                         type="text"
                         value={formData.purpose}
@@ -1195,13 +1892,33 @@ export default function SalaryStatementClient() {
 
                   {/* Employee Details */}
                   <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm space-y-4">
-                    <h3 className="font-bold text-gray-800 text-sm flex items-center gap-2 border-b pb-2">
-                      <User size={16} className="text-blue-600" /> Employee Particulars
-                    </h3>
+                    <div className="flex items-center justify-between border-b pb-2">
+                      <h3 className="font-bold text-gray-800 text-sm flex items-center gap-2">
+                        <User size={16} className="text-blue-600" /> Employee Particulars
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={handleResetEmployeeParticulars}
+                        className="text-xs text-slate-500 hover:text-blue-600 font-semibold flex items-center gap-1 hover:underline"
+                        title="Reset all employee details to defaults"
+                      >
+                        <RotateCcw size={12} /> Reset All Details
+                      </button>
+                    </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs font-semibold text-gray-600 mb-1">Salutation</label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-xs font-semibold text-gray-600">Salutation</label>
+                          <button
+                            type="button"
+                            onClick={() => handleResetField('salutation')}
+                            className="text-[11px] text-slate-400 hover:text-blue-600 flex items-center gap-1 font-medium transition"
+                            title="Reset Salutation"
+                          >
+                            <RotateCcw size={10} /> Reset
+                          </button>
+                        </div>
                         <select
                           value={formData.salutation}
                           onChange={(e) => setFormData({ ...formData, salutation: e.target.value })}
@@ -1215,7 +1932,17 @@ export default function SalaryStatementClient() {
                       </div>
 
                       <div>
-                        <label className="block text-xs font-semibold text-gray-600 mb-1">Pronoun</label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-xs font-semibold text-gray-600">Pronoun</label>
+                          <button
+                            type="button"
+                            onClick={() => handleResetField('genderPronoun')}
+                            className="text-[11px] text-slate-400 hover:text-blue-600 flex items-center gap-1 font-medium transition"
+                            title="Reset Pronoun"
+                          >
+                            <RotateCcw size={10} /> Reset
+                          </button>
+                        </div>
                         <select
                           value={formData.genderPronoun}
                           onChange={(e) => setFormData({ ...formData, genderPronoun: e.target.value as any })}
@@ -1228,7 +1955,17 @@ export default function SalaryStatementClient() {
                       </div>
 
                       <div>
-                        <label className="block text-xs font-semibold text-gray-600 mb-1">Full Name</label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-xs font-semibold text-gray-600">Full Name</label>
+                          <button
+                            type="button"
+                            onClick={() => handleResetField('name')}
+                            className="text-[11px] text-slate-400 hover:text-blue-600 flex items-center gap-1 font-medium transition"
+                            title="Reset Name"
+                          >
+                            <RotateCcw size={10} /> Reset
+                          </button>
+                        </div>
                         <input
                           type="text"
                           value={formData.name}
@@ -1238,7 +1975,17 @@ export default function SalaryStatementClient() {
                       </div>
 
                       <div>
-                        <label className="block text-xs font-semibold text-gray-600 mb-1">Staff / Worker ID</label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-xs font-semibold text-gray-600">Staff / Worker ID</label>
+                          <button
+                            type="button"
+                            onClick={() => handleResetField('workerId')}
+                            className="text-[11px] text-slate-400 hover:text-blue-600 flex items-center gap-1 font-medium transition"
+                            title="Reset Staff ID"
+                          >
+                            <RotateCcw size={10} /> Reset
+                          </button>
+                        </div>
                         <input
                           type="text"
                           value={formData.workerId}
@@ -1248,7 +1995,17 @@ export default function SalaryStatementClient() {
                       </div>
 
                       <div>
-                        <label className="block text-xs font-semibold text-gray-600 mb-1">Designation</label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-xs font-semibold text-gray-600">Designation</label>
+                          <button
+                            type="button"
+                            onClick={() => handleResetField('designation')}
+                            className="text-[11px] text-slate-400 hover:text-blue-600 flex items-center gap-1 font-medium transition"
+                            title="Reset Designation"
+                          >
+                            <RotateCcw size={10} /> Reset
+                          </button>
+                        </div>
                         <input
                           type="text"
                           value={formData.designation}
@@ -1258,7 +2015,17 @@ export default function SalaryStatementClient() {
                       </div>
 
                       <div>
-                        <label className="block text-xs font-semibold text-gray-600 mb-1">Department</label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-xs font-semibold text-gray-600">Department</label>
+                          <button
+                            type="button"
+                            onClick={() => handleResetField('department')}
+                            className="text-[11px] text-slate-400 hover:text-blue-600 flex items-center gap-1 font-medium transition"
+                            title="Reset Department"
+                          >
+                            <RotateCcw size={10} /> Reset
+                          </button>
+                        </div>
                         <input
                           type="text"
                           value={formData.department}
@@ -1268,7 +2035,17 @@ export default function SalaryStatementClient() {
                       </div>
 
                       <div>
-                        <label className="block text-xs font-semibold text-gray-600 mb-1">Joining Date</label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-xs font-semibold text-gray-600">Joining Date</label>
+                          <button
+                            type="button"
+                            onClick={() => handleResetField('joiningDate')}
+                            className="text-[11px] text-slate-400 hover:text-blue-600 flex items-center gap-1 font-medium transition"
+                            title="Reset Joining Date"
+                          >
+                            <RotateCcw size={10} /> Reset
+                          </button>
+                        </div>
                         <input
                           type="text"
                           value={formData.joiningDate}
@@ -1289,7 +2066,17 @@ export default function SalaryStatementClient() {
                       </div>
 
                       <div className="sm:col-span-2">
-                        <label className="block text-xs font-semibold text-gray-600 mb-1">Company / Sister Concern Name</label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-xs font-semibold text-gray-600">Company / Sister Concern Name</label>
+                          <button
+                            type="button"
+                            onClick={() => handleResetField('companyName')}
+                            className="text-[11px] text-slate-400 hover:text-blue-600 flex items-center gap-1 font-medium transition"
+                            title="Reset Company Name"
+                          >
+                            <RotateCcw size={10} /> Reset
+                          </button>
+                        </div>
                         <input
                           type="text"
                           value={formData.companyName}
@@ -1299,7 +2086,17 @@ export default function SalaryStatementClient() {
                       </div>
 
                       <div className="sm:col-span-2">
-                        <label className="block text-xs font-semibold text-gray-600 mb-1">Company Address (Plain Paper Mode)</label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-xs font-semibold text-gray-600">Company Address (Plain Paper Mode)</label>
+                          <button
+                            type="button"
+                            onClick={() => handleResetField('companyAddress')}
+                            className="text-[11px] text-slate-400 hover:text-blue-600 flex items-center gap-1 font-medium transition"
+                            title="Reset Company Address"
+                          >
+                            <RotateCcw size={10} /> Reset
+                          </button>
+                        </div>
                         <input
                           type="text"
                           value={formData.companyAddress}
@@ -1312,18 +2109,44 @@ export default function SalaryStatementClient() {
 
                   {/* Past 3 Months Salary Table */}
                   <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm space-y-4">
-                    <div className="flex items-center justify-between border-b pb-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-2">
                       <h3 className="font-bold text-gray-800 text-sm flex items-center gap-2">
                         <DollarSign size={16} className="text-emerald-600" /> Past 3 Months Breakdown Table
                       </h3>
-                      <button
-                        type="button"
-                        onClick={handleSyncMonthsFromFirst}
-                        className="text-xs text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1 hover:underline"
-                        title="Copy Month 1 numbers to Month 2 & 3"
-                      >
-                        <Sparkles size={13} /> Copy M1 to M2 & M3
-                      </button>
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                        <button
+                          type="button"
+                          onClick={() => handleSyncCustomLabels(0)}
+                          className="text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1 hover:underline"
+                          title="Copy Month 1 custom row labels to Month 2 & Month 3"
+                        >
+                          <Sparkles size={12} /> Sync Labels (M1 &rarr; M2/M3)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleResetAllCustomLabels}
+                          className="text-rose-600 hover:text-rose-800 font-semibold flex items-center gap-1 hover:underline"
+                          title="Reset (Less) PF, Over Time, Income Tax labels to default"
+                        >
+                          <RotateCcw size={12} /> Reset Labels
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSyncMonthsFromFirst}
+                          className="text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1 hover:underline"
+                          title="Copy Month 1 numbers to Month 2 & 3"
+                        >
+                          <Sparkles size={12} /> Copy M1 Amounts
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleResetAllTable}
+                          className="text-slate-600 hover:text-slate-800 font-semibold flex items-center gap-1 hover:underline"
+                          title="Reset entire 3-month table to default values"
+                        >
+                          <RotateCcw size={12} /> Reset Table
+                        </button>
+                      </div>
                     </div>
 
                     {/* 3 Month Columns */}
@@ -1331,7 +2154,7 @@ export default function SalaryStatementClient() {
                       const mIdx = idx as 0 | 1 | 2;
                       return (
                         <div key={idx} className="border border-gray-200 rounded-xl p-3.5 bg-gray-50/50 space-y-3">
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between border-b pb-2">
                             <span className="text-xs font-bold uppercase tracking-wider text-blue-700">
                               Month {idx + 1}
                             </span>
@@ -1343,12 +2166,124 @@ export default function SalaryStatementClient() {
                                 onChange={(e) => handleMonthChange(mIdx, 'monthName', e.target.value)}
                                 className="w-24 px-2 py-0.5 border border-gray-300 rounded text-xs font-bold text-gray-800 bg-white"
                               />
+                              <button
+                                type="button"
+                                onClick={() => handleResetMonthAmount(mIdx, 'monthName')}
+                                className="p-1 text-slate-400 hover:text-blue-600 rounded transition"
+                                title="Reset month name label"
+                              >
+                                <RotateCcw size={10} />
+                              </button>
                             </div>
                           </div>
 
+                          {/* Red-Marked Particulars Labels Editor */}
+                          <div className="bg-rose-50/70 border border-rose-200/80 rounded-lg p-2.5 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] font-bold uppercase tracking-wider text-rose-800 flex items-center gap-1">
+                                <span className="w-2 h-2 rounded-full bg-rose-500" />
+                                Customizable Particulars Labels (Red-Marked in Sheet)
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  handleResetRowLabel(mIdx, 'pfLabel');
+                                  handleResetRowLabel(mIdx, 'overtimeLabel');
+                                  handleResetRowLabel(mIdx, 'incomeTaxLabel');
+                                }}
+                                className="text-[10px] text-rose-700 hover:text-rose-900 font-semibold underline flex items-center gap-0.5"
+                                title="Reset Month {idx + 1} custom labels"
+                              >
+                                <RotateCcw size={10} /> Reset Labels
+                              </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                              <div>
+                                <label className="block text-[11px] font-medium text-rose-900 mb-0.5">
+                                  Deduction 1 Label (Default: (Less) PF)
+                                </label>
+                                <div className="flex items-center gap-1">
+                                  <input
+                                    type="text"
+                                    value={m.pfLabel || '(Less) PF'}
+                                    onChange={(e) => handleMonthChange(mIdx, 'pfLabel', e.target.value)}
+                                    placeholder="(Less) PF"
+                                    className="w-full px-2 py-1 border border-rose-300 rounded bg-white font-medium text-xs text-rose-950 focus:ring-1 focus:ring-rose-500"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => handleResetRowLabel(mIdx, 'pfLabel')}
+                                    className="p-1 text-rose-500 hover:text-rose-800 rounded transition shrink-0"
+                                    title="Reset to (Less) PF"
+                                  >
+                                    <RotateCcw size={10} />
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div>
+                                <label className="block text-[11px] font-medium text-rose-900 mb-0.5">
+                                  Addition Label (Default: Over Time)
+                                </label>
+                                <div className="flex items-center gap-1">
+                                  <input
+                                    type="text"
+                                    value={m.overtimeLabel || 'Over Time'}
+                                    onChange={(e) => handleMonthChange(mIdx, 'overtimeLabel', e.target.value)}
+                                    placeholder="Over Time"
+                                    className="w-full px-2 py-1 border border-rose-300 rounded bg-white font-medium text-xs text-rose-950 focus:ring-1 focus:ring-rose-500"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => handleResetRowLabel(mIdx, 'overtimeLabel')}
+                                    className="p-1 text-rose-500 hover:text-rose-800 rounded transition shrink-0"
+                                    title="Reset to Over Time"
+                                  >
+                                    <RotateCcw size={10} />
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div>
+                                <label className="block text-[11px] font-medium text-rose-900 mb-0.5">
+                                  Deduction 2 Label (Default: Income Tax)
+                                </label>
+                                <div className="flex items-center gap-1">
+                                  <input
+                                    type="text"
+                                    value={m.incomeTaxLabel || 'Income Tax'}
+                                    onChange={(e) => handleMonthChange(mIdx, 'incomeTaxLabel', e.target.value)}
+                                    placeholder="Income Tax"
+                                    className="w-full px-2 py-1 border border-rose-300 rounded bg-white font-medium text-xs text-rose-950 focus:ring-1 focus:ring-rose-500"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => handleResetRowLabel(mIdx, 'incomeTaxLabel')}
+                                    className="p-1 text-rose-500 hover:text-rose-800 rounded transition shrink-0"
+                                    title="Reset to Income Tax"
+                                  >
+                                    <RotateCcw size={10} />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Amounts Editor */}
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
                             <div>
-                              <label className="block text-gray-500 mb-0.5">Gross Salary</label>
+                              <div className="flex items-center justify-between mb-0.5">
+                                <label className="text-gray-500">Gross Salary</label>
+                                <button
+                                  type="button"
+                                  onClick={() => handleResetMonthAmount(mIdx, 'grossSalary')}
+                                  className="text-slate-400 hover:text-blue-600 p-0.5 rounded"
+                                  title="Reset gross salary"
+                                >
+                                  <RotateCcw size={9} />
+                                </button>
+                              </div>
                               <input
                                 type="number"
                                 value={m.grossSalary}
@@ -1356,8 +2291,19 @@ export default function SalaryStatementClient() {
                                 className="w-full px-2 py-1 border border-gray-300 rounded bg-white font-medium"
                               />
                             </div>
+
                             <div>
-                              <label className="block text-gray-500 mb-0.5">Basic</label>
+                              <div className="flex items-center justify-between mb-0.5">
+                                <label className="text-gray-500">Basic</label>
+                                <button
+                                  type="button"
+                                  onClick={() => handleResetMonthAmount(mIdx, 'basicSalary')}
+                                  className="text-slate-400 hover:text-blue-600 p-0.5 rounded"
+                                  title="Reset basic salary"
+                                >
+                                  <RotateCcw size={9} />
+                                </button>
+                              </div>
                               <input
                                 type="number"
                                 value={m.basicSalary}
@@ -1365,8 +2311,19 @@ export default function SalaryStatementClient() {
                                 className="w-full px-2 py-1 border border-gray-300 rounded bg-white font-medium"
                               />
                             </div>
+
                             <div>
-                              <label className="block text-gray-500 mb-0.5">House Rent</label>
+                              <div className="flex items-center justify-between mb-0.5">
+                                <label className="text-gray-500">House Rent</label>
+                                <button
+                                  type="button"
+                                  onClick={() => handleResetMonthAmount(mIdx, 'houseRent')}
+                                  className="text-slate-400 hover:text-blue-600 p-0.5 rounded"
+                                  title="Reset house rent"
+                                >
+                                  <RotateCcw size={9} />
+                                </button>
+                              </div>
                               <input
                                 type="number"
                                 value={m.houseRent}
@@ -1374,8 +2331,19 @@ export default function SalaryStatementClient() {
                                 className="w-full px-2 py-1 border border-gray-300 rounded bg-white font-medium"
                               />
                             </div>
+
                             <div>
-                              <label className="block text-gray-500 mb-0.5">Medical</label>
+                              <div className="flex items-center justify-between mb-0.5">
+                                <label className="text-gray-500">Medical</label>
+                                <button
+                                  type="button"
+                                  onClick={() => handleResetMonthAmount(mIdx, 'medical')}
+                                  className="text-slate-400 hover:text-blue-600 p-0.5 rounded"
+                                  title="Reset medical allowance"
+                                >
+                                  <RotateCcw size={9} />
+                                </button>
+                              </div>
                               <input
                                 type="number"
                                 value={m.medical}
@@ -1383,8 +2351,19 @@ export default function SalaryStatementClient() {
                                 className="w-full px-2 py-1 border border-gray-300 rounded bg-white font-medium"
                               />
                             </div>
+
                             <div>
-                              <label className="block text-gray-500 mb-0.5">Conveyance</label>
+                              <div className="flex items-center justify-between mb-0.5">
+                                <label className="text-gray-500">Conveyance</label>
+                                <button
+                                  type="button"
+                                  onClick={() => handleResetMonthAmount(mIdx, 'conveyance')}
+                                  className="text-slate-400 hover:text-blue-600 p-0.5 rounded"
+                                  title="Reset conveyance allowance"
+                                >
+                                  <RotateCcw size={9} />
+                                </button>
+                              </div>
                               <input
                                 type="number"
                                 value={m.conveyance}
@@ -1392,8 +2371,19 @@ export default function SalaryStatementClient() {
                                 className="w-full px-2 py-1 border border-gray-300 rounded bg-white font-medium"
                               />
                             </div>
+
                             <div>
-                              <label className="block text-gray-500 mb-0.5">(Less) PF</label>
+                              <div className="flex items-center justify-between mb-0.5">
+                                <label className="text-gray-500">{m.pfLabel || '(Less) PF'}</label>
+                                <button
+                                  type="button"
+                                  onClick={() => handleResetMonthAmount(mIdx, 'pfDeduction')}
+                                  className="text-slate-400 hover:text-blue-600 p-0.5 rounded"
+                                  title="Reset deduction amount"
+                                >
+                                  <RotateCcw size={9} />
+                                </button>
+                              </div>
                               <input
                                 type="number"
                                 value={m.pfDeduction}
@@ -1401,8 +2391,19 @@ export default function SalaryStatementClient() {
                                 className="w-full px-2 py-1 border border-gray-300 rounded bg-white font-medium"
                               />
                             </div>
+
                             <div>
-                              <label className="block text-gray-500 mb-0.5">Over Time</label>
+                              <div className="flex items-center justify-between mb-0.5">
+                                <label className="text-gray-500">{m.overtimeLabel || 'Over Time'}</label>
+                                <button
+                                  type="button"
+                                  onClick={() => handleResetMonthAmount(mIdx, 'overtime')}
+                                  className="text-slate-400 hover:text-blue-600 p-0.5 rounded"
+                                  title="Reset addition amount"
+                                >
+                                  <RotateCcw size={9} />
+                                </button>
+                              </div>
                               <input
                                 type="number"
                                 value={m.overtime}
@@ -1410,8 +2411,19 @@ export default function SalaryStatementClient() {
                                 className="w-full px-2 py-1 border border-gray-300 rounded bg-white font-medium"
                               />
                             </div>
+
                             <div>
-                              <label className="block text-gray-500 mb-0.5">Income Tax</label>
+                              <div className="flex items-center justify-between mb-0.5">
+                                <label className="text-gray-500">{m.incomeTaxLabel || 'Income Tax'}</label>
+                                <button
+                                  type="button"
+                                  onClick={() => handleResetMonthAmount(mIdx, 'incomeTax')}
+                                  className="text-slate-400 hover:text-blue-600 p-0.5 rounded"
+                                  title="Reset deduction amount"
+                                >
+                                  <RotateCcw size={9} />
+                                </button>
+                              </div>
                               <input
                                 type="number"
                                 value={m.incomeTax}
@@ -1422,7 +2434,17 @@ export default function SalaryStatementClient() {
                           </div>
 
                           <div className="flex items-center justify-between pt-1 border-t border-gray-200">
-                            <span className="text-xs font-bold text-gray-800">Net Payable =</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-gray-800">Net Payable =</span>
+                              <button
+                                type="button"
+                                onClick={() => handleResetMonth(mIdx)}
+                                className="text-[11px] text-slate-400 hover:text-blue-600 font-semibold flex items-center gap-0.5"
+                                title="Reset Month {idx + 1} values to default"
+                              >
+                                <RotateCcw size={10} /> Reset Month {idx + 1}
+                              </button>
+                            </div>
                             <div className="flex items-center gap-1">
                               <input
                                 type="number"
@@ -1445,13 +2467,33 @@ export default function SalaryStatementClient() {
                 <div className="space-y-6">
                   {/* Monthly Salary Structure Table */}
                   <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm space-y-4">
-                    <h3 className="font-bold text-gray-800 text-sm flex items-center gap-2 border-b pb-2">
-                      <CreditCard size={16} className="text-blue-600" /> Monthly Salary & Allowance Structure (Page 2)
-                    </h3>
+                    <div className="flex items-center justify-between border-b pb-2">
+                      <h3 className="font-bold text-gray-800 text-sm flex items-center gap-2">
+                        <CreditCard size={16} className="text-blue-600" /> Monthly Salary & Allowance Structure (Page 2)
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={handleResetSalaryStructure}
+                        className="text-xs text-slate-500 hover:text-blue-600 font-semibold flex items-center gap-1 hover:underline"
+                        title="Reset salary structure amounts"
+                      >
+                        <RotateCcw size={12} /> Reset Structure
+                      </button>
+                    </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                       <div>
-                        <label className="block font-semibold text-gray-600 mb-1">Basic (BDT)</label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="font-semibold text-gray-600">Basic (BDT)</label>
+                          <button
+                            type="button"
+                            onClick={() => handleResetField('structureBasic')}
+                            className="text-[11px] text-slate-400 hover:text-blue-600 flex items-center gap-1 font-medium transition"
+                            title="Reset Basic"
+                          >
+                            <RotateCcw size={10} /> Reset
+                          </button>
+                        </div>
                         <input
                           type="number"
                           value={formData.structureBasic}
@@ -1460,7 +2502,17 @@ export default function SalaryStatementClient() {
                         />
                       </div>
                       <div>
-                        <label className="block font-semibold text-gray-600 mb-1">House Rent (BDT)</label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="font-semibold text-gray-600">House Rent (BDT)</label>
+                          <button
+                            type="button"
+                            onClick={() => handleResetField('structureHouseRent')}
+                            className="text-[11px] text-slate-400 hover:text-blue-600 flex items-center gap-1 font-medium transition"
+                            title="Reset House Rent"
+                          >
+                            <RotateCcw size={10} /> Reset
+                          </button>
+                        </div>
                         <input
                           type="number"
                           value={formData.structureHouseRent}
@@ -1469,7 +2521,17 @@ export default function SalaryStatementClient() {
                         />
                       </div>
                       <div>
-                        <label className="block font-semibold text-gray-600 mb-1">Medical Allowance (BDT)</label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="font-semibold text-gray-600">Medical Allowance (BDT)</label>
+                          <button
+                            type="button"
+                            onClick={() => handleResetField('structureMedical')}
+                            className="text-[11px] text-slate-400 hover:text-blue-600 flex items-center gap-1 font-medium transition"
+                            title="Reset Medical Allowance"
+                          >
+                            <RotateCcw size={10} /> Reset
+                          </button>
+                        </div>
                         <input
                           type="number"
                           value={formData.structureMedical}
@@ -1478,7 +2540,17 @@ export default function SalaryStatementClient() {
                         />
                       </div>
                       <div>
-                        <label className="block font-semibold text-gray-600 mb-1">Conveyance (BDT)</label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="font-semibold text-gray-600">Conveyance (BDT)</label>
+                          <button
+                            type="button"
+                            onClick={() => handleResetField('structureConveyance')}
+                            className="text-[11px] text-slate-400 hover:text-blue-600 flex items-center gap-1 font-medium transition"
+                            title="Reset Conveyance"
+                          >
+                            <RotateCcw size={10} /> Reset
+                          </button>
+                        </div>
                         <input
                           type="number"
                           value={formData.structureConveyance}
@@ -1496,7 +2568,17 @@ export default function SalaryStatementClient() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-gray-600 mb-1">In Word (Total Salary)</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-semibold text-gray-600">In Word (Total Salary)</label>
+                        <button
+                          type="button"
+                          onClick={() => handleResetField('amountInWords')}
+                          className="text-[11px] text-slate-400 hover:text-blue-600 flex items-center gap-1 font-medium transition"
+                          title="Reset In Word"
+                        >
+                          <RotateCcw size={10} /> Reset
+                        </button>
+                      </div>
                       <input
                         type="text"
                         value={formData.amountInWords}
@@ -1508,15 +2590,39 @@ export default function SalaryStatementClient() {
 
                   {/* Bank & Payment Details */}
                   <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm space-y-4">
-                    <h3 className="font-bold text-gray-800 text-sm flex items-center gap-2 border-b pb-2">
-                      <Building2 size={16} className="text-blue-600" /> Monthly Salary Details (Numbered List)
-                    </h3>
+                    <div className="flex items-center justify-between border-b pb-2">
+                      <h3 className="font-bold text-gray-800 text-sm flex items-center gap-2">
+                        <Building2 size={16} className="text-blue-600" /> Monthly Salary Details (Numbered List)
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleResetBankDetails();
+                          handleResetField('pfDeductionPage2');
+                          handleResetField('monthlyPayableAmount');
+                          handleResetField('monthlyPayableInWords');
+                          handleResetField('disclaimer');
+                        }}
+                        className="text-xs text-slate-500 hover:text-blue-600 font-semibold flex items-center gap-1 hover:underline"
+                        title="Reset payment details"
+                      >
+                        <RotateCcw size={12} /> Reset Payment Details
+                      </button>
+                    </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                       <div>
-                        <label className="block font-semibold text-gray-600 mb-1">
-                          Bank Name
-                        </label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="font-semibold text-gray-600">Bank Name</label>
+                          <button
+                            type="button"
+                            onClick={() => handleResetField('bankName')}
+                            className="text-[11px] text-slate-400 hover:text-blue-600 flex items-center gap-1 font-medium transition"
+                            title="Reset Bank Name"
+                          >
+                            <RotateCcw size={10} /> Reset
+                          </button>
+                        </div>
                         <input
                           type="text"
                           value={formData.bankName}
@@ -1526,9 +2632,17 @@ export default function SalaryStatementClient() {
                         />
                       </div>
                       <div>
-                        <label className="block font-semibold text-gray-600 mb-1">
-                          Account Number
-                        </label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="font-semibold text-gray-600">Account Number</label>
+                          <button
+                            type="button"
+                            onClick={() => handleResetField('bankAccountNo')}
+                            className="text-[11px] text-slate-400 hover:text-blue-600 flex items-center gap-1 font-medium transition"
+                            title="Reset Account Number"
+                          >
+                            <RotateCcw size={10} /> Reset
+                          </button>
+                        </div>
                         <input
                           type="text"
                           value={formData.bankAccountNo}
@@ -1541,9 +2655,17 @@ export default function SalaryStatementClient() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                       <div>
-                        <label className="block font-semibold text-gray-600 mb-1">
-                          Total Deduction (PF purpose Tk.)
-                        </label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="font-semibold text-gray-600">Total Deduction (PF purpose Tk.)</label>
+                          <button
+                            type="button"
+                            onClick={() => handleResetField('pfDeductionPage2')}
+                            className="text-[11px] text-slate-400 hover:text-blue-600 flex items-center gap-1 font-medium transition"
+                            title="Reset PF Deduction"
+                          >
+                            <RotateCcw size={10} /> Reset
+                          </button>
+                        </div>
                         <input
                           type="number"
                           value={formData.pfDeductionPage2}
@@ -1552,9 +2674,17 @@ export default function SalaryStatementClient() {
                         />
                       </div>
                       <div>
-                        <label className="block font-semibold text-gray-600 mb-1">
-                          Monthly Net Payable Amount
-                        </label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="font-semibold text-gray-600">Monthly Net Payable Amount</label>
+                          <button
+                            type="button"
+                            onClick={() => handleResetField('monthlyPayableAmount')}
+                            className="text-[11px] text-slate-400 hover:text-blue-600 flex items-center gap-1 font-medium transition"
+                            title="Reset Net Payable"
+                          >
+                            <RotateCcw size={10} /> Reset
+                          </button>
+                        </div>
                         <input
                           type="number"
                           value={formData.monthlyPayableAmount}
@@ -1571,9 +2701,17 @@ export default function SalaryStatementClient() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-gray-600 mb-1">
-                        Payable in Words (Item 1)
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-semibold text-gray-600">Payable in Words (Item 1)</label>
+                        <button
+                          type="button"
+                          onClick={() => handleResetField('monthlyPayableInWords')}
+                          className="text-[11px] text-slate-400 hover:text-blue-600 flex items-center gap-1 font-medium transition"
+                          title="Reset Payable in Words"
+                        >
+                          <RotateCcw size={10} /> Reset
+                        </button>
+                      </div>
                       <input
                         type="text"
                         value={formData.monthlyPayableInWords}
@@ -1583,7 +2721,17 @@ export default function SalaryStatementClient() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-gray-600 mb-1">Item 3 Disclaimer Statement</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-semibold text-gray-600">Item 3 Disclaimer Statement</label>
+                        <button
+                          type="button"
+                          onClick={() => handleResetField('disclaimer')}
+                          className="text-[11px] text-slate-400 hover:text-blue-600 flex items-center gap-1 font-medium transition"
+                          title="Reset Disclaimer"
+                        >
+                          <RotateCcw size={10} /> Reset
+                        </button>
+                      </div>
                       <textarea
                         rows={3}
                         value={formData.disclaimer}
@@ -1598,12 +2746,32 @@ export default function SalaryStatementClient() {
               {/* TAB 3: Signatory */}
               {activeTab === 'signatory' && (
                 <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm space-y-4">
-                  <h3 className="font-bold text-gray-800 text-sm flex items-center gap-2 border-b pb-2">
-                    <ShieldCheck size={16} className="text-blue-600" /> Authorized Signatory Section
-                  </h3>
+                  <div className="flex items-center justify-between border-b pb-2">
+                    <h3 className="font-bold text-gray-800 text-sm flex items-center gap-2">
+                      <ShieldCheck size={16} className="text-blue-600" /> Authorized Signatory Section
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={handleResetSignatory}
+                      className="text-xs text-slate-500 hover:text-blue-600 font-semibold flex items-center gap-1 hover:underline"
+                      title="Reset signatory details"
+                    >
+                      <RotateCcw size={12} /> Reset Signatory
+                    </button>
+                  </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Signatory Full Name</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-semibold text-gray-600">Signatory Full Name</label>
+                      <button
+                        type="button"
+                        onClick={() => handleResetField('signatoryName')}
+                        className="text-[11px] text-slate-400 hover:text-blue-600 flex items-center gap-1 font-medium transition"
+                        title="Reset Name"
+                      >
+                        <RotateCcw size={10} /> Reset
+                      </button>
+                    </div>
                     <input
                       type="text"
                       value={formData.signatoryName}
@@ -1614,7 +2782,17 @@ export default function SalaryStatementClient() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Signatory Title / Designation</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-semibold text-gray-600">Signatory Title / Designation</label>
+                      <button
+                        type="button"
+                        onClick={() => handleResetField('signatoryTitle')}
+                        className="text-[11px] text-slate-400 hover:text-blue-600 flex items-center gap-1 font-medium transition"
+                        title="Reset Title"
+                      >
+                        <RotateCcw size={10} /> Reset
+                      </button>
+                    </div>
                     <input
                       type="text"
                       value={formData.signatoryTitle}
@@ -1625,7 +2803,17 @@ export default function SalaryStatementClient() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Department</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-semibold text-gray-600">Department</label>
+                      <button
+                        type="button"
+                        onClick={() => handleResetField('signatoryDepartment')}
+                        className="text-[11px] text-slate-400 hover:text-blue-600 flex items-center gap-1 font-medium transition"
+                        title="Reset Department"
+                      >
+                        <RotateCcw size={10} /> Reset
+                      </button>
+                    </div>
                     <input
                       type="text"
                       value={formData.signatoryDepartment}
@@ -1636,7 +2824,17 @@ export default function SalaryStatementClient() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Organization / Group (Page 1 line 4)</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-semibold text-gray-600">Organization / Group (Page 1 line 4)</label>
+                      <button
+                        type="button"
+                        onClick={() => handleResetField('signatoryOrg')}
+                        className="text-[11px] text-slate-400 hover:text-blue-600 flex items-center gap-1 font-medium transition"
+                        title="Reset Organization"
+                      >
+                        <RotateCcw size={10} /> Reset
+                      </button>
+                    </div>
                     <input
                       type="text"
                       value={formData.signatoryOrg}
@@ -1976,6 +3174,48 @@ export default function SalaryStatementClient() {
               </div>
             </div>
 
+            {/* On-Sheet Direct Editing Action Bar */}
+            <div className="on-sheet-toolbar print:hidden bg-gradient-to-r from-blue-50/95 via-indigo-50/95 to-slate-50/95 border border-blue-200/90 rounded-2xl p-3 shadow-xs flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2 text-blue-900 font-semibold">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                <span>On-Sheet Direct Editing Active: Click any cell, label, or text to modify directly.</span>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={handleResetAllCustomLabels}
+                  className="px-2.5 py-1 bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 rounded-lg font-bold text-[11px] flex items-center gap-1 transition shadow-xs"
+                  title="Reset (Less) PF, Over Time, Income Tax labels across all 3 months"
+                >
+                  <RotateCcw size={11} /> Reset Red Row Labels
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSyncCustomLabels(0)}
+                  className="px-2.5 py-1 bg-white hover:bg-blue-50 text-blue-700 border border-blue-200 rounded-lg font-bold text-[11px] flex items-center gap-1 transition shadow-xs"
+                  title="Sync Month 1 custom row labels to Month 2 & Month 3"
+                >
+                  <Sparkles size={11} /> Sync Labels (M1 &rarr; M2/M3)
+                </button>
+                <button
+                  type="button"
+                  onClick={handleResetAllTable}
+                  className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg font-bold text-[11px] flex items-center gap-1 transition shadow-xs"
+                  title="Reset 3-Month Breakdown Table to defaults"
+                >
+                  <RotateCcw size={11} /> Reset Table
+                </button>
+                <button
+                  type="button"
+                  onClick={handleResetEntireDocument}
+                  className="px-2.5 py-1 bg-white hover:bg-amber-50 text-amber-700 border border-amber-200 rounded-lg font-bold text-[11px] flex items-center gap-1 transition shadow-xs"
+                  title="Reset all fields, amounts, and labels to defaults"
+                >
+                  <RotateCcw size={11} /> Reset Entire Document
+                </button>
+              </div>
+            </div>
+
             {/* PAGE 1 CONTAINER */}
             <div className="salary-page-wrapper salary-page-1-wrapper relative group print:m-0 print:p-0">
               <div className="flex items-center justify-between mb-2 px-1 text-xs font-semibold text-gray-500 print:hidden">
@@ -2032,23 +3272,99 @@ export default function SalaryStatementClient() {
 
                   {/* Ref No and Date */}
                   <div className="flex justify-between items-baseline mb-6 text-[14px]">
-                    <div>
-                      <strong className="font-bold">Ref No:</strong> {formData.refNo}
+                    <div className="flex items-center gap-1">
+                      <strong className="font-bold">Ref No:</strong>
+                      <EditableInlineText
+                        value={formData.refNo}
+                        defaultValue={initialDefaultsRef.current.refNo}
+                        onChange={(val) => setFormData((prev) => ({ ...prev, refNo: val }))}
+                        onReset={() => handleResetField('refNo')}
+                        isMono={true}
+                      />
                     </div>
-                    <div>
-                      Date: {formData.date}
+                    <div className="flex items-center gap-1">
+                      <span>Date:</span>
+                      <EditableInlineText
+                        value={formData.date}
+                        defaultValue={todayFormatted}
+                        onChange={(val) => setFormData((prev) => ({ ...prev, date: val }))}
+                        onReset={() => handleResetField('date')}
+                      />
                     </div>
                   </div>
 
                   {/* Document Title */}
                   <div className="text-center mb-6">
-                    <u className="font-bold text-[16px]">To Whom It May Concern</u>
+                    <EditableInlineText
+                      value={formData.p1Title || 'To Whom It May Concern'}
+                      defaultValue="To Whom It May Concern"
+                      onChange={(val) => setFormData((prev) => ({ ...prev, p1Title: val }))}
+                      onReset={() => setFormData((prev) => ({ ...prev, p1Title: 'To Whom It May Concern' }))}
+                      isBold={true}
+                      isUnderline={true}
+                      className="text-[16px]"
+                    />
                   </div>
 
                   {/* Paragraph 1 */}
                   <p className="text-justify mb-4 leading-normal text-[14px]">
-                    This is to certify that {formData.salutation ? `${formData.salutation} ` : ''}
-                    <strong className="font-bold">{formData.name}</strong> (Staff ID: {formData.workerId}) has been employed with {formData.companyName}, a sister concern of MEP GROUP since {renderOrdinalDateText(formData.joiningDate)}. {formData.genderPronoun} is currently working as a {formData.designation} in the {formatDepartment(formData.department)} Department. {formData.genderPronoun} is a permanent employee of MEP GROUP.
+                    This is to certify that{' '}
+                    <EditableInlineText
+                      value={formData.salutation}
+                      defaultValue={initialDefaultsRef.current.salutation}
+                      onChange={(val) => setFormData((prev) => ({ ...prev, salutation: val }))}
+                      onReset={() => handleResetField('salutation')}
+                    />{' '}
+                    <EditableInlineText
+                      value={formData.name}
+                      defaultValue={initialDefaultsRef.current.name}
+                      onChange={(val) => setFormData((prev) => ({ ...prev, name: val }))}
+                      onReset={() => handleResetField('name')}
+                      isBold={true}
+                    />{' '}
+                    (Staff ID:{' '}
+                    <EditableInlineText
+                      value={formData.workerId}
+                      defaultValue={initialDefaultsRef.current.workerId}
+                      onChange={(val) => setFormData((prev) => ({ ...prev, workerId: val }))}
+                      onReset={() => handleResetField('workerId')}
+                    />
+                    ) has been employed with{' '}
+                    <EditableInlineText
+                      value={formData.companyName}
+                      defaultValue={initialDefaultsRef.current.companyName}
+                      onChange={(val) => setFormData((prev) => ({ ...prev, companyName: val }))}
+                      onReset={() => handleResetField('companyName')}
+                    />
+                    , a sister concern of MEP GROUP since{' '}
+                    <EditableInlineText
+                      value={formData.joiningDate}
+                      defaultValue={initialDefaultsRef.current.joiningDate}
+                      onChange={(val) => setFormData((prev) => ({ ...prev, joiningDate: val }))}
+                      onReset={() => handleResetField('joiningDate')}
+                    />
+                    .{' '}
+                    <EditableInlineText
+                      value={formData.genderPronoun}
+                      defaultValue={initialDefaultsRef.current.genderPronoun}
+                      onChange={(val) => setFormData((prev) => ({ ...prev, genderPronoun: val as any }))}
+                      onReset={() => handleResetField('genderPronoun')}
+                    />{' '}
+                    is currently working as a{' '}
+                    <EditableInlineText
+                      value={formData.designation}
+                      defaultValue={initialDefaultsRef.current.designation}
+                      onChange={(val) => setFormData((prev) => ({ ...prev, designation: val }))}
+                      onReset={() => handleResetField('designation')}
+                    />{' '}
+                    in the{' '}
+                    <EditableInlineText
+                      value={formData.department}
+                      defaultValue={initialDefaultsRef.current.department}
+                      onChange={(val) => setFormData((prev) => ({ ...prev, department: val }))}
+                      onReset={() => handleResetField('department')}
+                    />{' '}
+                    Department. {formData.genderPronoun} is a permanent employee of MEP GROUP.
                   </p>
 
                   {/* Intro line before table */}
@@ -2069,141 +3385,488 @@ export default function SalaryStatementClient() {
                     <thead>
                       <tr>
                         <th colSpan={2} className="border border-black py-1.5 px-2.5 text-center font-bold text-[13.5px] w-1/3 align-middle leading-normal">
-                          {formData.months[0].monthName}
+                          <EditableInlineText
+                            value={formData.months[0].monthName}
+                            defaultValue={initialDefaultsRef.current.months[0].monthName}
+                            onChange={(val) => handleMonthChange(0, 'monthName', val)}
+                            onReset={() => handleResetMonthAmount(0, 'monthName')}
+                            isBold={true}
+                          />
                         </th>
                         <th colSpan={2} className="border border-black py-1.5 px-2.5 text-center font-bold text-[13.5px] w-1/3 align-middle leading-normal">
-                          {formData.months[1].monthName}
+                          <EditableInlineText
+                            value={formData.months[1].monthName}
+                            defaultValue={initialDefaultsRef.current.months[1].monthName}
+                            onChange={(val) => handleMonthChange(1, 'monthName', val)}
+                            onReset={() => handleResetMonthAmount(1, 'monthName')}
+                            isBold={true}
+                          />
                         </th>
                         <th colSpan={2} className="border border-black py-1.5 px-2.5 text-center font-bold text-[13.5px] w-1/3 align-middle leading-normal">
-                          {formData.months[2].monthName}
+                          <EditableInlineText
+                            value={formData.months[2].monthName}
+                            defaultValue={initialDefaultsRef.current.months[2].monthName}
+                            onChange={(val) => handleMonthChange(2, 'monthName', val)}
+                            onReset={() => handleResetMonthAmount(2, 'monthName')}
+                            isBold={true}
+                          />
                         </th>
                       </tr>
                     </thead>
                     <tbody>
+                      {/* Row 1: Gross Salary */}
                       <tr>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal w-[20%]">Gross Salary</td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right w-[13.33%]">
-                          {Number(formData.months[0].grossSalary || 0).toLocaleString('en-US')}/-
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal w-[20%]">
+                          <EditableLabelCell
+                            value={formData.months[0].grossLabel || 'Gross Salary'}
+                            defaultValue="Gross Salary"
+                            onChange={(val) => handleMonthChange(0, 'grossLabel', val)}
+                            onReset={() => handleResetRowLabel(0, 'grossLabel')}
+                          />
                         </td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal w-[20%]">Gross Salary</td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right w-[13.33%]">
-                          {Number(formData.months[1].grossSalary || 0).toLocaleString('en-US')}/-
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right w-[13.33%]">
+                          <EditableAmountCell
+                            value={formData.months[0].grossSalary}
+                            onChange={(val) => handleMonthChange(0, 'grossSalary', val)}
+                            onReset={() => handleResetMonthAmount(0, 'grossSalary')}
+                          />
                         </td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal w-[20%]">Gross Salary</td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right w-[13.33%]">
-                          {Number(formData.months[2].grossSalary || 0).toLocaleString('en-US')}/-
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal w-[20%]">
+                          <EditableLabelCell
+                            value={formData.months[1].grossLabel || 'Gross Salary'}
+                            defaultValue="Gross Salary"
+                            onChange={(val) => handleMonthChange(1, 'grossLabel', val)}
+                            onReset={() => handleResetRowLabel(1, 'grossLabel')}
+                          />
+                        </td>
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right w-[13.33%]">
+                          <EditableAmountCell
+                            value={formData.months[1].grossSalary}
+                            onChange={(val) => handleMonthChange(1, 'grossSalary', val)}
+                            onReset={() => handleResetMonthAmount(1, 'grossSalary')}
+                          />
+                        </td>
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal w-[20%]">
+                          <EditableLabelCell
+                            value={formData.months[2].grossLabel || 'Gross Salary'}
+                            defaultValue="Gross Salary"
+                            onChange={(val) => handleMonthChange(2, 'grossLabel', val)}
+                            onReset={() => handleResetRowLabel(2, 'grossLabel')}
+                          />
+                        </td>
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right w-[13.34%]">
+                          <EditableAmountCell
+                            value={formData.months[2].grossSalary}
+                            onChange={(val) => handleMonthChange(2, 'grossSalary', val)}
+                            onReset={() => handleResetMonthAmount(2, 'grossSalary')}
+                          />
                         </td>
                       </tr>
+
+                      {/* Row 2: Basic */}
                       <tr>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">Basic</td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
-                          {Number(formData.months[0].basicSalary || 0).toLocaleString('en-US')}/-
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                          <EditableLabelCell
+                            value={formData.months[0].basicLabel || 'Basic'}
+                            defaultValue="Basic"
+                            onChange={(val) => handleMonthChange(0, 'basicLabel', val)}
+                            onReset={() => handleResetRowLabel(0, 'basicLabel')}
+                          />
                         </td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">Basic</td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
-                          {Number(formData.months[1].basicSalary || 0).toLocaleString('en-US')}/-
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                          <EditableAmountCell
+                            value={formData.months[0].basicSalary}
+                            onChange={(val) => handleMonthChange(0, 'basicSalary', val)}
+                            onReset={() => handleResetMonthAmount(0, 'basicSalary')}
+                          />
                         </td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">Basic</td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
-                          {Number(formData.months[2].basicSalary || 0).toLocaleString('en-US')}/-
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                          <EditableLabelCell
+                            value={formData.months[1].basicLabel || 'Basic'}
+                            defaultValue="Basic"
+                            onChange={(val) => handleMonthChange(1, 'basicLabel', val)}
+                            onReset={() => handleResetRowLabel(1, 'basicLabel')}
+                          />
+                        </td>
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                          <EditableAmountCell
+                            value={formData.months[1].basicSalary}
+                            onChange={(val) => handleMonthChange(1, 'basicSalary', val)}
+                            onReset={() => handleResetMonthAmount(1, 'basicSalary')}
+                          />
+                        </td>
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                          <EditableLabelCell
+                            value={formData.months[2].basicLabel || 'Basic'}
+                            defaultValue="Basic"
+                            onChange={(val) => handleMonthChange(2, 'basicLabel', val)}
+                            onReset={() => handleResetRowLabel(2, 'basicLabel')}
+                          />
+                        </td>
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                          <EditableAmountCell
+                            value={formData.months[2].basicSalary}
+                            onChange={(val) => handleMonthChange(2, 'basicSalary', val)}
+                            onReset={() => handleResetMonthAmount(2, 'basicSalary')}
+                          />
                         </td>
                       </tr>
+
+                      {/* Row 3: House Rent */}
                       <tr>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">House Rent</td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
-                          {Number(formData.months[0].houseRent || 0).toLocaleString('en-US')}/-
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                          <EditableLabelCell
+                            value={formData.months[0].houseRentLabel || 'House Rent'}
+                            defaultValue="House Rent"
+                            onChange={(val) => handleMonthChange(0, 'houseRentLabel', val)}
+                            onReset={() => handleResetRowLabel(0, 'houseRentLabel')}
+                          />
                         </td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">House Rent</td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
-                          {Number(formData.months[1].houseRent || 0).toLocaleString('en-US')}/-
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                          <EditableAmountCell
+                            value={formData.months[0].houseRent}
+                            onChange={(val) => handleMonthChange(0, 'houseRent', val)}
+                            onReset={() => handleResetMonthAmount(0, 'houseRent')}
+                          />
                         </td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">House Rent</td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
-                          {Number(formData.months[2].houseRent || 0).toLocaleString('en-US')}/-
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                          <EditableLabelCell
+                            value={formData.months[1].houseRentLabel || 'House Rent'}
+                            defaultValue="House Rent"
+                            onChange={(val) => handleMonthChange(1, 'houseRentLabel', val)}
+                            onReset={() => handleResetRowLabel(1, 'houseRentLabel')}
+                          />
+                        </td>
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                          <EditableAmountCell
+                            value={formData.months[1].houseRent}
+                            onChange={(val) => handleMonthChange(1, 'houseRent', val)}
+                            onReset={() => handleResetMonthAmount(1, 'houseRent')}
+                          />
+                        </td>
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                          <EditableLabelCell
+                            value={formData.months[2].houseRentLabel || 'House Rent'}
+                            defaultValue="House Rent"
+                            onChange={(val) => handleMonthChange(2, 'houseRentLabel', val)}
+                            onReset={() => handleResetRowLabel(2, 'houseRentLabel')}
+                          />
+                        </td>
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                          <EditableAmountCell
+                            value={formData.months[2].houseRent}
+                            onChange={(val) => handleMonthChange(2, 'houseRent', val)}
+                            onReset={() => handleResetMonthAmount(2, 'houseRent')}
+                          />
                         </td>
                       </tr>
+
+                      {/* Row 4: Medical */}
                       <tr>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">Medical</td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
-                          {Number(formData.months[0].medical || 0).toLocaleString('en-US')}/-
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                          <EditableLabelCell
+                            value={formData.months[0].medicalLabel || 'Medical'}
+                            defaultValue="Medical"
+                            onChange={(val) => handleMonthChange(0, 'medicalLabel', val)}
+                            onReset={() => handleResetRowLabel(0, 'medicalLabel')}
+                          />
                         </td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">Medical</td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
-                          {Number(formData.months[1].medical || 0).toLocaleString('en-US')}/-
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                          <EditableAmountCell
+                            value={formData.months[0].medical}
+                            onChange={(val) => handleMonthChange(0, 'medical', val)}
+                            onReset={() => handleResetMonthAmount(0, 'medical')}
+                          />
                         </td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">Medical</td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
-                          {Number(formData.months[2].medical || 0).toLocaleString('en-US')}/-
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                          <EditableLabelCell
+                            value={formData.months[1].medicalLabel || 'Medical'}
+                            defaultValue="Medical"
+                            onChange={(val) => handleMonthChange(1, 'medicalLabel', val)}
+                            onReset={() => handleResetRowLabel(1, 'medicalLabel')}
+                          />
+                        </td>
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                          <EditableAmountCell
+                            value={formData.months[1].medical}
+                            onChange={(val) => handleMonthChange(1, 'medical', val)}
+                            onReset={() => handleResetMonthAmount(1, 'medical')}
+                          />
+                        </td>
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                          <EditableLabelCell
+                            value={formData.months[2].medicalLabel || 'Medical'}
+                            defaultValue="Medical"
+                            onChange={(val) => handleMonthChange(2, 'medicalLabel', val)}
+                            onReset={() => handleResetRowLabel(2, 'medicalLabel')}
+                          />
+                        </td>
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                          <EditableAmountCell
+                            value={formData.months[2].medical}
+                            onChange={(val) => handleMonthChange(2, 'medical', val)}
+                            onReset={() => handleResetMonthAmount(2, 'medical')}
+                          />
                         </td>
                       </tr>
+
+                      {/* Row 5: Conveyance */}
                       <tr>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">Conveyance</td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
-                          {Number(formData.months[0].conveyance || 0).toLocaleString('en-US')}/-
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                          <EditableLabelCell
+                            value={formData.months[0].conveyanceLabel || 'Conveyance'}
+                            defaultValue="Conveyance"
+                            onChange={(val) => handleMonthChange(0, 'conveyanceLabel', val)}
+                            onReset={() => handleResetRowLabel(0, 'conveyanceLabel')}
+                          />
                         </td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">Conveyance</td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
-                          {Number(formData.months[1].conveyance || 0).toLocaleString('en-US')}/-
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                          <EditableAmountCell
+                            value={formData.months[0].conveyance}
+                            onChange={(val) => handleMonthChange(0, 'conveyance', val)}
+                            onReset={() => handleResetMonthAmount(0, 'conveyance')}
+                          />
                         </td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">Conveyance</td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
-                          {Number(formData.months[2].conveyance || 0).toLocaleString('en-US')}/-
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                          <EditableLabelCell
+                            value={formData.months[1].conveyanceLabel || 'Conveyance'}
+                            defaultValue="Conveyance"
+                            onChange={(val) => handleMonthChange(1, 'conveyanceLabel', val)}
+                            onReset={() => handleResetRowLabel(1, 'conveyanceLabel')}
+                          />
+                        </td>
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                          <EditableAmountCell
+                            value={formData.months[1].conveyance}
+                            onChange={(val) => handleMonthChange(1, 'conveyance', val)}
+                            onReset={() => handleResetMonthAmount(1, 'conveyance')}
+                          />
+                        </td>
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                          <EditableLabelCell
+                            value={formData.months[2].conveyanceLabel || 'Conveyance'}
+                            defaultValue="Conveyance"
+                            onChange={(val) => handleMonthChange(2, 'conveyanceLabel', val)}
+                            onReset={() => handleResetRowLabel(2, 'conveyanceLabel')}
+                          />
+                        </td>
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                          <EditableAmountCell
+                            value={formData.months[2].conveyance}
+                            onChange={(val) => handleMonthChange(2, 'conveyance', val)}
+                            onReset={() => handleResetMonthAmount(2, 'conveyance')}
+                          />
                         </td>
                       </tr>
+
+                      {/* Row 6: [RED-MARKED] Deduction 1 (Default: (Less) PF) */}
                       <tr>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">(Less) PF</td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
-                          {Number(formData.months[0].pfDeduction || 0).toLocaleString('en-US')}/-
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                          <EditableLabelCell
+                            value={formData.months[0].pfLabel || '(Less) PF'}
+                            defaultValue="(Less) PF"
+                            onChange={(val) => handleMonthChange(0, 'pfLabel', val)}
+                            onReset={() => handleResetRowLabel(0, 'pfLabel')}
+                            highlight={true}
+                          />
                         </td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">(Less) PF</td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
-                          {Number(formData.months[1].pfDeduction || 0).toLocaleString('en-US')}/-
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                          <EditableAmountCell
+                            value={formData.months[0].pfDeduction}
+                            onChange={(val) => handleMonthChange(0, 'pfDeduction', val)}
+                            onReset={() => handleResetMonthAmount(0, 'pfDeduction')}
+                          />
                         </td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">(Less) PF</td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
-                          {Number(formData.months[2].pfDeduction || 0).toLocaleString('en-US')}/-
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                          <EditableLabelCell
+                            value={formData.months[1].pfLabel || '(Less) PF'}
+                            defaultValue="(Less) PF"
+                            onChange={(val) => handleMonthChange(1, 'pfLabel', val)}
+                            onReset={() => handleResetRowLabel(1, 'pfLabel')}
+                            highlight={true}
+                          />
+                        </td>
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                          <EditableAmountCell
+                            value={formData.months[1].pfDeduction}
+                            onChange={(val) => handleMonthChange(1, 'pfDeduction', val)}
+                            onReset={() => handleResetMonthAmount(1, 'pfDeduction')}
+                          />
+                        </td>
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                          <EditableLabelCell
+                            value={formData.months[2].pfLabel || '(Less) PF'}
+                            defaultValue="(Less) PF"
+                            onChange={(val) => handleMonthChange(2, 'pfLabel', val)}
+                            onReset={() => handleResetRowLabel(2, 'pfLabel')}
+                            highlight={true}
+                          />
+                        </td>
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                          <EditableAmountCell
+                            value={formData.months[2].pfDeduction}
+                            onChange={(val) => handleMonthChange(2, 'pfDeduction', val)}
+                            onReset={() => handleResetMonthAmount(2, 'pfDeduction')}
+                          />
                         </td>
                       </tr>
+
+                      {/* Row 7: [RED-MARKED] Addition (Default: Over Time) */}
                       <tr>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">Over Time</td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
-                          {Number(formData.months[0].overtime || 0).toLocaleString('en-US')}/-
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                          <EditableLabelCell
+                            value={formData.months[0].overtimeLabel || 'Over Time'}
+                            defaultValue="Over Time"
+                            onChange={(val) => handleMonthChange(0, 'overtimeLabel', val)}
+                            onReset={() => handleResetRowLabel(0, 'overtimeLabel')}
+                            highlight={true}
+                          />
                         </td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">Over Time</td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
-                          {Number(formData.months[1].overtime || 0).toLocaleString('en-US')}/-
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                          <EditableAmountCell
+                            value={formData.months[0].overtime}
+                            onChange={(val) => handleMonthChange(0, 'overtime', val)}
+                            onReset={() => handleResetMonthAmount(0, 'overtime')}
+                          />
                         </td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">Over Time</td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
-                          {Number(formData.months[2].overtime || 0).toLocaleString('en-US')}/-
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                          <EditableLabelCell
+                            value={formData.months[1].overtimeLabel || 'Over Time'}
+                            defaultValue="Over Time"
+                            onChange={(val) => handleMonthChange(1, 'overtimeLabel', val)}
+                            onReset={() => handleResetRowLabel(1, 'overtimeLabel')}
+                            highlight={true}
+                          />
+                        </td>
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                          <EditableAmountCell
+                            value={formData.months[1].overtime}
+                            onChange={(val) => handleMonthChange(1, 'overtime', val)}
+                            onReset={() => handleResetMonthAmount(1, 'overtime')}
+                          />
+                        </td>
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                          <EditableLabelCell
+                            value={formData.months[2].overtimeLabel || 'Over Time'}
+                            defaultValue="Over Time"
+                            onChange={(val) => handleMonthChange(2, 'overtimeLabel', val)}
+                            onReset={() => handleResetRowLabel(2, 'overtimeLabel')}
+                            highlight={true}
+                          />
+                        </td>
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                          <EditableAmountCell
+                            value={formData.months[2].overtime}
+                            onChange={(val) => handleMonthChange(2, 'overtime', val)}
+                            onReset={() => handleResetMonthAmount(2, 'overtime')}
+                          />
                         </td>
                       </tr>
+
+                      {/* Row 8: [RED-MARKED] Deduction 2 (Default: Income Tax) */}
                       <tr>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">Income Tax</td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
-                          {Number(formData.months[0].incomeTax || 0).toLocaleString('en-US')}/-
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                          <EditableLabelCell
+                            value={formData.months[0].incomeTaxLabel || 'Income Tax'}
+                            defaultValue="Income Tax"
+                            onChange={(val) => handleMonthChange(0, 'incomeTaxLabel', val)}
+                            onReset={() => handleResetRowLabel(0, 'incomeTaxLabel')}
+                            highlight={true}
+                          />
                         </td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">Income Tax</td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
-                          {Number(formData.months[1].incomeTax || 0).toLocaleString('en-US')}/-
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                          <EditableAmountCell
+                            value={formData.months[0].incomeTax}
+                            onChange={(val) => handleMonthChange(0, 'incomeTax', val)}
+                            onReset={() => handleResetMonthAmount(0, 'incomeTax')}
+                          />
                         </td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">Income Tax</td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
-                          {Number(formData.months[2].incomeTax || 0).toLocaleString('en-US')}/-
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                          <EditableLabelCell
+                            value={formData.months[1].incomeTaxLabel || 'Income Tax'}
+                            defaultValue="Income Tax"
+                            onChange={(val) => handleMonthChange(1, 'incomeTaxLabel', val)}
+                            onReset={() => handleResetRowLabel(1, 'incomeTaxLabel')}
+                            highlight={true}
+                          />
+                        </td>
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                          <EditableAmountCell
+                            value={formData.months[1].incomeTax}
+                            onChange={(val) => handleMonthChange(1, 'incomeTax', val)}
+                            onReset={() => handleResetMonthAmount(1, 'incomeTax')}
+                          />
+                        </td>
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                          <EditableLabelCell
+                            value={formData.months[2].incomeTaxLabel || 'Income Tax'}
+                            defaultValue="Income Tax"
+                            onChange={(val) => handleMonthChange(2, 'incomeTaxLabel', val)}
+                            onReset={() => handleResetRowLabel(2, 'incomeTaxLabel')}
+                            highlight={true}
+                          />
+                        </td>
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                          <EditableAmountCell
+                            value={formData.months[2].incomeTax}
+                            onChange={(val) => handleMonthChange(2, 'incomeTax', val)}
+                            onReset={() => handleResetMonthAmount(2, 'incomeTax')}
+                          />
                         </td>
                       </tr>
+
+                      {/* Row 9: Net Payable= */}
                       <tr className="font-bold">
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">Net Payable=</td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
-                          {Number(formData.months[0].netPayable || 0).toLocaleString('en-US')}/-
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                          <EditableLabelCell
+                            value={formData.months[0].netPayableLabel || 'Net Payable='}
+                            defaultValue="Net Payable="
+                            onChange={(val) => handleMonthChange(0, 'netPayableLabel', val)}
+                            onReset={() => handleResetRowLabel(0, 'netPayableLabel')}
+                            isBold={true}
+                          />
                         </td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">Net Payable=</td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
-                          {Number(formData.months[1].netPayable || 0).toLocaleString('en-US')}/-
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                          <EditableAmountCell
+                            value={formData.months[0].netPayable}
+                            onChange={(val) => handleMonthChange(0, 'netPayable', val)}
+                            onReset={() => handleResetMonthAmount(0, 'netPayable')}
+                            isBold={true}
+                          />
                         </td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal">Net Payable=</td>
-                        <td className="border border-black py-1.5 px-2.5 align-middle leading-normal text-right">
-                          {Number(formData.months[2].netPayable || 0).toLocaleString('en-US')}/-
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                          <EditableLabelCell
+                            value={formData.months[1].netPayableLabel || 'Net Payable='}
+                            defaultValue="Net Payable="
+                            onChange={(val) => handleMonthChange(1, 'netPayableLabel', val)}
+                            onReset={() => handleResetRowLabel(1, 'netPayableLabel')}
+                            isBold={true}
+                          />
+                        </td>
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                          <EditableAmountCell
+                            value={formData.months[1].netPayable}
+                            onChange={(val) => handleMonthChange(1, 'netPayable', val)}
+                            onReset={() => handleResetMonthAmount(1, 'netPayable')}
+                            isBold={true}
+                          />
+                        </td>
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                          <EditableLabelCell
+                            value={formData.months[2].netPayableLabel || 'Net Payable='}
+                            defaultValue="Net Payable="
+                            onChange={(val) => handleMonthChange(2, 'netPayableLabel', val)}
+                            onReset={() => handleResetRowLabel(2, 'netPayableLabel')}
+                            isBold={true}
+                          />
+                        </td>
+                        <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                          <EditableAmountCell
+                            value={formData.months[2].netPayable}
+                            onChange={(val) => handleMonthChange(2, 'netPayable', val)}
+                            onReset={() => handleResetMonthAmount(2, 'netPayable')}
+                            isBold={true}
+                          />
                         </td>
                       </tr>
                     </tbody>
@@ -2211,16 +3874,52 @@ export default function SalaryStatementClient() {
 
                   {/* Closing Paragraph */}
                   <p className="text-justify mt-3.5 mb-4 leading-normal text-[14px]">
-                    This certificate is issued upon {getPossessivePronoun(formData.genderPronoun)} personal request for the purpose of {formData.purpose}, for which Company or undersigned has no responsibility or liability at all.
+                    This certificate is issued upon {getPossessivePronoun(formData.genderPronoun)} personal request for the purpose of{' '}
+                    <EditableInlineText
+                      value={formData.purpose}
+                      defaultValue={initialDefaultsRef.current.purpose}
+                      onChange={(val) => setFormData((prev) => ({ ...prev, purpose: val }))}
+                      onReset={() => handleResetField('purpose')}
+                    />
+                    , for which Company or undersigned has no responsibility or liability at all.
                   </p>
 
                   {/* Signatory Section (Left aligned, with underline separator) */}
                   <div className="mt-6 text-[14px] leading-snug">
                     <div className="w-52 border-b border-black mb-1.5" />
-                    <div className="font-bold">{formData.signatoryName}</div>
-                    <div>{formData.signatoryTitle}</div>
-                    <div>{formData.signatoryDepartment}</div>
-                    <div>{formData.signatoryOrg}</div>
+                    <div className="font-bold">
+                      <EditableInlineText
+                        value={formData.signatoryName}
+                        defaultValue={initialDefaultsRef.current.signatoryName}
+                        onChange={(val) => setFormData((prev) => ({ ...prev, signatoryName: val }))}
+                        onReset={() => handleResetField('signatoryName')}
+                        isBold={true}
+                      />
+                    </div>
+                    <div>
+                      <EditableInlineText
+                        value={formData.signatoryTitle}
+                        defaultValue={initialDefaultsRef.current.signatoryTitle}
+                        onChange={(val) => setFormData((prev) => ({ ...prev, signatoryTitle: val }))}
+                        onReset={() => handleResetField('signatoryTitle')}
+                      />
+                    </div>
+                    <div>
+                      <EditableInlineText
+                        value={formData.signatoryDepartment}
+                        defaultValue={initialDefaultsRef.current.signatoryDepartment}
+                        onChange={(val) => setFormData((prev) => ({ ...prev, signatoryDepartment: val }))}
+                        onReset={() => handleResetField('signatoryDepartment')}
+                      />
+                    </div>
+                    <div>
+                      <EditableInlineText
+                        value={formData.signatoryOrg}
+                        defaultValue={initialDefaultsRef.current.signatoryOrg}
+                        onChange={(val) => setFormData((prev) => ({ ...prev, signatoryOrg: val }))}
+                        onReset={() => handleResetField('signatoryOrg')}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2282,23 +3981,99 @@ export default function SalaryStatementClient() {
 
                   {/* Ref No and Date */}
                   <div className="flex justify-between items-baseline mb-6 text-[14px]">
-                    <div>
-                      <strong className="font-bold">Ref No:</strong> {formData.refNo}
+                    <div className="flex items-center gap-1">
+                      <strong className="font-bold">Ref No:</strong>
+                      <EditableInlineText
+                        value={formData.refNo}
+                        defaultValue={initialDefaultsRef.current.refNo}
+                        onChange={(val) => setFormData((prev) => ({ ...prev, refNo: val }))}
+                        onReset={() => handleResetField('refNo')}
+                        isMono={true}
+                      />
                     </div>
-                    <div>
-                      Date: {formData.date}
+                    <div className="flex items-center gap-1">
+                      <span>Date:</span>
+                      <EditableInlineText
+                        value={formData.date}
+                        defaultValue={todayFormatted}
+                        onChange={(val) => setFormData((prev) => ({ ...prev, date: val }))}
+                        onReset={() => handleResetField('date')}
+                      />
                     </div>
                   </div>
 
                   {/* Document Title */}
                   <div className="text-center mb-6">
-                    <u className="font-bold text-[16px]">Monthly Salary Certificate</u>
+                    <EditableInlineText
+                      value={formData.p2Title || 'Monthly Salary Certificate'}
+                      defaultValue="Monthly Salary Certificate"
+                      onChange={(val) => setFormData((prev) => ({ ...prev, p2Title: val }))}
+                      onReset={() => setFormData((prev) => ({ ...prev, p2Title: 'Monthly Salary Certificate' }))}
+                      isBold={true}
+                      isUnderline={true}
+                      className="text-[16px]"
+                    />
                   </div>
 
                   {/* Paragraph 1 */}
                   <p className="text-justify mb-4 leading-normal text-[14px]">
-                    This is to certify that {formData.salutation ? `${formData.salutation} ` : ''}
-                    <strong className="font-bold">{formData.name}</strong> (Staff ID: {formData.workerId}) has been employed with {formData.companyName}, a sister concern of MEP GROUP since {renderOrdinalDateText(formData.joiningDate)}. {formData.genderPronoun} is currently working as a {formData.designation} in the {formatDepartment(formData.department)} Department. {formData.genderPronoun} is a permanent employee of MEP GROUP.
+                    This is to certify that{' '}
+                    <EditableInlineText
+                      value={formData.salutation}
+                      defaultValue={initialDefaultsRef.current.salutation}
+                      onChange={(val) => setFormData((prev) => ({ ...prev, salutation: val }))}
+                      onReset={() => handleResetField('salutation')}
+                    />{' '}
+                    <EditableInlineText
+                      value={formData.name}
+                      defaultValue={initialDefaultsRef.current.name}
+                      onChange={(val) => setFormData((prev) => ({ ...prev, name: val }))}
+                      onReset={() => handleResetField('name')}
+                      isBold={true}
+                    />{' '}
+                    (Staff ID:{' '}
+                    <EditableInlineText
+                      value={formData.workerId}
+                      defaultValue={initialDefaultsRef.current.workerId}
+                      onChange={(val) => setFormData((prev) => ({ ...prev, workerId: val }))}
+                      onReset={() => handleResetField('workerId')}
+                    />
+                    ) has been employed with{' '}
+                    <EditableInlineText
+                      value={formData.companyName}
+                      defaultValue={initialDefaultsRef.current.companyName}
+                      onChange={(val) => setFormData((prev) => ({ ...prev, companyName: val }))}
+                      onReset={() => handleResetField('companyName')}
+                    />
+                    , a sister concern of MEP GROUP since{' '}
+                    <EditableInlineText
+                      value={formData.joiningDate}
+                      defaultValue={initialDefaultsRef.current.joiningDate}
+                      onChange={(val) => setFormData((prev) => ({ ...prev, joiningDate: val }))}
+                      onReset={() => handleResetField('joiningDate')}
+                    />
+                    .{' '}
+                    <EditableInlineText
+                      value={formData.genderPronoun}
+                      defaultValue={initialDefaultsRef.current.genderPronoun}
+                      onChange={(val) => setFormData((prev) => ({ ...prev, genderPronoun: val as any }))}
+                      onReset={() => handleResetField('genderPronoun')}
+                    />{' '}
+                    is currently working as a{' '}
+                    <EditableInlineText
+                      value={formData.designation}
+                      defaultValue={initialDefaultsRef.current.designation}
+                      onChange={(val) => setFormData((prev) => ({ ...prev, designation: val }))}
+                      onReset={() => handleResetField('designation')}
+                    />{' '}
+                    in the{' '}
+                    <EditableInlineText
+                      value={formData.department}
+                      defaultValue={initialDefaultsRef.current.department}
+                      onChange={(val) => setFormData((prev) => ({ ...prev, department: val }))}
+                      onReset={() => handleResetField('department')}
+                    />{' '}
+                    Department. {formData.genderPronoun} is a permanent employee of MEP GROUP.
                   </p>
 
                   {/* Intro line before table */}
@@ -2316,39 +4091,72 @@ export default function SalaryStatementClient() {
                       <tr>
                         <td className="border border-black py-1.5 px-3 align-middle leading-normal w-[65%]">Basic</td>
                         <td className="border border-black py-1.5 px-3 align-middle leading-normal text-right w-[35%]">
-                          {Number(formData.structureBasic || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          <EditableAmountCell
+                            value={formData.structureBasic}
+                            onChange={(val) => handleStructureChange('structureBasic', val)}
+                            onReset={() => handleResetField('structureBasic')}
+                            decimals={2}
+                          />
                         </td>
                       </tr>
                       <tr>
                         <td className="border border-black py-1.5 px-3 align-middle leading-normal">House Rent</td>
                         <td className="border border-black py-1.5 px-3 align-middle leading-normal text-right">
-                          {Number(formData.structureHouseRent || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          <EditableAmountCell
+                            value={formData.structureHouseRent}
+                            onChange={(val) => handleStructureChange('structureHouseRent', val)}
+                            onReset={() => handleResetField('structureHouseRent')}
+                            decimals={2}
+                          />
                         </td>
                       </tr>
                       <tr>
                         <td className="border border-black py-1.5 px-3 align-middle leading-normal">Medical Allowance</td>
                         <td className="border border-black py-1.5 px-3 align-middle leading-normal text-right">
-                          {Number(formData.structureMedical || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          <EditableAmountCell
+                            value={formData.structureMedical}
+                            onChange={(val) => handleStructureChange('structureMedical', val)}
+                            onReset={() => handleResetField('structureMedical')}
+                            decimals={2}
+                          />
                         </td>
                       </tr>
                       <tr>
                         <td className="border border-black py-1.5 px-3 align-middle leading-normal">Conveyance</td>
                         <td className="border border-black py-1.5 px-3 align-middle leading-normal text-right">
-                          {Number(formData.structureConveyance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          <EditableAmountCell
+                            value={formData.structureConveyance}
+                            onChange={(val) => handleStructureChange('structureConveyance', val)}
+                            onReset={() => handleResetField('structureConveyance')}
+                            decimals={2}
+                          />
                         </td>
                       </tr>
                       <tr className="font-bold">
                         <td className="border border-black py-1.5 px-3 align-middle leading-normal">Total Salary</td>
                         <td className="border border-black py-1.5 px-3 align-middle leading-normal text-right">
-                          {Number(formData.structureTotal || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          <EditableAmountCell
+                            value={formData.structureTotal}
+                            onChange={(val) => setFormData((prev) => ({ ...prev, structureTotal: val }))}
+                            onReset={handleResetSalaryStructure}
+                            isBold={true}
+                            decimals={2}
+                          />
                         </td>
                       </tr>
                     </tbody>
                   </table>
 
                   {/* In Word line */}
-                  <div className="font-bold text-[14px] mt-2 mb-3">
-                    In Word: - {(formData.amountInWords || '').replace(/^In Word:\s*-?\s*/i, '').trim()}
+                  <div className="font-bold text-[14px] mt-2 mb-3 flex items-center gap-1 flex-wrap">
+                    <span>In Word: -</span>
+                    <EditableInlineText
+                      value={(formData.amountInWords || '').replace(/^In Word:\s*-?\s*/i, '').trim()}
+                      defaultValue={initialDefaultsRef.current.amountInWords}
+                      onChange={(val) => setFormData((prev) => ({ ...prev, amountInWords: val }))}
+                      onReset={() => handleResetField('amountInWords')}
+                      isBold={true}
+                    />
                   </div>
 
                   {/* Monthly salary details heading */}
@@ -2358,23 +4166,94 @@ export default function SalaryStatementClient() {
 
                   {/* Numbered Items List */}
                   <div className="space-y-2 text-[14px] leading-relaxed">
-                    <p>
-                      1. {formData.bankName} (A/C No. {formData.bankAccountNo}) payable amount:  {Number(formData.monthlyPayableAmount || 0).toLocaleString('en-US')}/- (In Word: - {(formData.monthlyPayableInWords || '').replace(/^\(?In Word:\s*-?\s*/i, '').replace(/\)?\s*$/, '').trim()})
+                    <p className="flex items-center gap-1 flex-wrap">
+                      <span>1.</span>
+                      <EditableInlineText
+                        value={formData.bankName}
+                        defaultValue={initialDefaultsRef.current.bankName}
+                        onChange={(val) => setFormData((prev) => ({ ...prev, bankName: val }))}
+                        onReset={() => handleResetField('bankName')}
+                      />
+                      <span>(A/C No.</span>
+                      <EditableInlineText
+                        value={formData.bankAccountNo}
+                        defaultValue={initialDefaultsRef.current.bankAccountNo}
+                        onChange={(val) => setFormData((prev) => ({ ...prev, bankAccountNo: val }))}
+                        onReset={() => handleResetField('bankAccountNo')}
+                        isMono={true}
+                      />
+                      <span>) payable amount:</span>
+                      <EditableAmountCell
+                        value={formData.monthlyPayableAmount}
+                        onChange={(val) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            monthlyPayableAmount: val,
+                            monthlyPayableInWords: formatWordsOnly(val),
+                          }))
+                        }
+                        onReset={() => handleResetField('monthlyPayableAmount')}
+                      />
+                      <span>(In Word: -</span>
+                      <EditableInlineText
+                        value={(formData.monthlyPayableInWords || '').replace(/^\(?In Word:\s*-?\s*/i, '').replace(/\)?\s*$/, '').trim()}
+                        defaultValue={initialDefaultsRef.current.monthlyPayableInWords}
+                        onChange={(val) => setFormData((prev) => ({ ...prev, monthlyPayableInWords: val }))}
+                        onReset={() => handleResetField('monthlyPayableInWords')}
+                      />
+                      <span>)</span>
                     </p>
-                    <p>
-                      2. Total deduction amount (PF purpose Tk. {Number(formData.pfDeductionPage2 || 0).toLocaleString('en-US')}/-)
+                    <p className="flex items-center gap-1 flex-wrap">
+                      <span>2. Total deduction amount (PF purpose Tk.</span>
+                      <EditableAmountCell
+                        value={formData.pfDeductionPage2}
+                        onChange={(val) => handlePage2PfChange(val)}
+                        onReset={() => handleResetField('pfDeductionPage2')}
+                      />
+                      <span>)</span>
                     </p>
-                    <p>
-                      3. {formData.disclaimer}
+                    <p className="flex items-start gap-1">
+                      <span className="shrink-0">3.</span>
+                      <span className="flex-1">
+                        <EditableInlineText
+                          value={formData.disclaimer}
+                          defaultValue={initialDefaultsRef.current.disclaimer}
+                          onChange={(val) => setFormData((prev) => ({ ...prev, disclaimer: val }))}
+                          onReset={() => handleResetField('disclaimer')}
+                          className="w-full"
+                        />
+                      </span>
                     </p>
                   </div>
 
                   {/* Signatory Section (Left aligned, with underline separator) */}
                   <div className="mt-10 text-[14px] leading-snug">
                     <div className="w-52 border-b border-black mb-1.5" />
-                    <div className="font-bold">{formData.signatoryName}</div>
-                    <div>{formData.signatoryTitle}</div>
-                    <div>{formData.signatoryDepartment}</div>
+                    <div className="font-bold">
+                      <EditableInlineText
+                        value={formData.signatoryName}
+                        defaultValue={initialDefaultsRef.current.signatoryName}
+                        onChange={(val) => setFormData((prev) => ({ ...prev, signatoryName: val }))}
+                        onReset={() => handleResetField('signatoryName')}
+                        isBold={true}
+                      />
+                    </div>
+                    <div>
+                      <EditableInlineText
+                        value={formData.signatoryTitle}
+                        defaultValue={initialDefaultsRef.current.signatoryTitle}
+                        onChange={(val) => setFormData((prev) => ({ ...prev, signatoryTitle: val }))}
+                        onReset={() => handleResetField('signatoryTitle')}
+                      />
+                    </div>
+                    <div>
+                      <EditableInlineText
+                        value={formData.signatoryDepartment}
+                        defaultValue={initialDefaultsRef.current.signatoryDepartment}
+                        onChange={(val) => setFormData((prev) => ({ ...prev, signatoryDepartment: val }))}
+                        onReset={() => handleResetField('signatoryDepartment')}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
