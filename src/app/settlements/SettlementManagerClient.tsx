@@ -658,14 +658,14 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
                 <button
                   type="button"
                   onClick={handleResetResignForm}
-                  className="px-5 py-2.5 text-sm font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition"
+                  className="min-h-[44px] px-5 py-2.5 text-sm font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition flex items-center justify-center"
                 >
                   Clear
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmittingResign}
-                  className={`px-6 py-2.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition shadow-sm flex items-center gap-2 ${
+                  className={`min-h-[44px] px-6 py-2.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition shadow-sm flex items-center justify-center gap-2 ${
                     isSubmittingResign ? 'opacity-60 cursor-not-allowed' : ''
                   }`}
                 >
@@ -694,7 +694,7 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
             <button
               type="button"
               onClick={() => setStatusFilter('ALL')}
-              className={`whitespace-nowrap shrink-0 min-h-[38px] px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+              className={`whitespace-nowrap shrink-0 min-h-[44px] px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                 statusFilter === 'ALL'
                   ? 'bg-white text-slate-900 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
@@ -708,7 +708,7 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
             <button
               type="button"
               onClick={() => setStatusFilter('PENDING')}
-              className={`whitespace-nowrap shrink-0 min-h-[38px] px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+              className={`whitespace-nowrap shrink-0 min-h-[44px] px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                 statusFilter === 'PENDING'
                   ? 'bg-white text-amber-800 shadow-xs'
                   : 'text-slate-600 hover:text-amber-700'
@@ -722,7 +722,7 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
             <button
               type="button"
               onClick={() => setStatusFilter('APPROVED')}
-              className={`whitespace-nowrap shrink-0 min-h-[38px] px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+              className={`whitespace-nowrap shrink-0 min-h-[44px] px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                 statusFilter === 'APPROVED'
                   ? 'bg-white text-emerald-800 shadow-xs'
                   : 'text-slate-600 hover:text-emerald-700'
@@ -736,7 +736,7 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
             <button
               type="button"
               onClick={() => setStatusFilter('PAID')}
-              className={`whitespace-nowrap shrink-0 min-h-[38px] px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+              className={`whitespace-nowrap shrink-0 min-h-[44px] px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                 statusFilter === 'PAID'
                   ? 'bg-white text-blue-800 shadow-xs'
                   : 'text-slate-600 hover:text-blue-700'

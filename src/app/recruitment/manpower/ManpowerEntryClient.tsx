@@ -260,7 +260,7 @@ export default function ManpowerEntryClient({
   const newDiff = parsedNewAuth - currentExisting;
 
   return (
-    <div className={`space-y-6 ${isEmbedded ? '' : 'p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto'}`}>
+    <div className={`space-y-6 ${isEmbedded ? '' : 'p-3 sm:p-6 lg:p-8 safe-pb max-w-5xl mx-auto'}`}>
       {/* Toast Alert */}
       {toast && (
         <div className={`fixed bottom-6 right-6 z-50 px-5 py-3 rounded-xl shadow-2xl text-white font-medium flex items-center gap-3 transition-all animate-bounce ${
@@ -277,7 +277,7 @@ export default function ManpowerEntryClient({
           <Link 
             href="/recruitment" 
             prefetch={true}
-            className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-800 transition"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-800 transition min-h-[44px]"
           >
             <ArrowLeft size={16} /> Back to Recruitment & Manpower Overview
           </Link>
@@ -503,7 +503,7 @@ export default function ManpowerEntryClient({
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full sm:w-auto px-8 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-xl shadow-md transition flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto px-8 py-2.5 min-h-[44px] text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-xl shadow-md transition flex items-center justify-center gap-2"
                 >
                   {isSubmitting ? (
                     <RefreshCw size={16} className="animate-spin" />
@@ -539,7 +539,7 @@ export default function ManpowerEntryClient({
             <button
               onClick={handleBulkSubmit}
               disabled={isBulkSubmitting}
-              className="inline-flex items-center gap-2 bg-indigo-600 text-white font-bold text-sm px-5 py-2.5 rounded-xl hover:bg-indigo-700 transition shadow-sm self-start sm:self-auto"
+              className="inline-flex items-center gap-2 bg-indigo-600 text-white font-bold text-sm px-5 py-2.5 min-h-[44px] rounded-xl hover:bg-indigo-700 transition shadow-sm self-start sm:self-auto"
             >
               {isBulkSubmitting ? (
                 <RefreshCw size={15} className="animate-spin" />
@@ -550,7 +550,7 @@ export default function ManpowerEntryClient({
             </button>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto custom-scrollbar touch-scroll">
             <table className="w-full text-left text-sm">
               <thead className="bg-gray-50 text-gray-600 font-semibold border-b border-gray-200">
                 <tr>

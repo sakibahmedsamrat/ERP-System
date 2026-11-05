@@ -2281,7 +2281,7 @@ export default function SalaryStatementClient({
           <div className="flex items-center gap-3">
             <Link
               href="/payroll"
-              className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50/80 rounded-xl transition border border-transparent hover:border-blue-100"
+              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-500 hover:text-blue-600 hover:bg-blue-50/80 rounded-xl transition border border-transparent hover:border-blue-100"
               title="Back to Payroll"
             >
               <ArrowLeft size={20} />
@@ -2343,7 +2343,7 @@ export default function SalaryStatementClient({
                 setIsDrawerOpen(true);
                 fetchSavedStatements(savedSearchQuery);
               }}
-              className="inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-800 border border-slate-200/90 px-3.5 py-2 rounded-xl text-xs font-bold shadow-xs transition hover:border-blue-400 group"
+              className="inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-800 border border-slate-200/90 px-3.5 py-2 min-h-[44px] rounded-xl text-xs font-bold shadow-xs transition hover:border-blue-400 group"
               title="Open saved salary statements list"
             >
               <Bookmark size={15} className="text-blue-600 transition group-hover:scale-110" />
@@ -2357,23 +2357,23 @@ export default function SalaryStatementClient({
 
             {/* Save / Update Button */}
             {activeStatementId ? (
-              <div className="inline-flex items-center rounded-xl bg-emerald-600 p-0.5 shadow-sm">
+              <div className="inline-flex items-center rounded-xl bg-emerald-600 p-0.5 shadow-sm min-h-[44px]">
                 <button
                   type="button"
                   onClick={() => handleSave(false)}
                   disabled={isSaving}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white hover:bg-emerald-700 transition disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 min-h-[40px] rounded-lg text-xs font-bold text-white hover:bg-emerald-700 transition disabled:opacity-50"
                   title="Update currently loaded statement in database"
                 >
                   {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
                   <span>Update Statement</span>
                 </button>
-                <div className="w-px h-4 bg-emerald-500/80 mx-0.5" />
+                <div className="w-px h-5 bg-emerald-500/80 mx-0.5" />
                 <button
                   type="button"
                   onClick={() => handleSave(true)}
                   disabled={isSaving}
-                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-emerald-100 hover:text-white hover:bg-emerald-700 transition disabled:opacity-50"
+                  className="inline-flex items-center gap-1 px-2.5 py-2 min-h-[40px] rounded-lg text-xs font-semibold text-emerald-100 hover:text-white hover:bg-emerald-700 transition disabled:opacity-50"
                   title="Save current state as a new copy without overwriting"
                 >
                   <Copy size={13} />
@@ -2385,7 +2385,7 @@ export default function SalaryStatementClient({
                 type="button"
                 onClick={() => handleSave(false)}
                 disabled={isSaving}
-                className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow-xs shadow-emerald-600/20 transition disabled:opacity-50"
+                className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 min-h-[44px] rounded-xl text-xs font-bold shadow-xs shadow-emerald-600/20 transition disabled:opacity-50"
                 title="Save current statement to database"
               >
                 {isSaving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
@@ -2395,7 +2395,7 @@ export default function SalaryStatementClient({
 
             <button
               onClick={handlePrint}
-              className="inline-flex items-center gap-2 bg-white/80 hover:bg-white text-slate-800 border border-slate-200/80 px-3.5 py-2 rounded-xl text-xs font-bold shadow-xs transition hover:border-slate-300"
+              className="inline-flex items-center gap-2 bg-white/80 hover:bg-white text-slate-800 border border-slate-200/80 px-3.5 py-2 min-h-[44px] rounded-xl text-xs font-bold shadow-xs transition hover:border-slate-300"
             >
               <Printer size={15} /> Print / Save PDF
             </button>
@@ -2403,7 +2403,7 @@ export default function SalaryStatementClient({
             <button
               onClick={handleDownloadPdf}
               disabled={isGeneratingPdf}
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md shadow-blue-600/20 transition-all disabled:opacity-50"
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2 min-h-[44px] rounded-xl text-xs font-bold shadow-md shadow-blue-600/20 transition-all disabled:opacity-50"
             >
               {isGeneratingPdf ? (
                 <>
@@ -2579,26 +2579,30 @@ export default function SalaryStatementClient({
           {(viewMode === 'split' || viewMode === 'form') && (
             <div className={viewMode === 'split' ? 'lg:col-span-5 space-y-6 print:hidden' : 'max-w-4xl mx-auto space-y-6 print:hidden w-full'}>
               {/* Form Navigation Tabs */}
-              <div className="glass-panel rounded-2xl p-1.5 border border-white/70 shadow-xs flex items-center gap-1 text-xs font-bold">
+              <div className="glass-panel rounded-2xl p-1.5 border border-white/70 shadow-xs flex items-center gap-1 text-xs font-bold overflow-x-auto no-scrollbar touch-scroll">
                 <button
                   onClick={() => setActiveTab('p1')}
-                  className={`flex-1 py-2 px-3 rounded-xl transition flex items-center justify-center gap-1.5 ${
+                  className={`flex-1 min-h-[44px] whitespace-nowrap shrink-0 py-2 px-3 rounded-xl transition flex items-center justify-center gap-1.5 ${
                     activeTab === 'p1' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:bg-white/60'
                   }`}
                 >
-                  <FileText size={14} /> Page 1: 3-Month Breakdown
+                  <FileText size={14} />
+                  <span className="hidden sm:inline">Page 1: 3-Month Breakdown</span>
+                  <span className="sm:hidden">Breakdown (P1)</span>
                 </button>
                 <button
                   onClick={() => setActiveTab('p2')}
-                  className={`flex-1 py-2 px-3 rounded-xl transition flex items-center justify-center gap-1.5 ${
+                  className={`flex-1 min-h-[44px] whitespace-nowrap shrink-0 py-2 px-3 rounded-xl transition flex items-center justify-center gap-1.5 ${
                     activeTab === 'p2' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:bg-white/60'
                   }`}
                 >
-                  <CreditCard size={14} /> Page 2: Salary Certificate
+                  <CreditCard size={14} />
+                  <span className="hidden sm:inline">Page 2: Salary Certificate</span>
+                  <span className="sm:hidden">Certificate (P2)</span>
                 </button>
                 <button
                   onClick={() => setActiveTab('signatory')}
-                  className={`flex-1 py-2 px-3 rounded-xl transition flex items-center justify-center gap-1.5 ${
+                  className={`flex-1 min-h-[44px] whitespace-nowrap shrink-0 py-2 px-3 rounded-xl transition flex items-center justify-center gap-1.5 ${
                     activeTab === 'signatory' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:bg-white/60'
                   }`}
                 >
@@ -4277,7 +4281,7 @@ export default function SalaryStatementClient({
                 <span className="text-gray-400">Standard A4 Sheet (210mm x 297mm) • Verbatim Official Template</span>
               </div>
 
-              <div className="salary-doc-page-wrapper w-full overflow-x-auto pb-4 print:p-0 print:m-0 print:overflow-visible">
+              <div className="salary-doc-page-wrapper w-full overflow-x-auto custom-scrollbar touch-scroll pb-4 print:p-0 print:m-0 print:overflow-visible">
                 <div
                   ref={page1Ref}
                   id="salary-statement-page-1"
@@ -5022,7 +5026,7 @@ export default function SalaryStatementClient({
                 <span className="text-gray-400">Standard A4 Sheet (210mm x 297mm) • Verbatim Official Template</span>
               </div>
 
-              <div className="salary-doc-page-wrapper w-full overflow-x-auto pb-4 print:p-0 print:m-0 print:overflow-visible">
+              <div className="salary-doc-page-wrapper w-full overflow-x-auto custom-scrollbar touch-scroll pb-4 print:p-0 print:m-0 print:overflow-visible">
                 <div
                   ref={page2Ref}
                   id="salary-statement-page-2"

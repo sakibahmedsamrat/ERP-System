@@ -408,7 +408,7 @@ export default function NewSettlementPage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
+    <div className="p-3 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-6 safe-pb">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -423,7 +423,7 @@ export default function NewSettlementPage() {
         </div>
         <Link 
           href="/settlements" 
-          className="inline-flex items-center gap-2 px-4 py-2 bg-white/80 hover:bg-white text-slate-700 hover:text-slate-900 rounded-xl border border-slate-200/80 transition text-xs font-bold shadow-xs w-fit"
+          className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] bg-white/80 hover:bg-white text-slate-700 hover:text-slate-900 rounded-xl border border-slate-200/80 transition text-xs font-bold shadow-xs w-fit"
         >
           <ArrowLeft size={16} /> Back to Settlements
         </Link>
@@ -470,29 +470,29 @@ export default function NewSettlementPage() {
 
       {/* Form Section */}
       {selectedWorker && (
-        <form onSubmit={handleSubmit} className="glass-card rounded-3xl p-6 sm:p-10 border border-white/70 shadow-sm space-y-6">
+        <form onSubmit={handleSubmit} className="glass-card rounded-3xl p-4 sm:p-10 border border-white/70 shadow-sm space-y-6">
           
           <div className="text-center pb-6 border-b border-slate-200/70">
             <h2 className="text-2xl font-extrabold uppercase text-slate-900 tracking-tight">{selectedWorker.company?.name || 'MEP GROUP'}</h2>
             <h3 className="text-base font-bold text-blue-600 mt-1 uppercase tracking-wider">Final Settlement &amp; Resign Benefits</h3>
           </div>
 
-          <div className="grid grid-cols-2 gap-x-12 gap-y-4 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 lg:gap-x-12 gap-y-4 mb-8">
             {/* Row 1 */}
-            <div className="flex"><strong className="w-40">Name :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{selectedWorker.name}</span></div>
-            <div className="flex"><strong className="w-40">Grade :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{selectedWorker.grade || ''}</span></div>
+            <div className="flex"><strong className="w-36 sm:w-40 shrink-0">Name :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{selectedWorker.name}</span></div>
+            <div className="flex"><strong className="w-36 sm:w-40 shrink-0">Grade :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{selectedWorker.grade || ''}</span></div>
 
             {/* Row 2 */}
-            <div className="flex"><strong className="w-40">ID :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{selectedWorker.workerId}</span></div>
-            <div className="flex"><strong className="w-40">Department :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{selectedWorker.department?.name || ''}</span></div>
+            <div className="flex"><strong className="w-36 sm:w-40 shrink-0">ID :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{selectedWorker.workerId}</span></div>
+            <div className="flex"><strong className="w-36 sm:w-40 shrink-0">Department :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{selectedWorker.department?.name || ''}</span></div>
             
             {/* Row 3 */}
-            <div className="flex"><strong className="w-40">Designation :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{selectedWorker.designation || ''}</span></div>
-            <div className="flex"><strong className="w-40">Section :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{selectedWorker.section?.name || ''}</span></div>
+            <div className="flex"><strong className="w-36 sm:w-40 shrink-0">Designation :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{selectedWorker.designation || ''}</span></div>
+            <div className="flex"><strong className="w-36 sm:w-40 shrink-0">Section :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{selectedWorker.section?.name || ''}</span></div>
             
             {/* Row 4 */}
             <div className="flex items-center">
-              <strong className="w-40">Join Date :</strong>
+              <strong className="w-36 sm:w-40 shrink-0">Join Date :</strong>
               <input
                 type="date"
                 name="joinDate"
@@ -502,19 +502,19 @@ export default function NewSettlementPage() {
                 title="Employee Join Date (editable if adjustments needed)"
               />
             </div>
-            <div className="flex"><strong className="w-40">Sub-Section :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{selectedWorker.subSection?.name || ''}</span></div>
+            <div className="flex"><strong className="w-36 sm:w-40 shrink-0">Sub-Section :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{selectedWorker.subSection?.name || ''}</span></div>
             
             {/* Row 5 */}
-            <div className="flex items-center"><strong className="w-40">Resign Apply Date :</strong> <input type="date" name="resignApplyDate" value={resignApplyDate} onChange={(e) => setResignApplyDate(e.target.value)} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
-            <div className="flex items-center"><strong className="w-40">Basic Salary :</strong> <input type="number" name="basicSalary" value={formVals.basicSalary || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
+            <div className="flex items-center"><strong className="w-36 sm:w-40 shrink-0">Resign Apply Date :</strong> <input type="date" name="resignApplyDate" value={resignApplyDate} onChange={(e) => setResignApplyDate(e.target.value)} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
+            <div className="flex items-center"><strong className="w-36 sm:w-40 shrink-0">Basic Salary :</strong> <input type="number" name="basicSalary" value={formVals.basicSalary || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
             
             {/* Row 6 */}
-            <div className="flex items-center"><strong className="w-40">Last Working Day :</strong> <input type="date" name="lastWorkingDay" value={lastWorkingDay} onChange={(e) => setLastWorkingDay(e.target.value)} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
-            <div className="flex items-center"><strong className="w-40">House Rent :</strong> <input type="number" name="houseRent" value={formVals.houseRent || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
+            <div className="flex items-center"><strong className="w-36 sm:w-40 shrink-0">Last Working Day :</strong> <input type="date" name="lastWorkingDay" value={lastWorkingDay} onChange={(e) => setLastWorkingDay(e.target.value)} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
+            <div className="flex items-center"><strong className="w-36 sm:w-40 shrink-0">House Rent :</strong> <input type="number" name="houseRent" value={formVals.houseRent || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
             
             {/* Row 7 */}
             <div className="flex items-center">
-              <strong className="w-40">Service Age :</strong>
+              <strong className="w-36 sm:w-40 shrink-0">Service Age :</strong>
               <div className="flex-1 flex flex-col">
                 <input
                   type="text"
@@ -536,11 +536,11 @@ export default function NewSettlementPage() {
                 )}
               </div>
             </div>
-            <div className="flex items-center"><strong className="w-40">Medical Allowance :</strong> <input type="number" name="medicalAllowance" value={formVals.medicalAllowance || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
+            <div className="flex items-center"><strong className="w-36 sm:w-40 shrink-0">Medical Allowance :</strong> <input type="number" name="medicalAllowance" value={formVals.medicalAllowance || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
             
             {/* Row 8 */}
-            <div className="flex items-center"><strong className="w-40">Gross Salary :</strong> <input type="number" name="grossSalary" value={formVals.grossSalary || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
-            <div className="flex items-center"><strong className="w-40">Conveyance Allow :</strong> <input type="number" name="conveyanceAllowance" value={formVals.conveyanceAllowance || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
+            <div className="flex items-center"><strong className="w-36 sm:w-40 shrink-0">Gross Salary :</strong> <input type="number" name="grossSalary" value={formVals.grossSalary || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
+            <div className="flex items-center"><strong className="w-36 sm:w-40 shrink-0">Conveyance Allow :</strong> <input type="number" name="conveyanceAllowance" value={formVals.conveyanceAllowance || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
           </div>
 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-gray-100 p-2 mb-4 gap-2">
@@ -705,7 +705,7 @@ export default function NewSettlementPage() {
           </div>
 
           {/* Total Pay Amount */}
-          <div className="bg-blue-50 p-4 rounded-lg my-6 flex items-center justify-between border border-blue-100">
+          <div className="bg-blue-50 p-4 rounded-xl my-6 flex flex-col sm:flex-row sm:items-center justify-between border border-blue-100 gap-3">
             <div>
               <strong className="text-lg">Total Pay Amount :</strong>
               {manualOverrides.totalPayAmount && (
@@ -726,8 +726,8 @@ export default function NewSettlementPage() {
             </div>
           </div>
 
-          <div className="flex items-center mb-6">
-            <strong className="w-40 flex items-center gap-1">
+          <div className="flex flex-col sm:flex-row sm:items-center mb-6 gap-1 sm:gap-0">
+            <strong className="w-36 sm:w-40 shrink-0 flex items-center gap-1">
               Amount in Word :
               {manualOverrides.amountInWords && <span className="text-[10px] text-amber-600 font-normal">(Manual)</span>}
             </strong> 
@@ -743,8 +743,8 @@ export default function NewSettlementPage() {
             />
           </div>
 
-          <div className="flex items-center mb-10">
-            <strong className="w-40">Bank Acc. No. :</strong> 
+          <div className="flex flex-col sm:flex-row sm:items-center mb-10 gap-1 sm:gap-0">
+            <strong className="w-36 sm:w-40 shrink-0">Bank Acc. No. :</strong> 
             <input 
               type="text" 
               name="bankAccNo" 
@@ -759,7 +759,7 @@ export default function NewSettlementPage() {
             <button 
               type="button" 
               onClick={handleReset}
-              className="bg-white/80 hover:bg-white text-slate-700 hover:text-slate-900 border border-slate-200/80 px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition shadow-xs flex items-center gap-2 w-full sm:w-auto justify-center"
+              className="min-h-[44px] bg-white/80 hover:bg-white text-slate-700 hover:text-slate-900 border border-slate-200/80 px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition shadow-xs flex items-center gap-2 w-full sm:w-auto justify-center"
             >
               <RotateCcw size={17} />
               <span>Reset Form</span>
@@ -767,7 +767,7 @@ export default function NewSettlementPage() {
             <button 
               type="submit" 
               disabled={loading}
-              className={`bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-8 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition shadow-md shadow-emerald-600/20 flex items-center gap-2 w-full sm:w-auto justify-center ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`min-h-[44px] bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-8 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition shadow-md shadow-emerald-600/20 flex items-center gap-2 w-full sm:w-auto justify-center ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <Save size={17} />
               <span>{loading ? 'Saving Settlement Record...' : 'Save Settlement Record'}</span>

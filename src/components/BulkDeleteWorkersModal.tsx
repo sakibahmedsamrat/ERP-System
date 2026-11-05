@@ -183,7 +183,7 @@ export default function BulkDeleteWorkersModal() {
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="bg-rose-600/90 hover:bg-rose-700 text-white px-3.5 py-2.5 sm:py-2 min-h-[42px] sm:min-h-[38px] rounded-xl flex items-center justify-center gap-2 transition text-xs font-bold shadow-sm shadow-rose-600/20 flex-1 sm:flex-initial"
+        className="bg-rose-600/90 hover:bg-rose-700 text-white px-3.5 py-2.5 rounded-xl min-h-[44px] flex items-center justify-center gap-2 transition text-xs font-bold shadow-sm shadow-rose-600/20 flex-1 sm:flex-initial"
         title="Bulk Delete Employees by ID numbers"
       >
         <Trash2 size={15} /> Bulk Delete

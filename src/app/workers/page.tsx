@@ -159,7 +159,7 @@ export default async function WorkersPage({
             <Link 
               href="/confirmations" 
               prefetch={true}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2.5 sm:py-2 min-h-[42px] sm:min-h-[38px] rounded-xl flex items-center justify-center gap-2 transition text-xs font-bold shadow-sm shadow-indigo-600/20 flex-1 sm:flex-initial"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2.5 rounded-xl min-h-[44px] flex items-center justify-center gap-2 transition text-xs font-bold shadow-sm shadow-indigo-600/20 flex-1 sm:flex-initial"
               title="Employee Confirmation"
             >
               <UserCheck size={15} /> Confirmation
@@ -169,7 +169,7 @@ export default async function WorkersPage({
             <Link 
               href="/id-cards" 
               prefetch={true}
-              className="bg-teal-600 hover:bg-teal-700 text-white px-3.5 py-2.5 sm:py-2 min-h-[42px] sm:min-h-[38px] rounded-xl flex items-center justify-center gap-2 transition text-xs font-bold shadow-sm shadow-teal-600/20 flex-1 sm:flex-initial"
+              className="bg-teal-600 hover:bg-teal-700 text-white px-3.5 py-2.5 rounded-xl min-h-[44px] flex items-center justify-center gap-2 transition text-xs font-bold shadow-sm shadow-teal-600/20 flex-1 sm:flex-initial"
               title="ID Card"
             >
               <Contact size={15} /> ID Card
@@ -179,14 +179,14 @@ export default async function WorkersPage({
             <>
               <Link 
                 href="/api/workers/export" 
-                className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2.5 sm:py-2 min-h-[42px] sm:min-h-[38px] rounded-xl flex items-center justify-center gap-2 transition text-xs font-bold shadow-sm shadow-emerald-600/20 flex-1 sm:flex-initial"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2.5 rounded-xl min-h-[44px] flex items-center justify-center gap-2 transition text-xs font-bold shadow-sm shadow-emerald-600/20 flex-1 sm:flex-initial"
               >
                 <Download size={15} /> Export CSV
               </Link>
               <Link 
                 href="/workers/import" 
                 prefetch={true}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-3.5 py-2.5 sm:py-2 min-h-[42px] sm:min-h-[38px] rounded-xl flex items-center justify-center gap-2 transition text-xs font-bold shadow-sm shadow-purple-600/20 flex-1 sm:flex-initial"
+                className="bg-purple-600 hover:bg-purple-700 text-white px-3.5 py-2.5 rounded-xl min-h-[44px] flex items-center justify-center gap-2 transition text-xs font-bold shadow-sm shadow-purple-600/20 flex-1 sm:flex-initial"
               >
                 <Upload size={15} /> Import CSV
               </Link>
@@ -197,7 +197,7 @@ export default async function WorkersPage({
             <Link 
               href="/workers/recycle-bin" 
               prefetch={true}
-              className="bg-rose-600 hover:bg-rose-700 text-white px-3.5 py-2.5 sm:py-2 min-h-[42px] sm:min-h-[38px] rounded-xl flex items-center justify-center gap-2 transition text-xs font-bold shadow-sm shadow-rose-600/20 flex-1 sm:flex-initial"
+              className="bg-rose-600 hover:bg-rose-700 text-white px-3.5 py-2.5 rounded-xl min-h-[44px] flex items-center justify-center gap-2 transition text-xs font-bold shadow-sm shadow-rose-600/20 flex-1 sm:flex-initial"
               title="Employee Recycle Bin"
             >
               <Trash2 size={15} /> Recycle Bin
@@ -212,7 +212,7 @@ export default async function WorkersPage({
             <Link 
               href="/workers/new" 
               prefetch={true}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2.5 sm:py-2 min-h-[42px] sm:min-h-[38px] rounded-xl flex items-center justify-center gap-2 transition text-xs font-bold shadow-md shadow-blue-600/20 flex-1 sm:flex-initial"
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl min-h-[44px] flex items-center justify-center gap-2 transition text-xs font-bold shadow-md shadow-blue-600/20 flex-1 sm:flex-initial"
             >
               <Plus size={16} /> Add Employee
             </Link>
@@ -346,13 +346,13 @@ export default async function WorkersPage({
           <div className="md:col-span-2 lg:col-span-3 xl:col-span-7 flex flex-col sm:flex-row justify-end gap-2.5 mt-2 w-full">
             <Link 
               href="/workers" 
-              className="flex items-center justify-center gap-1.5 px-4 py-2.5 sm:py-2 text-slate-600 bg-white/80 hover:bg-white hover:text-slate-900 rounded-xl border border-slate-200/80 transition shadow-xs text-xs font-semibold min-h-[42px] sm:min-h-[38px] w-full sm:w-auto"
+              className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-slate-600 bg-white/80 hover:bg-white hover:text-slate-900 border border-slate-200/80 transition shadow-xs text-xs font-semibold min-h-[44px] w-full sm:w-auto"
             >
               <X size={13} /> Clear
             </Link>
             <button 
               type="submit" 
-              className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 sm:py-2 rounded-xl transition flex items-center justify-center gap-2 shadow-sm text-xs font-bold min-h-[42px] sm:min-h-[38px] w-full sm:w-auto"
+              className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl transition flex items-center justify-center gap-2 shadow-sm text-xs font-bold min-h-[44px] w-full sm:w-auto"
             >
               <Search size={14} /> Filter Results
             </button>
@@ -443,12 +443,12 @@ export default async function WorkersPage({
             {page > 1 ? (
               <Link
                 href={createPageURL(page - 1)}
-                className="flex-1 sm:flex-initial justify-center min-h-[40px] px-3 py-1.5 border border-slate-200/80 rounded-xl text-slate-700 hover:bg-white flex items-center gap-1 transition font-semibold bg-white/70 shadow-xs"
+                className="flex-1 sm:flex-initial justify-center min-h-[44px] px-3.5 py-2 border border-slate-200/80 rounded-xl text-slate-700 hover:bg-white flex items-center gap-1 transition font-semibold bg-white/70 shadow-xs"
               >
                 <ChevronLeft size={14} /> Previous
               </Link>
             ) : (
-              <span className="flex-1 sm:flex-initial justify-center min-h-[40px] px-3 py-1.5 border border-slate-100 rounded-xl text-slate-300 flex items-center gap-1 cursor-not-allowed">
+              <span className="flex-1 sm:flex-initial justify-center min-h-[44px] px-3.5 py-2 border border-slate-100 rounded-xl text-slate-300 flex items-center gap-1 cursor-not-allowed">
                 <ChevronLeft size={14} /> Previous
               </span>
             )}
@@ -460,12 +460,12 @@ export default async function WorkersPage({
             {page < totalPages ? (
               <Link
                 href={createPageURL(page + 1)}
-                className="flex-1 sm:flex-initial justify-center min-h-[40px] px-3 py-1.5 border border-slate-200/80 rounded-xl text-slate-700 hover:bg-white flex items-center gap-1 transition font-semibold bg-white/70 shadow-xs"
+                className="flex-1 sm:flex-initial justify-center min-h-[44px] px-3.5 py-2 border border-slate-200/80 rounded-xl text-slate-700 hover:bg-white flex items-center gap-1 transition font-semibold bg-white/70 shadow-xs"
               >
                 Next <ChevronRight size={14} />
               </Link>
             ) : (
-              <span className="flex-1 sm:flex-initial justify-center min-h-[40px] px-3 py-1.5 border border-slate-100 rounded-xl text-slate-300 flex items-center gap-1 cursor-not-allowed">
+              <span className="flex-1 sm:flex-initial justify-center min-h-[44px] px-3.5 py-2 border border-slate-100 rounded-xl text-slate-300 flex items-center gap-1 cursor-not-allowed">
                 Next <ChevronRight size={14} />
               </span>
             )}

@@ -120,13 +120,13 @@ export default function RecycleBinClient({ initialWorkers }: { initialWorkers: D
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-3 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 safe-pb">
       {/* Top Breadcrumb & Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/60 pb-5">
         <div>
           <Link
             href="/workers"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-800 transition mb-2"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-800 transition mb-2 min-h-[44px]"
           >
             <ArrowLeft size={14} /> Back to Employees
           </Link>
@@ -209,7 +209,7 @@ export default function RecycleBinClient({ initialWorkers }: { initialWorkers: D
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto custom-scrollbar touch-scroll">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-slate-50/80 backdrop-blur-md border-b border-slate-200/70 text-slate-600 uppercase font-bold tracking-wider">
@@ -331,7 +331,7 @@ export default function RecycleBinClient({ initialWorkers }: { initialWorkers: D
                           <button
                             onClick={() => handleRestore(worker)}
                             disabled={isLoading}
-                            className="inline-flex items-center gap-1 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-200 px-2.5 py-1 rounded-lg font-bold text-xs transition disabled:opacity-50 shadow-xs"
+                            className="inline-flex items-center gap-1 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-200 px-3 py-1.5 min-h-[38px] rounded-lg font-bold text-xs transition disabled:opacity-50 shadow-xs"
                             title="Restore employee to active directory"
                           >
                             <RotateCcw size={13} />
@@ -340,7 +340,7 @@ export default function RecycleBinClient({ initialWorkers }: { initialWorkers: D
                           <button
                             onClick={() => handlePermanentDelete(worker)}
                             disabled={isLoading}
-                            className="inline-flex items-center gap-1 bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 px-2.5 py-1 rounded-lg font-bold text-xs transition disabled:opacity-50 shadow-xs"
+                            className="inline-flex items-center gap-1 bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 px-3 py-1.5 min-h-[38px] rounded-lg font-bold text-xs transition disabled:opacity-50 shadow-xs"
                             title="Permanently erase record"
                           >
                             <Trash2 size={13} />

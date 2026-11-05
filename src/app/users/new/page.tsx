@@ -24,7 +24,7 @@ export default function NewUserPage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto space-y-6">
+    <div className="p-3 sm:p-6 lg:p-8 safe-pb max-w-2xl mx-auto space-y-6">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -39,7 +39,7 @@ export default function NewUserPage() {
         </div>
         <Link 
           href="/users" 
-          className="inline-flex items-center gap-2 px-4 py-2 bg-white/80 hover:bg-white text-slate-700 hover:text-slate-900 rounded-xl border border-slate-200/80 transition text-xs font-bold shadow-xs w-fit"
+          className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] bg-white/80 hover:bg-white text-slate-700 hover:text-slate-900 rounded-xl border border-slate-200/80 transition text-xs font-bold shadow-xs w-fit"
         >
           <ArrowLeft size={16} /> Back to Users
         </Link>
@@ -154,7 +154,7 @@ export default function NewUserPage() {
             <button 
               type="submit" 
               disabled={loading}
-              className={`bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-3 rounded-xl font-bold text-sm transition shadow-md shadow-blue-600/20 w-full flex items-center justify-center gap-2 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-3 min-h-[44px] rounded-xl font-bold text-sm transition shadow-md shadow-blue-600/20 w-full flex items-center justify-center gap-2 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <UserPlus size={16} />
               <span>{loading ? 'Creating User Account...' : 'Create User Account'}</span>

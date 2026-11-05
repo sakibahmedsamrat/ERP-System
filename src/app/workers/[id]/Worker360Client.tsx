@@ -208,13 +208,13 @@ export default function Worker360Client({ worker }: Props) {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-3 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 safe-pb">
       {/* Top Breadcrumb & Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <Link
             href="/workers"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-800 transition mb-2 group"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-800 transition mb-2 group min-h-[44px]"
           >
             <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" /> Back to Employees
           </Link>
@@ -234,13 +234,13 @@ export default function Worker360Client({ worker }: Props) {
         <div className="flex items-center gap-2.5">
           <Link
             href={`/workers/${worker.id}/edit`}
-            className="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
+            className="px-4 py-2.5 min-h-[44px] bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
           >
             <Edit size={14} /> Edit Profile
           </Link>
           <Link
             href={`/id-cards?workerDbId=${worker.id}`}
-            className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-blue-500/20"
+            className="px-4 py-2.5 min-h-[44px] bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-blue-500/20"
           >
             <CreditCard size={14} /> Generate ID Badge
           </Link>
@@ -310,10 +310,10 @@ export default function Worker360Client({ worker }: Props) {
       </div>
 
       {/* Tabs */}
-      <div className="flex flex-wrap items-center gap-2 p-1.5 glass-card bg-white/70 backdrop-blur-xl rounded-2xl border border-white/60 shadow-glass">
+      <div className="flex items-center gap-2 p-1.5 glass-card bg-white/70 backdrop-blur-xl rounded-2xl border border-white/60 shadow-glass overflow-x-auto no-scrollbar touch-scroll max-w-full">
         <button
           onClick={() => switchTab('overview')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+          className={`whitespace-nowrap shrink-0 min-h-[44px] flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
             activeTab === 'overview'
               ? 'bg-white text-blue-600 shadow-md shadow-blue-500/20 translate-y-[-1px]'
               : 'text-slate-600 hover:text-slate-900 hover:bg-white/40'
@@ -324,7 +324,7 @@ export default function Worker360Client({ worker }: Props) {
 
         <button
           onClick={() => switchTab('vault')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+          className={`whitespace-nowrap shrink-0 min-h-[44px] flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
             activeTab === 'vault'
               ? 'bg-white text-blue-600 shadow-md shadow-blue-500/20 translate-y-[-1px]'
               : 'text-slate-600 hover:text-slate-900 hover:bg-white/40'
@@ -335,7 +335,7 @@ export default function Worker360Client({ worker }: Props) {
 
         <button
           onClick={() => switchTab('career')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+          className={`whitespace-nowrap shrink-0 min-h-[44px] flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
             activeTab === 'career'
               ? 'bg-white text-blue-600 shadow-md shadow-blue-500/20 translate-y-[-1px]'
               : 'text-slate-600 hover:text-slate-900 hover:bg-white/40'
@@ -346,7 +346,7 @@ export default function Worker360Client({ worker }: Props) {
 
         <button
           onClick={() => switchTab('nominee')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+          className={`whitespace-nowrap shrink-0 min-h-[44px] flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
             activeTab === 'nominee'
               ? 'bg-white text-blue-600 shadow-md shadow-blue-500/20 translate-y-[-1px]'
               : 'text-slate-600 hover:text-slate-900 hover:bg-white/40'
@@ -357,7 +357,7 @@ export default function Worker360Client({ worker }: Props) {
 
         <button
           onClick={() => switchTab('disciplinary')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+          className={`whitespace-nowrap shrink-0 min-h-[44px] flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
             activeTab === 'disciplinary'
               ? 'bg-white text-blue-600 shadow-md shadow-blue-500/20 translate-y-[-1px]'
               : 'text-slate-600 hover:text-slate-900 hover:bg-white/40'
@@ -754,17 +754,20 @@ export default function Worker360Client({ worker }: Props) {
 
       {/* MODAL: UPLOAD DOCUMENT */}
       {isDocModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-          <div className="glass-modal bg-white/95 backdrop-blur-2xl rounded-3xl border border-white/80 shadow-2xl max-w-lg w-full p-6 relative">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-sm">
+          <div className="glass-modal bg-white rounded-t-3xl sm:rounded-3xl border border-white/80 shadow-2xl max-w-lg w-full p-5 sm:p-6 relative max-h-[92dvh] flex flex-col safe-pb">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
                 <Upload size={16} className="text-blue-600" /> Upload Document to Vault
               </h3>
-              <button onClick={() => setIsDocModalOpen(false)} className="text-slate-400 hover:text-slate-700 text-lg font-bold">
+              <button 
+                onClick={() => setIsDocModalOpen(false)} 
+                className="text-slate-400 hover:text-slate-700 min-h-[44px] min-w-[44px] flex items-center justify-center text-xl font-bold rounded-xl"
+              >
                 &times;
               </button>
             </div>
-            <form onSubmit={handleUploadDoc} className="space-y-4 mt-4" encType="multipart/form-data">
+            <form onSubmit={handleUploadDoc} className="space-y-4 mt-4 flex-1 overflow-y-auto pr-1 custom-scrollbar" encType="multipart/form-data">
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Document Title *</label>
                 <input
@@ -812,18 +815,18 @@ export default function Worker360Client({ worker }: Props) {
                 />
               </div>
 
-              <div className="pt-2 flex justify-end gap-2">
+              <div className="pt-2 flex justify-end gap-2 border-t border-slate-100 mt-4">
                 <button
                   type="button"
                   onClick={() => setIsDocModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold"
+                  className="min-h-[44px] px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold flex items-center justify-center"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={docLoading}
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 disabled:opacity-50"
+                  className="min-h-[44px] px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 disabled:opacity-50 flex items-center justify-center"
                 >
                   {docLoading ? 'Uploading...' : 'Save Document'}
                 </button>
@@ -835,8 +838,8 @@ export default function Worker360Client({ worker }: Props) {
 
       {/* MODAL: PREVIEW DOCUMENT */}
       {previewDoc && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="glass-modal bg-white rounded-3xl border border-white/80 shadow-2xl max-w-3xl w-full p-6 relative max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="glass-modal bg-white rounded-t-3xl sm:rounded-3xl border border-white/80 shadow-2xl max-w-3xl w-full p-5 sm:p-6 relative max-h-[92dvh] flex flex-col safe-pb">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
                 <h3 className="font-extrabold text-base text-slate-900">{previewDoc.title}</h3>
@@ -846,16 +849,16 @@ export default function Worker360Client({ worker }: Props) {
                 <a
                   href={previewDoc.fileUrl}
                   download={previewDoc.title}
-                  className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"
+                  className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-slate-100 rounded-xl text-slate-600 transition"
                   title="Download File"
                 >
-                  <Download size={16} />
+                  <Download size={18} />
                 </a>
                 <button
                   onClick={() => setPreviewDoc(null)}
-                  className="text-slate-400 hover:text-slate-700 p-2"
+                  className="min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-slate-700 rounded-xl transition"
                 >
-                  <X size={18} />
+                  <X size={20} />
                 </button>
               </div>
             </div>
@@ -882,7 +885,7 @@ export default function Worker360Client({ worker }: Props) {
                     href={previewDoc.fileUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold"
+                    className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 min-h-[44px] bg-blue-600 text-white rounded-xl text-xs font-bold"
                   >
                     <ExternalLink size={14} /> Open in New Tab
                   </a>
@@ -895,18 +898,21 @@ export default function Worker360Client({ worker }: Props) {
 
       {/* MODAL: ADD CAREER MILESTONE */}
       {isCareerModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-          <div className="glass-modal bg-white/95 backdrop-blur-2xl rounded-3xl border border-white/80 shadow-2xl max-w-lg w-full p-6 relative">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-sm">
+          <div className="glass-modal bg-white rounded-t-3xl sm:rounded-3xl border border-white/80 shadow-2xl max-w-lg w-full p-5 sm:p-6 relative max-h-[92dvh] flex flex-col safe-pb">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
                 <History size={16} className="text-blue-600" /> Record Career Milestone
               </h3>
-              <button onClick={() => setIsCareerModalOpen(false)} className="text-slate-400 hover:text-slate-700 text-lg font-bold">
+              <button 
+                onClick={() => setIsCareerModalOpen(false)} 
+                className="text-slate-400 hover:text-slate-700 min-h-[44px] min-w-[44px] flex items-center justify-center text-xl font-bold rounded-xl"
+              >
                 &times;
               </button>
             </div>
-            <form onSubmit={handleAddCareer} className="space-y-4 mt-4">
-              <div className="grid grid-cols-2 gap-4">
+            <form onSubmit={handleAddCareer} className="space-y-4 mt-4 flex-1 overflow-y-auto pr-1 custom-scrollbar">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Milestone Type *</label>
                   <select
@@ -932,7 +938,7 @@ export default function Worker360Client({ worker }: Props) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Previous Designation</label>
                   <input
@@ -953,7 +959,7 @@ export default function Worker360Client({ worker }: Props) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">New Department</label>
                   <input
@@ -974,7 +980,7 @@ export default function Worker360Client({ worker }: Props) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Previous Gross</label>
                   <input
@@ -1005,18 +1011,18 @@ export default function Worker360Client({ worker }: Props) {
                 />
               </div>
 
-              <div className="pt-2 flex justify-end gap-2">
+              <div className="pt-2 flex justify-end gap-2 border-t border-slate-100 mt-4">
                 <button
                   type="button"
                   onClick={() => setIsCareerModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold"
+                  className="min-h-[44px] px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold flex items-center justify-center"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={careerLoading}
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 disabled:opacity-50"
+                  className="min-h-[44px] px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 disabled:opacity-50 flex items-center justify-center"
                 >
                   {careerLoading ? 'Saving...' : 'Save Milestone'}
                 </button>
@@ -1028,21 +1034,24 @@ export default function Worker360Client({ worker }: Props) {
 
       {/* MODAL: UPDATE NOMINEE & EMERGENCY */}
       {isNomineeModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-          <div className="glass-modal bg-white/95 backdrop-blur-2xl rounded-3xl border border-white/80 shadow-2xl max-w-lg w-full p-6 relative">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-sm">
+          <div className="glass-modal bg-white rounded-t-3xl sm:rounded-3xl border border-white/80 shadow-2xl max-w-lg w-full p-5 sm:p-6 relative max-h-[92dvh] flex flex-col safe-pb">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
                 <HeartHandshake size={16} className="text-blue-600" /> Update Nominee &amp; Emergency
               </h3>
-              <button onClick={() => setIsNomineeModalOpen(false)} className="text-slate-400 hover:text-slate-700 text-lg font-bold">
+              <button 
+                onClick={() => setIsNomineeModalOpen(false)} 
+                className="text-slate-400 hover:text-slate-700 min-h-[44px] min-w-[44px] flex items-center justify-center text-xl font-bold rounded-xl"
+              >
                 &times;
               </button>
             </div>
-            <form onSubmit={handleUpdateNominee} className="space-y-4 mt-4">
+            <form onSubmit={handleUpdateNominee} className="space-y-4 mt-4 flex-1 overflow-y-auto pr-1 custom-scrollbar">
               <div className="text-xs font-bold text-slate-800 uppercase tracking-wider pb-1 border-b">
                 Emergency Contact
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[11px] font-semibold text-slate-600 mb-1">Contact Name</label>
                   <input
@@ -1076,7 +1085,7 @@ export default function Worker360Client({ worker }: Props) {
               <div className="text-xs font-bold text-slate-800 uppercase tracking-wider pt-2 pb-1 border-b">
                 Nominee Information
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[11px] font-semibold text-slate-600 mb-1">Nominee Name</label>
                   <input
@@ -1096,7 +1105,7 @@ export default function Worker360Client({ worker }: Props) {
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[11px] font-semibold text-slate-600 mb-1">Nominee NID</label>
                   <input
@@ -1117,18 +1126,18 @@ export default function Worker360Client({ worker }: Props) {
                 </div>
               </div>
 
-              <div className="pt-2 flex justify-end gap-2">
+              <div className="pt-2 flex justify-end gap-2 border-t border-slate-100 mt-4">
                 <button
                   type="button"
                   onClick={() => setIsNomineeModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold"
+                  className="min-h-[44px] px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold flex items-center justify-center"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={nomineeLoading}
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 disabled:opacity-50"
+                  className="min-h-[44px] px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 disabled:opacity-50 flex items-center justify-center"
                 >
                   {nomineeLoading ? 'Saving...' : 'Update Details'}
                 </button>
@@ -1140,18 +1149,21 @@ export default function Worker360Client({ worker }: Props) {
 
       {/* MODAL: ADD DISCIPLINARY RECORD */}
       {isDiscModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-          <div className="glass-modal bg-white/95 backdrop-blur-2xl rounded-3xl border border-white/80 shadow-2xl max-w-lg w-full p-6 relative">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-sm">
+          <div className="glass-modal bg-white rounded-t-3xl sm:rounded-3xl border border-white/80 shadow-2xl max-w-lg w-full p-5 sm:p-6 relative max-h-[92dvh] flex flex-col safe-pb">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
                 <ShieldAlert size={16} className="text-rose-600" /> Record Disciplinary Incident
               </h3>
-              <button onClick={() => setIsDiscModalOpen(false)} className="text-slate-400 hover:text-slate-700 text-lg font-bold">
+              <button 
+                onClick={() => setIsDiscModalOpen(false)} 
+                className="text-slate-400 hover:text-slate-700 min-h-[44px] min-w-[44px] flex items-center justify-center text-xl font-bold rounded-xl"
+              >
                 &times;
               </button>
             </div>
-            <form onSubmit={handleAddDisciplinary} className="space-y-4 mt-4">
-              <div className="grid grid-cols-2 gap-4">
+            <form onSubmit={handleAddDisciplinary} className="space-y-4 mt-4 flex-1 overflow-y-auto pr-1 custom-scrollbar">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Action Type *</label>
                   <select
@@ -1199,7 +1211,7 @@ export default function Worker360Client({ worker }: Props) {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Action Taken</label>
                   <input
@@ -1223,18 +1235,18 @@ export default function Worker360Client({ worker }: Props) {
                 </div>
               </div>
 
-              <div className="pt-2 flex justify-end gap-2">
+              <div className="pt-2 flex justify-end gap-2 border-t border-slate-100 mt-4">
                 <button
                   type="button"
                   onClick={() => setIsDiscModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold"
+                  className="min-h-[44px] px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold flex items-center justify-center"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={discLoading}
-                  className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-md shadow-rose-500/20 disabled:opacity-50"
+                  className="min-h-[44px] px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-md shadow-rose-500/20 disabled:opacity-50 flex items-center justify-center"
                 >
                   {discLoading ? 'Saving...' : 'Record Incident'}
                 </button>

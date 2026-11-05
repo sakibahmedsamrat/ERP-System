@@ -38,7 +38,7 @@ export default function Header({
   };
 
   return (
-    <header className="glass-header sticky top-0 z-30 print:hidden">
+    <header className="glass-header sticky top-0 z-30 print:hidden safe-pt">
       <div className="flex justify-between items-center px-3 sm:px-8 py-2.5 sm:py-4">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           {onToggleMobileSidebar && (

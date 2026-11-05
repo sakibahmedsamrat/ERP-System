@@ -31,15 +31,15 @@ export default async function EditWorkerPage({ params }: { params: { id: string 
   const updateAction = updateWorker.bind(null, worker.id);
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Edit Employee</h1>
-        <Link href="/workers" className="text-blue-600 hover:underline">
+    <div className="p-3 sm:p-6 lg:p-8 safe-pb max-w-4xl mx-auto space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Edit Employee</h1>
+        <Link href="/workers" className="text-blue-600 hover:underline min-h-[44px] flex items-center font-bold text-sm">
           &larr; Back to Employees
         </Link>
       </div>
 
-      <div className="glass-card bg-white/75 backdrop-blur-xl rounded-2xl shadow-glass p-8 border border-white/60">
+      <div className="glass-card bg-white/75 backdrop-blur-xl rounded-2xl shadow-glass p-4 sm:p-8 border border-white/60">
         <form action={updateAction} className="space-y-6" encType="multipart/form-data">
           {/* Basic Info */}
           <div>
@@ -178,7 +178,7 @@ export default async function EditWorkerPage({ params }: { params: { id: string 
           />
 
           <div className="pt-6">
-            <button type="submit" className="bg-blue-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-blue-700 transition w-full md:w-auto">
+            <button type="submit" className="bg-blue-600 text-white px-8 py-3 min-h-[44px] rounded-xl font-bold hover:bg-blue-700 transition w-full md:w-auto flex items-center justify-center">
               Update Employee Profile
             </button>
           </div>

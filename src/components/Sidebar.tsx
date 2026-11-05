@@ -42,7 +42,7 @@ function NavItem({ href, icon: Icon, label, color = "text-slate-300", isActive, 
       onClick={() => {
         onClose?.();
       }}
-      className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-colors duration-150 text-sm font-medium ${
+      className={`flex items-center gap-3 px-4 py-2.5 min-h-[44px] rounded-xl transition-colors duration-150 text-sm font-medium ${
         isActive 
           ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/30 ring-1 ring-white/25 translate-x-1 font-semibold' 
           : `hover:bg-white/10 hover:text-white ${color} hover:translate-x-1`
@@ -282,7 +282,7 @@ export default function Sidebar({
                       onClose?.();
                     }
                   }}
-                  className="flex items-center gap-3 px-4 py-2.5 flex-1 min-w-0"
+                  className="flex items-center gap-3 px-4 py-2.5 min-h-[44px] flex-1 min-w-0"
                 >
                   <Banknote size={18} className={isPayrollExactActive ? 'text-white' : 'opacity-75'} />
                   <span className="text-sm">Payroll</span>
@@ -299,7 +299,7 @@ export default function Sidebar({
                   aria-expanded={isPayrollOpen}
                   aria-controls="payroll-submenu"
                   title={isPayrollOpen ? 'Collapse sub-menu' : 'Expand sub-menu'}
-                  className={`self-stretch px-3.5 flex items-center justify-center rounded-r-xl transition-colors cursor-pointer ${
+                  className={`self-stretch px-3.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-r-xl transition-colors cursor-pointer ${
                     isPayrollExactActive
                       ? 'hover:bg-white/20 text-white'
                       : 'text-slate-400 hover:text-white hover:bg-white/10'
@@ -352,13 +352,14 @@ export default function Sidebar({
                         setIsRecruitmentOpen((prev) => !prev);
                       } else {
                         setIsRecruitmentOpen(true);
+                        onClose?.();
                       }
                     } else {
                       setIsRecruitmentOpen(true);
                       onClose?.();
                     }
                   }}
-                  className="flex items-center gap-3 px-4 py-2.5 flex-1 min-w-0"
+                  className="flex items-center gap-3 px-4 py-2.5 min-h-[44px] flex-1 min-w-0"
                 >
                   <Briefcase size={18} className={isRecruitmentParentActive ? 'text-white' : 'opacity-75'} />
                   <span className="text-sm">Recruitment</span>
@@ -375,7 +376,7 @@ export default function Sidebar({
                   aria-expanded={isRecruitmentOpen}
                   aria-controls="recruitment-submenu"
                   title={isRecruitmentOpen ? 'Collapse sub-menu' : 'Expand sub-menu'}
-                  className={`self-stretch px-3.5 flex items-center justify-center rounded-r-xl transition-colors cursor-pointer ${
+                  className={`self-stretch px-3.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-r-xl transition-colors cursor-pointer ${
                     isRecruitmentParentActive
                       ? 'hover:bg-white/20 text-white'
                       : 'text-slate-400 hover:text-white hover:bg-white/10'

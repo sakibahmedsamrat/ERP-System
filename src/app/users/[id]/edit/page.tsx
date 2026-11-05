@@ -29,7 +29,7 @@ export default async function EditUserPage({ params }: { params: { id: string } 
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto space-y-6">
+    <div className="p-3 sm:p-6 lg:p-8 safe-pb max-w-2xl mx-auto space-y-6">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -44,7 +44,7 @@ export default async function EditUserPage({ params }: { params: { id: string } 
         </div>
         <Link 
           href="/users" 
-          className="inline-flex items-center gap-2 px-4 py-2 bg-white/80 hover:bg-white text-slate-700 hover:text-slate-900 rounded-xl border border-slate-200/80 transition text-xs font-bold shadow-xs w-fit"
+          className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] bg-white/80 hover:bg-white text-slate-700 hover:text-slate-900 rounded-xl border border-slate-200/80 transition text-xs font-bold shadow-xs w-fit"
         >
           <ArrowLeft size={16} /> Back to Users
         </Link>

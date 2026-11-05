@@ -30,22 +30,22 @@ export default async function SettlementPrintPage({ params }: { params: { id: st
   const payrollCycle = settlement.lastWorkingDay ? getPayrollCycleDays(settlement.lastWorkingDay) : null;
 
   return (
-    <div className="p-8 max-w-5xl mx-auto print:p-0 print:max-w-full">
+    <div className="p-3 sm:p-6 lg:p-8 safe-pb max-w-5xl mx-auto print:p-0 print:max-w-full">
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
           @page { size: A4 portrait; margin: 15mm; }
           body { -webkit-print-color-adjust: exact; }
         }
       `}} />
-      <div className="flex justify-between items-center mb-6 print:hidden">
-        <Link href="/settlements" prefetch={true} className="text-blue-600 hover:underline">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 print:hidden">
+        <Link href="/settlements" prefetch={true} className="text-blue-600 hover:underline min-h-[44px] flex items-center font-bold text-sm">
           &larr; Back to Settlements
         </Link>
         <div className="flex items-center gap-3">
           <Link
             href={`/settlements/${settlement.id}/edit`}
             prefetch={true}
-            className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-bold text-sm transition"
+            className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 min-h-[44px] flex items-center rounded-xl font-bold text-xs sm:text-sm transition"
           >
             Edit Form
           </Link>
@@ -53,7 +53,7 @@ export default async function SettlementPrintPage({ params }: { params: { id: st
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm p-10 border border-gray-200 print:shadow-none print:border-none print:p-0 print:text-[14px]">
+      <div className="bg-white rounded-xl shadow-sm p-4 sm:p-10 border border-gray-200 print:shadow-none print:border-none print:p-0 print:text-[14px] overflow-x-auto custom-scrollbar touch-scroll">
         
         {/* Header */}
         <div className="flex items-center justify-between mb-8 print:mb-4">
