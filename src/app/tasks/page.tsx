@@ -35,14 +35,14 @@ export default async function TasksPage() {
   });
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-3 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 safe-pb">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-1.5 text-xs font-bold text-blue-600 uppercase tracking-wider mb-1">
             <Sparkles size={13} />
             <span>Workflow &amp; Action Items</span>
           </div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Task Management</h1>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Task Management</h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
             Assign, track, and resolve team operational responsibilities
           </p>
@@ -51,7 +51,7 @@ export default async function TasksPage() {
           <Link 
             href="/tasks/new" 
             prefetch={true}
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 font-bold text-xs sm:text-sm transition shadow-md shadow-blue-600/20 w-fit"
+            className="min-h-[44px] bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 font-bold text-xs sm:text-sm transition shadow-md shadow-blue-600/20 w-full sm:w-fit"
           >
             <Plus size={18} /> Assign Task
           </Link>

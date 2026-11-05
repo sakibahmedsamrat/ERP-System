@@ -89,7 +89,7 @@ export default async function GateVerificationPage({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 text-white flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen min-h-[100dvh] bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 text-white flex flex-col items-center justify-center p-3 sm:p-6 safe-pt safe-pb">
       <div className="w-full max-w-md space-y-4">
         {/* Factory Gate Top Header */}
         <div className="text-center space-y-1">

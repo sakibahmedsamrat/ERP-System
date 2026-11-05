@@ -456,7 +456,7 @@ export default function RecruitmentClient({
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6">
+    <div className="p-3 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6 safe-pb">
       {/* Toast Alert */}
       {toast && (
         <div className={`fixed bottom-6 right-6 z-50 px-5 py-3 rounded-xl shadow-2xl text-white font-medium flex items-center gap-3 transition-all animate-bounce ${
@@ -529,10 +529,10 @@ export default function RecruitmentClient({
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200/60 print:hidden">
+      <div className="flex items-center gap-2 border-b border-slate-200/60 print:hidden overflow-x-auto no-scrollbar touch-scroll">
         <button
           onClick={() => switchTab('overview')}
-          className={`flex items-center gap-2 px-5 py-3 font-bold text-xs sm:text-sm border-b-2 transition-all ${
+          className={`flex items-center gap-2 px-4 sm:px-5 py-3 font-bold text-xs sm:text-sm border-b-2 whitespace-nowrap shrink-0 min-h-[44px] transition-all ${
             activeTab === 'overview'
               ? 'border-blue-600 text-blue-600'
               : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
@@ -547,7 +547,7 @@ export default function RecruitmentClient({
 
         <button
           onClick={() => switchTab('entry')}
-          className={`flex items-center gap-2 px-5 py-3 font-bold text-xs sm:text-sm border-b-2 transition-all ${
+          className={`flex items-center gap-2 px-4 sm:px-5 py-3 font-bold text-xs sm:text-sm border-b-2 whitespace-nowrap shrink-0 min-h-[44px] transition-all ${
             activeTab === 'entry'
               ? 'border-blue-600 text-blue-600'
               : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
@@ -562,7 +562,7 @@ export default function RecruitmentClient({
 
         <button
           onClick={() => switchTab('jobs')}
-          className={`flex items-center gap-2 px-5 py-3 font-bold text-xs sm:text-sm border-b-2 transition-all ${
+          className={`flex items-center gap-2 px-4 sm:px-5 py-3 font-bold text-xs sm:text-sm border-b-2 whitespace-nowrap shrink-0 min-h-[44px] transition-all ${
             activeTab === 'jobs'
               ? 'border-blue-600 text-blue-600'
               : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
@@ -577,7 +577,7 @@ export default function RecruitmentClient({
 
         <button
           onClick={() => switchTab('pipeline')}
-          className={`flex items-center gap-2 px-5 py-3 font-bold text-xs sm:text-sm border-b-2 transition-all ${
+          className={`flex items-center gap-2 px-4 sm:px-5 py-3 font-bold text-xs sm:text-sm border-b-2 whitespace-nowrap shrink-0 min-h-[44px] transition-all ${
             activeTab === 'pipeline'
               ? 'border-blue-600 text-blue-600'
               : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
@@ -1449,128 +1449,132 @@ export default function RecruitmentClient({
 
       {/* Quick Edit Modal */}
       {editingItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-in fade-in">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-6 sm:p-7 border border-gray-100">
-            <div className="flex items-center justify-between pb-4 border-b border-gray-100">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in">
+          <div className="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl max-w-lg w-full p-5 sm:p-7 border border-gray-100 max-h-[92dvh] flex flex-col animate-in fade-in slide-in-from-bottom-4 sm:zoom-in duration-200 safe-pb">
+            <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-gray-100 shrink-0">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
                   <Pencil size={16} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900">Set Authorized Manpower</h3>
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900">Set Authorized Manpower</h3>
                   <p className="text-xs text-gray-500">Define authorized manpower count for sub-section</p>
                 </div>
               </div>
               <button
                 onClick={() => setEditingItem(null)}
-                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition"
+                className="text-gray-400 hover:text-gray-600 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl hover:bg-gray-100 transition"
+                aria-label="Close"
               >
                 <X size={20} />
               </button>
             </div>
 
-            {/* Hierarchy Info */}
-            <div className="my-4 p-4 rounded-xl bg-gray-50 border border-gray-100 space-y-1.5 text-xs text-gray-600">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-gray-400 uppercase tracking-wider w-20">Path:</span>
-                <span className="font-medium text-gray-800">
-                  {editingItem.companyName} &gt; {editingItem.departmentName} &gt; {editingItem.sectionName}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-gray-400 uppercase tracking-wider w-20">Sub Section:</span>
-                <span className="font-bold text-blue-600 text-sm">{editingItem.name}</span>
-              </div>
-              <div className="flex items-center gap-2 pt-1 border-t border-gray-200/70">
-                <span className="font-semibold text-gray-400 uppercase tracking-wider w-20">Current:</span>
-                <span className="text-gray-700">
-                  Existing Workers: <strong className="text-emerald-700">{editingItem.existingManpower}</strong> | Current Auth: <strong className="text-blue-700">{editingItem.authorizedManpower}</strong>
-                </span>
-              </div>
-            </div>
-
-            <form onSubmit={handleSaveAuthorized} className="space-y-4">
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">
-                  Authorized Manpower *
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  required
-                  value={newAuthorized}
-                  onChange={(e) => setNewAuthorized(e.target.value)}
-                  className="w-full text-lg font-bold text-gray-900 border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition"
-                  placeholder="Enter number (e.g. 10)"
-                  autoFocus
-                />
-                <div className="mt-2 text-xs flex items-center justify-between text-gray-500">
-                  <span>
-                    New Projected Difference: <strong className={
-                      (Number(newAuthorized) || 0) - editingItem.existingManpower > 0 
-                        ? 'text-rose-600' 
-                        : (Number(newAuthorized) || 0) - editingItem.existingManpower === 0 
-                        ? 'text-emerald-600' 
-                        : 'text-indigo-600'
-                    }>
-                      {(Number(newAuthorized) || 0) - editingItem.existingManpower > 0 
-                        ? `+${(Number(newAuthorized) || 0) - editingItem.existingManpower} Vacancy` 
-                        : (Number(newAuthorized) || 0) - editingItem.existingManpower === 0 
-                        ? '0 Fulfilled' 
-                        : `${Math.abs((Number(newAuthorized) || 0) - editingItem.existingManpower)} Surplus`}
-                    </strong>
+            <div className="overflow-y-auto custom-scrollbar touch-scroll flex-1 pr-1">
+              {/* Hierarchy Info */}
+              <div className="my-4 p-4 rounded-xl bg-gray-50 border border-gray-100 space-y-1.5 text-xs text-gray-600">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-gray-400 uppercase tracking-wider w-20">Path:</span>
+                  <span className="font-medium text-gray-800">
+                    {editingItem.companyName} &gt; {editingItem.departmentName} &gt; {editingItem.sectionName}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-gray-400 uppercase tracking-wider w-20">Sub Section:</span>
+                  <span className="font-bold text-blue-600 text-sm">{editingItem.name}</span>
+                </div>
+                <div className="flex items-center gap-2 pt-1 border-t border-gray-200/70">
+                  <span className="font-semibold text-gray-400 uppercase tracking-wider w-20">Current:</span>
+                  <span className="text-gray-700">
+                    Existing Workers: <strong className="text-emerald-700">{editingItem.existingManpower}</strong> | Current Auth: <strong className="text-blue-700">{editingItem.authorizedManpower}</strong>
                   </span>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">
-                  Remarks / Note (Optional)
-                </label>
-                <input
-                  type="text"
-                  value={editRemarks}
-                  onChange={(e) => setEditRemarks(e.target.value)}
-                  placeholder="e.g. Requisition for Q4, management approved"
-                  className="w-full text-sm border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition"
-                />
-              </div>
+              <form id="authorized-manpower-form" onSubmit={handleSaveAuthorized} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">
+                    Authorized Manpower *
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    required
+                    value={newAuthorized}
+                    onChange={(e) => setNewAuthorized(e.target.value)}
+                    className="w-full text-lg font-bold text-gray-900 border border-gray-300 rounded-xl px-4 py-2.5 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition"
+                    placeholder="Enter number (e.g. 10)"
+                    autoFocus
+                  />
+                  <div className="mt-2 text-xs flex items-center justify-between text-gray-500">
+                    <span>
+                      New Projected Difference: <strong className={
+                        (Number(newAuthorized) || 0) - editingItem.existingManpower > 0 
+                          ? 'text-rose-600' 
+                          : (Number(newAuthorized) || 0) - editingItem.existingManpower === 0 
+                          ? 'text-emerald-600' 
+                          : 'text-indigo-600'
+                      }>
+                        {(Number(newAuthorized) || 0) - editingItem.existingManpower > 0 
+                          ? `+${(Number(newAuthorized) || 0) - editingItem.existingManpower} Vacancy` 
+                          : (Number(newAuthorized) || 0) - editingItem.existingManpower === 0 
+                          ? '0 Fulfilled' 
+                          : `${Math.abs((Number(newAuthorized) || 0) - editingItem.existingManpower)} Surplus`}
+                      </strong>
+                    </span>
+                  </div>
+                </div>
 
-              <div className="pt-2 flex items-center justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setEditingItem(null)}
-                  disabled={isSaving}
-                  className="px-4 py-2 text-sm font-semibold text-gray-600 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 rounded-xl transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="px-6 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md transition flex items-center gap-2"
-                >
-                  {isSaving && <RefreshCw size={14} className="animate-spin" />}
-                  <span>Save Changes</span>
-                </button>
-              </div>
-            </form>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">
+                    Remarks / Note (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={editRemarks}
+                    onChange={(e) => setEditRemarks(e.target.value)}
+                    placeholder="e.g. Requisition for Q4, management approved"
+                    className="w-full text-sm border border-gray-300 rounded-xl px-3 py-2.5 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition"
+                  />
+                </div>
+              </form>
+            </div>
+
+            <div className="pt-3 border-t border-gray-100 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 shrink-0">
+              <button
+                type="button"
+                onClick={() => setEditingItem(null)}
+                disabled={isSaving}
+                className="min-h-[44px] px-4 py-2 text-sm font-semibold text-gray-600 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 rounded-xl transition flex items-center justify-center"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                form="authorized-manpower-form"
+                disabled={isSaving}
+                className="min-h-[44px] px-6 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md transition flex items-center justify-center gap-2"
+              >
+                {isSaving && <RefreshCw size={14} className="animate-spin" />}
+                <span>Save Changes</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {/* Worker List Modal */}
       {inspectingItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-in fade-in">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full p-6 sm:p-7 border border-gray-100 flex flex-col max-h-[85vh]">
-            <div className="flex items-center justify-between pb-4 border-b border-gray-100">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in">
+          <div className="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl max-w-2xl w-full p-5 sm:p-7 border border-gray-100 flex flex-col max-h-[92dvh] animate-in fade-in slide-in-from-bottom-4 sm:zoom-in duration-200 safe-pb">
+            <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-gray-100 shrink-0">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
                   <UserCheck size={18} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900">
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900">
                     Active Workers: {inspectingItem.name}
                   </h3>
                   <p className="text-xs text-gray-500">
@@ -1580,13 +1584,14 @@ export default function RecruitmentClient({
               </div>
               <button
                 onClick={() => setInspectingItem(null)}
-                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition"
+                className="text-gray-400 hover:text-gray-600 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl hover:bg-gray-100 transition"
+                aria-label="Close"
               >
                 <X size={20} />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto py-4">
+            <div className="flex-1 overflow-y-auto custom-scrollbar touch-scroll py-4">
               {isLoadingWorkers ? (
                 <div className="py-12 text-center text-gray-400 flex flex-col items-center justify-center">
                   <RefreshCw size={24} className="animate-spin mb-2 text-blue-600" />
@@ -1597,7 +1602,7 @@ export default function RecruitmentClient({
                   {workerList.map((w: any) => (
                     <div key={w.id} className="py-3 flex items-center justify-between hover:bg-gray-50 px-2 rounded-xl">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs uppercase">
+                        <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs uppercase shrink-0">
                           {w.name ? w.name.slice(0, 2) : 'EM'}
                         </div>
                         <div>
@@ -1607,7 +1612,7 @@ export default function RecruitmentClient({
                           </p>
                         </div>
                       </div>
-                      <div className="text-right text-xs">
+                      <div className="text-right text-xs shrink-0">
                         <p className="text-gray-600 font-medium">Joined: {formatDate(w.joinDate)}</p>
                         {w.phone && <p className="text-gray-400">{w.phone}</p>}
                       </div>
@@ -1623,11 +1628,11 @@ export default function RecruitmentClient({
               )}
             </div>
 
-            <div className="pt-4 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+            <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500 shrink-0">
               <span>Total Active Workers: <strong className="text-emerald-700">{workerList.length}</strong></span>
               <button
                 onClick={() => setInspectingItem(null)}
-                className="px-4 py-2 font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition"
+                className="min-h-[44px] px-5 py-2 font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition flex items-center justify-center"
               >
                 Close
               </button>

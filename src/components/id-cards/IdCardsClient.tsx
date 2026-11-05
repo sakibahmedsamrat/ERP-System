@@ -34,7 +34,7 @@ export default function IdCardsClient({
   };
 
   return (
-    <div className="p-2 sm:p-4 md:p-6 w-full max-w-full mx-auto space-y-4">
+    <div className="p-3 sm:p-6 lg:p-8 w-full max-w-full mx-auto space-y-4 sm:space-y-6 safe-pb">
       {/* Page Header */}
       <div className="print:hidden flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2">
         <div>
@@ -44,22 +44,22 @@ export default function IdCardsClient({
           >
             <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" /> {canAccessWorkers ? "Back to Employees" : "Back to Dashboard"}
           </Link>
-          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/20">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/20 shrink-0">
               <Contact size={22} />
             </div>
-            Smart ID Badges &amp; Visitor System
+            <span>Smart ID Badges &amp; Visitor System</span>
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-xs sm:text-sm text-gray-500 mt-1">
             Generate dynamic QR/barcode employee badges, manage factory gate visitors, and print A4 batch sheets
           </p>
         </div>
 
         {/* Tab Switcher Pills */}
-        <div className="flex items-center p-1.5 glass-card bg-white/70 backdrop-blur-xl rounded-2xl border border-white/60 shadow-glass">
+        <div className="flex items-center p-1.5 glass-card bg-white/70 backdrop-blur-xl rounded-2xl border border-white/60 shadow-glass overflow-x-auto no-scrollbar touch-scroll w-full sm:w-fit">
           <button
             onClick={() => switchTab('employee')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap shrink-0 min-h-[44px] transition-all duration-200 ${
               activeTab === 'employee'
                 ? 'bg-white text-blue-600 shadow-md shadow-blue-500/20 translate-y-[-1px]'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-white/40'
@@ -71,7 +71,7 @@ export default function IdCardsClient({
 
           <button
             onClick={() => switchTab('visitor')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap shrink-0 min-h-[44px] transition-all duration-200 ${
               activeTab === 'visitor'
                 ? 'bg-white text-indigo-600 shadow-md shadow-indigo-500/20 translate-y-[-1px]'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-white/40'
@@ -83,7 +83,7 @@ export default function IdCardsClient({
 
           <button
             onClick={() => switchTab('batch')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap shrink-0 min-h-[44px] transition-all duration-200 ${
               activeTab === 'batch'
                 ? 'bg-white text-emerald-600 shadow-md shadow-emerald-500/20 translate-y-[-1px]'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-white/40'

@@ -183,7 +183,7 @@ export default function BulkDeleteWorkersModal() {
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="bg-rose-600/90 hover:bg-rose-700 text-white px-3.5 py-2 rounded-xl flex items-center gap-2 transition text-xs font-bold shadow-sm shadow-rose-600/20"
+        className="bg-rose-600/90 hover:bg-rose-700 text-white px-3.5 py-2.5 sm:py-2 min-h-[42px] sm:min-h-[38px] rounded-xl flex items-center justify-center gap-2 transition text-xs font-bold shadow-sm shadow-rose-600/20 flex-1 sm:flex-initial"
         title="Bulk Delete Employees by ID numbers"
       >
         <Trash2 size={15} /> Bulk Delete
@@ -196,20 +196,20 @@ export default function BulkDeleteWorkersModal() {
               resetModal();
             }
           }}
-          className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+          className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto"
         >
-          <div className="glass-modal max-w-2xl w-full rounded-3xl border border-white/80 overflow-hidden my-8 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+          <div className="glass-modal max-w-2xl w-full rounded-t-3xl sm:rounded-3xl border border-white/80 overflow-hidden my-0 sm:my-8 shadow-2xl animate-in fade-in slide-in-from-bottom-5 sm:zoom-in-95 duration-200 max-h-[92dvh] flex flex-col">
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 bg-white/60 backdrop-blur-md border-b border-slate-200/60">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 bg-white/90 sm:bg-white/60 backdrop-blur-md border-b border-slate-200/60 shrink-0">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-rose-500/10 text-rose-700 rounded-2xl border border-rose-200/50 shadow-xs">
+                <div className="p-2 sm:p-2.5 bg-rose-500/10 text-rose-700 rounded-2xl border border-rose-200/50 shadow-xs shrink-0">
                   <Trash2 size={20} />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-slate-900 text-base leading-tight">
+                  <h3 className="font-extrabold text-slate-900 text-sm sm:text-base leading-tight">
                     Bulk Delete Employees
                   </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">
                     {step === 'input'
                       ? 'Step 1: Enter multiple Worker IDs'
                       : 'Step 2: Review matching records and confirm'}
@@ -220,14 +220,15 @@ export default function BulkDeleteWorkersModal() {
                 type="button"
                 onClick={resetModal}
                 disabled={isValidating || isDeleting}
-                className="text-slate-400 hover:text-slate-700 p-2 rounded-xl hover:bg-white/60 transition disabled:opacity-50"
+                className="text-slate-400 hover:text-slate-700 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl hover:bg-white/60 transition disabled:opacity-50"
+                aria-label="Close dialog"
               >
                 <X size={18} />
               </button>
             </div>
 
             {/* Modal Body */}
-            <div className="p-6">
+            <div className="p-4 sm:p-6 overflow-y-auto flex-1 custom-scrollbar">
               {error && (
                 <div className="mb-4 p-3.5 bg-rose-50 border border-rose-200 rounded-2xl text-xs text-rose-700 flex items-start gap-2.5 font-semibold">
                   <AlertCircle size={16} className="mt-0.5 shrink-0" />
@@ -470,7 +471,7 @@ export default function BulkDeleteWorkersModal() {
             </div>
 
             {/* Modal Footer */}
-            <div className="flex items-center justify-between px-6 py-4 bg-white/60 backdrop-blur-md border-t border-slate-200/60">
+            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 bg-white/95 sm:bg-white/60 backdrop-blur-md border-t border-slate-200/60 gap-2.5 sm:gap-0 shrink-0 safe-pb">
               {step === 'preview' ? (
                 <>
                   <button
@@ -480,7 +481,7 @@ export default function BulkDeleteWorkersModal() {
                       setError(null);
                     }}
                     disabled={isDeleting}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 border border-slate-200/80 rounded-xl text-xs text-slate-700 bg-white/80 hover:bg-white transition font-bold disabled:opacity-50 shadow-xs"
+                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 border border-slate-200/80 rounded-xl text-xs text-slate-700 bg-white/80 hover:bg-white transition font-bold disabled:opacity-50 shadow-xs"
                   >
                     <ArrowLeft size={14} /> Back to Edit IDs
                   </button>
@@ -489,7 +490,7 @@ export default function BulkDeleteWorkersModal() {
                     type="button"
                     onClick={handleConfirmDelete}
                     disabled={isDeleting || selectedIds.size === 0 || !confirmCheck || !!successMessage}
-                    className="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white transition shadow-md shadow-rose-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center justify-center gap-2 px-5 py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white transition shadow-md shadow-rose-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isDeleting ? (
                       <>
@@ -512,7 +513,7 @@ export default function BulkDeleteWorkersModal() {
                     type="button"
                     onClick={resetModal}
                     disabled={isValidating}
-                    className="px-4 py-2 border border-slate-200/80 rounded-xl text-xs text-slate-700 bg-white/80 hover:bg-white transition font-bold disabled:opacity-50 shadow-xs"
+                    className="px-4 py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 border border-slate-200/80 rounded-xl text-xs text-slate-700 bg-white/80 hover:bg-white transition font-bold disabled:opacity-50 shadow-xs flex items-center justify-center"
                   >
                     Cancel
                   </button>
@@ -521,7 +522,7 @@ export default function BulkDeleteWorkersModal() {
                     type="button"
                     onClick={handleValidate}
                     disabled={isValidating || !rawInput.trim()}
-                    className="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold bg-slate-900 hover:bg-black text-white transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center justify-center gap-2 px-5 py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 rounded-xl text-xs font-bold bg-slate-900 hover:bg-black text-white transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isValidating ? (
                       <>

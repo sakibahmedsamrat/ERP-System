@@ -220,13 +220,13 @@ export default function Sidebar({
         />
       )}
 
-      <aside className={`w-72 bg-slate-950/95 backdrop-blur-md text-white h-screen shrink-0 flex flex-col print:hidden shadow-2xl relative overflow-hidden z-50 border-r border-slate-800/80 transition-transform duration-200 ease-in-out fixed inset-y-0 left-0 lg:static lg:translate-x-0 ${
+      <aside className={`w-72 max-w-[85vw] bg-slate-950/95 backdrop-blur-md text-white h-screen h-[100dvh] shrink-0 flex flex-col print:hidden shadow-2xl relative overflow-hidden z-50 border-r border-slate-800/80 transition-transform duration-300 ease-in-out fixed inset-y-0 left-0 lg:static lg:translate-x-0 ${
         isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       }`}>
         {/* Subtle interior gradient */}
         <div className="absolute top-0 left-0 w-full h-72 bg-gradient-to-b from-blue-600/10 via-indigo-600/5 to-transparent pointer-events-none" />
         
-        <div className="p-6 font-extrabold text-2xl border-b border-white/10 flex items-center justify-between relative z-10">
+        <div className="p-4 sm:p-6 font-extrabold text-xl sm:text-2xl border-b border-white/10 flex items-center justify-between relative z-10 safe-pt">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 relative flex items-center justify-center shrink-0">
               <Image
@@ -246,14 +246,14 @@ export default function Sidebar({
           <button
             type="button"
             onClick={onClose}
-            className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition"
+            className="lg:hidden min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition"
             aria-label="Close navigation menu"
           >
             <X size={20} />
           </button>
         </div>
         
-        <nav className="flex-1 p-5 space-y-1.5 overflow-y-auto relative z-10 custom-scrollbar">
+        <nav className="flex-1 p-3.5 sm:p-5 space-y-1.5 overflow-y-auto relative z-10 custom-scrollbar safe-pb">
           {renderNavItem('/', LayoutDashboard, 'Dashboard', 'text-slate-300', true)}
           
           {(hasModule('WORKERS') || hasModule('CONFIRMATIONS') || hasModule('IDCARD')) && (

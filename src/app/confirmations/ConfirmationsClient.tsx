@@ -518,7 +518,7 @@ export default function ConfirmationsClient({
   };
 
   return (
-    <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-6 pb-24">
+    <div className="p-3 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-4 sm:space-y-6 pb-28 safe-pb">
       {/* Toast Notification */}
       {toastMessage && (
         <div
@@ -541,26 +541,26 @@ export default function ConfirmationsClient({
             <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" /> {canAccessWorkers ? "Back to Employees" : "Back to Dashboard"}
           </Link>
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-blue-600 text-white rounded-xl shadow-md shadow-blue-500/20">
-              <UserCheck size={26} />
+            <div className="p-2.5 bg-blue-600 text-white rounded-xl shadow-md shadow-blue-500/20 shrink-0">
+              <UserCheck size={24} />
             </div>
             <div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
                 Employee Confirmation
               </h1>
-              <p className="text-sm text-gray-500 mt-0.5">
+              <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
                 Manage 6-Months & 3-Years tenure confirmations with automated eligibility
               </p>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 flex-wrap">
+        <div className="flex items-center gap-2.5 flex-wrap w-full md:w-auto">
           {/* Export Excel / CSV Report Dropdown */}
-          <div className="relative" ref={exportMenuRef}>
+          <div className="relative flex-1 md:flex-initial" ref={exportMenuRef}>
             <button
               onClick={() => setShowExportMenu((prev) => !prev)}
-              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition shadow-sm shadow-emerald-600/20"
+              className="w-full md:w-auto flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs sm:text-sm font-semibold transition shadow-sm shadow-emerald-600/20"
               title="Export confirmation records to Excel / CSV"
             >
               <FileSpreadsheet size={16} />
@@ -569,10 +569,10 @@ export default function ConfirmationsClient({
             </button>
 
             {showExportMenu && (
-              <div className="absolute right-0 mt-2 w-64 glass-modal bg-white/95 backdrop-blur-2xl rounded-xl border border-slate-200/80 shadow-xl py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+              <div className="absolute right-0 mt-2 w-full sm:w-64 glass-modal bg-white/95 backdrop-blur-2xl rounded-xl border border-slate-200/80 shadow-xl py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
                 <button
                   onClick={handleExportAll}
-                  className="w-full px-4 py-2 text-left text-xs sm:text-sm text-gray-700 hover:bg-blue-50/80 flex items-center justify-between transition"
+                  className="w-full px-4 py-2.5 sm:py-2 text-left text-xs sm:text-sm text-gray-700 hover:bg-blue-50/80 flex items-center justify-between transition min-h-[44px] sm:min-h-0"
                 >
                   <span className="flex items-center gap-2">
                     <Download size={14} className="text-emerald-600" />
@@ -586,7 +586,7 @@ export default function ConfirmationsClient({
                 <button
                   onClick={handleExportSelected}
                   disabled={selectedIds.size === 0}
-                  className={`w-full px-4 py-2 text-left text-xs sm:text-sm flex items-center justify-between transition ${
+                  className={`w-full px-4 py-2.5 sm:py-2 text-left text-xs sm:text-sm flex items-center justify-between transition min-h-[44px] sm:min-h-0 ${
                     selectedIds.size > 0
                       ? 'text-gray-700 hover:bg-blue-50/80'
                       : 'text-gray-400 cursor-not-allowed bg-gray-50/50'
@@ -608,7 +608,7 @@ export default function ConfirmationsClient({
 
           <button
             onClick={handlePrint}
-            className="flex items-center gap-2 px-4 py-2 bg-white/80 hover:bg-white border border-gray-300 text-gray-700 rounded-xl text-sm font-semibold transition shadow-sm"
+            className="flex-1 md:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 bg-white/80 hover:bg-white border border-gray-300 text-gray-700 rounded-xl text-xs sm:text-sm font-semibold transition shadow-sm"
           >
             <Printer size={16} /> Print Report
           </button>
@@ -629,12 +629,12 @@ export default function ConfirmationsClient({
       </div>
 
       {/* Module Navigation Tabs */}
-      <div className="print:hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-card bg-white/70 backdrop-blur-xl p-2 rounded-2xl border border-white/60 shadow-glass">
+      <div className="print:hidden flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4 glass-card bg-white/70 backdrop-blur-xl p-2 rounded-2xl border border-white/60 shadow-glass">
         {/* Main Category Tabs: 6m vs 3y */}
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
           <button
             onClick={() => handleTabChange('6m')}
-            className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+            className={`flex items-center justify-center gap-2.5 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all min-h-[44px] sm:min-h-0 ${
               activeTab === '6m'
                 ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
@@ -653,7 +653,7 @@ export default function ConfirmationsClient({
 
           <button
             onClick={() => handleTabChange('3y')}
-            className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+            className={`flex items-center justify-center gap-2.5 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all min-h-[44px] sm:min-h-0 ${
               activeTab === '3y'
                 ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
@@ -672,10 +672,10 @@ export default function ConfirmationsClient({
         </div>
 
         {/* Sub Toggle: Pending vs Confirmed */}
-        <div className="flex items-center bg-slate-100/80 backdrop-blur-sm p-1 rounded-xl self-start sm:self-auto border border-white/60">
+        <div className="flex items-center justify-between sm:justify-start bg-slate-100/80 backdrop-blur-sm p-1 rounded-xl w-full lg:w-auto border border-white/60">
           <button
             onClick={() => handleStatusChange('pending')}
-            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`flex-1 sm:flex-initial px-3 sm:px-4 py-2 sm:py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 min-h-[40px] sm:min-h-0 ${
               viewStatus === 'pending'
                 ? 'bg-white text-gray-900 shadow-sm'
                 : 'text-gray-500 hover:text-gray-900'
@@ -686,7 +686,7 @@ export default function ConfirmationsClient({
           </button>
           <button
             onClick={() => handleStatusChange('confirmed')}
-            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`flex-1 sm:flex-initial px-3 sm:px-4 py-2 sm:py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 min-h-[40px] sm:min-h-0 ${
               viewStatus === 'confirmed'
                 ? 'bg-white text-emerald-700 shadow-sm'
                 : 'text-gray-500 hover:text-gray-900'
@@ -1074,26 +1074,27 @@ export default function ConfirmationsClient({
 
       {/* Single Confirmation Done Modal */}
       {selectedWorkerForDone && (
-        <div className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="glass-modal bg-white/95 backdrop-blur-2xl rounded-2xl border border-white/80 shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200/60">
+        <div className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="glass-modal bg-white/95 backdrop-blur-2xl rounded-t-3xl sm:rounded-2xl border border-white/80 shadow-2xl max-w-md w-full p-4 sm:p-6 max-h-[92dvh] flex flex-col animate-in fade-in slide-in-from-bottom-4 sm:zoom-in duration-200 safe-pb">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200/60 shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 bg-emerald-500/15 backdrop-blur-sm text-emerald-700 rounded-xl border border-emerald-500/20">
                   <CheckCircle2 size={22} />
                 </div>
-                <h3 className="font-bold text-gray-900 text-lg">
+                <h3 className="font-bold text-gray-900 text-base sm:text-lg">
                   Confirm {activeTab === '6m' ? '6 Months' : '3 Years'} Status
                 </h3>
               </div>
               <button
                 onClick={() => setSelectedWorkerForDone(null)}
-                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg transition"
+                className="text-gray-400 hover:text-gray-600 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg transition"
+                aria-label="Close"
               >
                 <X size={20} />
               </button>
             </div>
 
-            <div className="py-4 space-y-3">
+            <div className="py-4 space-y-3 overflow-y-auto custom-scrollbar touch-scroll flex-1">
               <p className="text-sm text-gray-600">
                 Are you sure you want to mark confirmation as <strong>Done</strong> for this employee?
               </p>
@@ -1142,7 +1143,7 @@ export default function ConfirmationsClient({
                   value={remarks}
                   onChange={(e) => setRemarks(e.target.value)}
                   placeholder="e.g. Regularized, Good performance, Grade incremented..."
-                  className="w-full px-3 py-2 border border-slate-200/80 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white/70 focus:bg-white transition"
+                  className="w-full px-3 py-2.5 min-h-[44px] border border-slate-200/80 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white/70 focus:bg-white transition"
                 />
               </div>
 
@@ -1151,17 +1152,17 @@ export default function ConfirmationsClient({
               </p>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200/60">
+            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 pt-3 border-t border-slate-200/60 shrink-0">
               <button
                 onClick={() => setSelectedWorkerForDone(null)}
-                className="px-4 py-2 border border-slate-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-slate-100/70 transition"
+                className="min-h-[44px] px-4 py-2 border border-slate-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-slate-100/70 transition flex items-center justify-center"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDoneSubmit}
                 disabled={isPendingAction}
-                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold shadow-md shadow-emerald-600/20 transition flex items-center gap-1.5"
+                className="min-h-[44px] px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold shadow-md shadow-emerald-600/20 transition flex items-center justify-center gap-1.5"
               >
                 {isPendingAction ? (
                   <>Processing...</>
@@ -1178,15 +1179,15 @@ export default function ConfirmationsClient({
 
       {/* Bulk Confirm Modal */}
       {showBulkConfirmModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="glass-modal bg-white/95 backdrop-blur-2xl rounded-2xl border border-white/80 shadow-2xl max-w-lg w-full p-6 animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200/60">
+        <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="glass-modal bg-white/95 backdrop-blur-2xl rounded-t-3xl sm:rounded-2xl border border-white/80 shadow-2xl max-w-lg w-full p-4 sm:p-6 max-h-[92dvh] flex flex-col animate-in fade-in slide-in-from-bottom-4 sm:zoom-in duration-200 safe-pb">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200/60 shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 bg-emerald-500/15 backdrop-blur-sm text-emerald-700 rounded-xl border border-emerald-500/20">
                   <CheckCheck size={22} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900 text-lg">
+                  <h3 className="font-bold text-gray-900 text-base sm:text-lg">
                     Confirm Selected Employees
                   </h3>
                   <p className="text-xs text-gray-500">
@@ -1196,13 +1197,14 @@ export default function ConfirmationsClient({
               </div>
               <button
                 onClick={() => setShowBulkConfirmModal(false)}
-                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg transition"
+                className="text-gray-400 hover:text-gray-600 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg transition"
+                aria-label="Close"
               >
                 <X size={20} />
               </button>
             </div>
 
-            <div className="py-4 space-y-4">
+            <div className="py-4 space-y-4 overflow-y-auto custom-scrollbar touch-scroll flex-1">
               <p className="text-sm text-gray-600">
                 You are about to confirm tenure status for{' '}
                 <strong className="text-emerald-700 font-bold">{selectedIds.size}</strong> selected employee(s).
@@ -1237,7 +1239,7 @@ export default function ConfirmationsClient({
                   value={bulkRemarks}
                   onChange={(e) => setBulkRemarks(e.target.value)}
                   placeholder="e.g. Regularized upon review, Satisfactory performance..."
-                  className="w-full px-3 py-2 border border-slate-200/80 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white/70 focus:bg-white transition"
+                  className="w-full px-3 py-2.5 min-h-[44px] border border-slate-200/80 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white/70 focus:bg-white transition"
                 />
               </div>
 
@@ -1246,17 +1248,17 @@ export default function ConfirmationsClient({
               </p>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200/60">
+            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 pt-3 border-t border-slate-200/60 shrink-0">
               <button
                 onClick={() => setShowBulkConfirmModal(false)}
-                className="px-4 py-2 border border-slate-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-slate-100/70 transition"
+                className="min-h-[44px] px-4 py-2 border border-slate-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-slate-100/70 transition flex items-center justify-center"
               >
                 Cancel
               </button>
               <button
                 onClick={handleBulkConfirmSubmit}
                 disabled={isPendingAction}
-                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold shadow-md shadow-emerald-600/20 transition flex items-center gap-1.5"
+                className="min-h-[44px] px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold shadow-md shadow-emerald-600/20 transition flex items-center justify-center gap-1.5"
               >
                 {isPendingAction ? (
                   <>Processing...</>
@@ -1273,15 +1275,15 @@ export default function ConfirmationsClient({
 
       {/* Bulk Undo Modal */}
       {showBulkUndoModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="glass-modal bg-white/95 backdrop-blur-2xl rounded-2xl border border-white/80 shadow-2xl max-w-lg w-full p-6 animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200/60">
+        <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="glass-modal bg-white/95 backdrop-blur-2xl rounded-t-3xl sm:rounded-2xl border border-white/80 shadow-2xl max-w-lg w-full p-4 sm:p-6 max-h-[92dvh] flex flex-col animate-in fade-in slide-in-from-bottom-4 sm:zoom-in duration-200 safe-pb">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200/60 shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 bg-amber-500/15 backdrop-blur-sm text-amber-700 rounded-xl border border-amber-500/20">
                   <RotateCcw size={22} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900 text-lg">
+                  <h3 className="font-bold text-gray-900 text-base sm:text-lg">
                     Revert Confirmation
                   </h3>
                   <p className="text-xs text-gray-500">
@@ -1291,13 +1293,14 @@ export default function ConfirmationsClient({
               </div>
               <button
                 onClick={() => setShowBulkUndoModal(false)}
-                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg transition"
+                className="text-gray-400 hover:text-gray-600 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg transition"
+                aria-label="Close"
               >
                 <X size={20} />
               </button>
             </div>
 
-            <div className="py-4 space-y-3">
+            <div className="py-4 space-y-3 overflow-y-auto custom-scrollbar touch-scroll flex-1">
               <p className="text-sm text-gray-600">
                 Are you sure you want to revert confirmation status for{' '}
                 <strong className="text-amber-700 font-bold">{selectedIds.size}</strong> employee(s)?
@@ -1327,17 +1330,17 @@ export default function ConfirmationsClient({
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200/60">
+            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 pt-3 border-t border-slate-200/60 shrink-0">
               <button
                 onClick={() => setShowBulkUndoModal(false)}
-                className="px-4 py-2 border border-slate-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-slate-100/70 transition"
+                className="min-h-[44px] px-4 py-2 border border-slate-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-slate-100/70 transition flex items-center justify-center"
               >
                 Cancel
               </button>
               <button
                 onClick={handleBulkUndoSubmit}
                 disabled={isPendingAction}
-                className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-sm font-bold shadow-md shadow-amber-600/20 transition flex items-center gap-1.5"
+                className="min-h-[44px] px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-sm font-bold shadow-md shadow-amber-600/20 transition flex items-center justify-center gap-1.5"
               >
                 {isPendingAction ? (
                   <>Processing...</>

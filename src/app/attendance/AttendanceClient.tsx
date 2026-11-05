@@ -227,7 +227,7 @@ export default function AttendanceClient({
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-3 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -235,18 +235,18 @@ export default function AttendanceClient({
             <Sparkles size={13} />
             <span>Time &amp; Attendance Module</span>
           </div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Attendance &amp; Leave System</h1>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Attendance &amp; Leave System</h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
             Manage daily employee attendance, statutory leaves (CL/SL/EL), and factory holiday calendar
           </p>
         </div>
 
         {/* Tab-specific actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
           {activeTab === 'daily' && (
             <Link 
               href="/attendance/mark" 
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 font-bold text-xs sm:text-sm transition shadow-md shadow-blue-600/20"
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 font-bold text-xs sm:text-sm transition shadow-md shadow-blue-600/20 w-full sm:w-auto min-h-[44px] sm:min-h-0"
             >
               <ClipboardCheck size={18} /> Mark Attendance
             </Link>
@@ -254,7 +254,7 @@ export default function AttendanceClient({
           {activeTab === 'leaves' && (
             <button
               onClick={() => setIsLeaveModalOpen(true)}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 font-bold text-xs sm:text-sm transition shadow-md shadow-blue-600/20"
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 font-bold text-xs sm:text-sm transition shadow-md shadow-blue-600/20 w-full sm:w-auto min-h-[44px] sm:min-h-0"
             >
               <Plus size={18} /> Apply for Leave
             </button>
@@ -262,7 +262,7 @@ export default function AttendanceClient({
           {activeTab === 'holidays' && (
             <button
               onClick={() => setIsHolidayModalOpen(true)}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 font-bold text-xs sm:text-sm transition shadow-md shadow-blue-600/20"
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 font-bold text-xs sm:text-sm transition shadow-md shadow-blue-600/20 w-full sm:w-auto min-h-[44px] sm:min-h-0"
             >
               <Plus size={18} /> Add Factory Holiday
             </button>
@@ -271,10 +271,10 @@ export default function AttendanceClient({
       </div>
 
       {/* Modern Navigation Tabs */}
-      <div className="flex items-center gap-2 p-1.5 glass-card bg-white/70 backdrop-blur-xl rounded-2xl border border-white/60 shadow-glass w-fit">
+      <div className="flex items-center gap-2 p-1.5 glass-card bg-white/70 backdrop-blur-xl rounded-2xl border border-white/60 shadow-glass w-full sm:w-fit overflow-x-auto custom-scrollbar no-scrollbar touch-scroll">
         <button
           onClick={() => switchTab('daily')}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 ${
+          className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 whitespace-nowrap shrink-0 min-h-[44px] sm:min-h-0 ${
             activeTab === 'daily'
               ? 'bg-white text-blue-600 shadow-md shadow-blue-500/20 translate-y-[-1px]'
               : 'text-slate-600 hover:text-slate-900 hover:bg-white/40'
@@ -286,7 +286,7 @@ export default function AttendanceClient({
 
         <button
           onClick={() => switchTab('leaves')}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 ${
+          className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 whitespace-nowrap shrink-0 min-h-[44px] sm:min-h-0 ${
             activeTab === 'leaves'
               ? 'bg-white text-blue-600 shadow-md shadow-blue-500/20 translate-y-[-1px]'
               : 'text-slate-600 hover:text-slate-900 hover:bg-white/40'
@@ -303,7 +303,7 @@ export default function AttendanceClient({
 
         <button
           onClick={() => switchTab('holidays')}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 ${
+          className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 whitespace-nowrap shrink-0 min-h-[44px] sm:min-h-0 ${
             activeTab === 'holidays'
               ? 'bg-white text-blue-600 shadow-md shadow-blue-500/20 translate-y-[-1px]'
               : 'text-slate-600 hover:text-slate-900 hover:bg-white/40'
@@ -319,8 +319,8 @@ export default function AttendanceClient({
         <div className="space-y-6">
           {/* Date Filter */}
           <div className="glass-card rounded-2xl shadow-sm border border-white/70 p-4 sm:p-5 flex flex-wrap gap-4 items-end">
-            <form className="flex flex-wrap gap-4 items-end w-full" method="GET">
-              <div>
+            <form className="flex flex-col sm:flex-row gap-3 sm:items-end w-full" method="GET">
+              <div className="flex-1">
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center gap-1.5">
                   <Calendar size={13} className="text-blue-600" />
                   <span>Select Date</span>
@@ -330,12 +330,12 @@ export default function AttendanceClient({
                   name="date" 
                   value={filterDate}
                   onChange={(e) => setFilterDate(e.target.value)}
-                  className="bg-white/70 backdrop-blur-sm border border-slate-200/80 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none shadow-xs"
+                  className="w-full sm:w-auto bg-white/70 backdrop-blur-sm border border-slate-200/80 rounded-xl px-3.5 py-2.5 sm:py-2 text-xs sm:text-sm text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none shadow-xs min-h-[42px] sm:min-h-[38px]"
                 />
               </div>
               <button 
                 type="submit" 
-                className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-1.5"
+                className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 sm:py-2 rounded-xl text-xs font-bold transition shadow-xs flex items-center justify-center gap-1.5 w-full sm:w-auto min-h-[44px] sm:min-h-[38px]"
               >
                 <Filter size={14} /> Filter Date
               </button>
@@ -652,21 +652,22 @@ export default function AttendanceClient({
 
       {/* MODAL: APPLY FOR LEAVE */}
       {isLeaveModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-          <div className="glass-modal bg-white/95 backdrop-blur-2xl rounded-3xl border border-white/80 shadow-2xl max-w-lg w-full p-6 relative">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-              <h3 className="font-extrabold text-lg text-slate-900 flex items-center gap-2">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-sm overflow-y-auto">
+          <div className="glass-modal bg-white/95 backdrop-blur-2xl rounded-t-3xl sm:rounded-3xl border border-white/80 shadow-2xl max-w-lg w-full p-4 sm:p-6 relative max-h-[92dvh] flex flex-col my-0 sm:my-auto">
+            <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-slate-100 shrink-0">
+              <h3 className="font-extrabold text-base sm:text-lg text-slate-900 flex items-center gap-2">
                 <Palmtree size={18} className="text-blue-600" /> Apply for Statutory Leave
               </h3>
               <button 
                 onClick={() => setIsLeaveModalOpen(false)}
-                className="text-slate-400 hover:text-slate-700 text-lg font-bold"
+                className="text-slate-400 hover:text-slate-700 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-lg font-bold"
+                aria-label="Close dialog"
               >
                 &times;
               </button>
             </div>
 
-            <form onSubmit={handleApplyLeave} className="space-y-4 mt-4">
+            <form onSubmit={handleApplyLeave} className="space-y-4 mt-4 overflow-y-auto flex-1 custom-scrollbar">
               {/* Select Employee */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Select Employee *</label>
@@ -677,7 +678,7 @@ export default function AttendanceClient({
                       placeholder="Search employee by name or ID..."
                       value={leaveWorkerSearch}
                       onChange={(e) => setLeaveWorkerSearch(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500"
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500 min-h-[42px]"
                     />
                     <div className="max-h-40 overflow-y-auto divide-y divide-slate-100 border border-slate-200 rounded-xl bg-white">
                       {filteredWorkersForLeave.slice(0, 10).map((w) => (
@@ -700,7 +701,7 @@ export default function AttendanceClient({
                     <button
                       type="button"
                       onClick={() => setSelectedWorkerId('')}
-                      className="text-xs text-blue-700 hover:text-rose-600 font-semibold"
+                      className="text-xs text-blue-700 hover:text-rose-600 font-semibold p-1"
                     >
                       Change
                     </button>
@@ -714,7 +715,7 @@ export default function AttendanceClient({
                 <select
                   name="leaveType"
                   required
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500 font-medium"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500 font-medium min-h-[42px]"
                 >
                   <option value="CASUAL">Casual Leave (CL - 10 Days Statutory)</option>
                   <option value="SICK">Sick Leave (SL - 14 Days Statutory)</option>
@@ -725,14 +726,14 @@ export default function AttendanceClient({
               </div>
 
               {/* Date Range */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Start Date *</label>
                   <input
                     type="date"
                     name="startDate"
                     required
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500 min-h-[42px]"
                   />
                 </div>
                 <div>
@@ -741,7 +742,7 @@ export default function AttendanceClient({
                     type="date"
                     name="endDate"
                     required
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500 min-h-[42px]"
                   />
                 </div>
               </div>
@@ -757,18 +758,18 @@ export default function AttendanceClient({
                 />
               </div>
 
-              <div className="pt-2 flex justify-end gap-2">
+              <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row justify-end gap-2 safe-pb">
                 <button
                   type="button"
                   onClick={() => setIsLeaveModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50"
+                  className="w-full sm:w-auto px-4 py-2.5 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50 min-h-[44px] sm:min-h-0 flex items-center justify-center"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={!selectedWorkerId || leaveLoading}
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 disabled:opacity-50"
+                  className="w-full sm:w-auto px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 disabled:opacity-50 min-h-[44px] sm:min-h-0 flex items-center justify-center"
                 >
                   {leaveLoading ? 'Submitting...' : 'Submit Request'}
                 </button>
@@ -780,21 +781,22 @@ export default function AttendanceClient({
 
       {/* MODAL: ADD FACTORY HOLIDAY */}
       {isHolidayModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-          <div className="glass-modal bg-white/95 backdrop-blur-2xl rounded-3xl border border-white/80 shadow-2xl max-w-lg w-full p-6 relative">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-              <h3 className="font-extrabold text-lg text-slate-900 flex items-center gap-2">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-sm overflow-y-auto">
+          <div className="glass-modal bg-white/95 backdrop-blur-2xl rounded-t-3xl sm:rounded-3xl border border-white/80 shadow-2xl max-w-lg w-full p-4 sm:p-6 relative max-h-[92dvh] flex flex-col my-0 sm:my-auto">
+            <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-slate-100 shrink-0">
+              <h3 className="font-extrabold text-base sm:text-lg text-slate-900 flex items-center gap-2">
                 <CalendarDays size={18} className="text-blue-600" /> Add Factory Holiday
               </h3>
               <button 
                 onClick={() => setIsHolidayModalOpen(false)}
-                className="text-slate-400 hover:text-slate-700 text-lg font-bold"
+                className="text-slate-400 hover:text-slate-700 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-lg font-bold"
+                aria-label="Close dialog"
               >
                 &times;
               </button>
             </div>
 
-            <form onSubmit={handleAddHoliday} className="space-y-4 mt-4">
+            <form onSubmit={handleAddHoliday} className="space-y-4 mt-4 overflow-y-auto flex-1 custom-scrollbar">
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Holiday Title *</label>
                 <input
@@ -802,17 +804,17 @@ export default function AttendanceClient({
                   name="title"
                   required
                   placeholder="e.g. Eid-ul-Fitr, May Day, Rest Day"
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500 min-h-[42px]"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Holiday Type *</label>
                   <select
                     name="type"
                     required
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500 font-medium"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500 font-medium min-h-[42px]"
                   >
                     <option value="PUBLIC">Public Holiday</option>
                     <option value="FESTIVAL">Festival Holiday</option>
@@ -825,7 +827,7 @@ export default function AttendanceClient({
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Factory / Company</label>
                   <select
                     name="companyId"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500 font-medium"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500 font-medium min-h-[42px]"
                   >
                     <option value="">All Companies / Factory-wide</option>
                     {companies.map((c) => (
@@ -835,14 +837,14 @@ export default function AttendanceClient({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Start Date *</label>
                   <input
                     type="date"
                     name="startDate"
                     required
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500 min-h-[42px]"
                   />
                 </div>
                 <div>
@@ -851,7 +853,7 @@ export default function AttendanceClient({
                     type="date"
                     name="endDate"
                     required
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500 min-h-[42px]"
                   />
                 </div>
               </div>
@@ -866,18 +868,18 @@ export default function AttendanceClient({
                 />
               </div>
 
-              <div className="pt-2 flex justify-end gap-2">
+              <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row justify-end gap-2 safe-pb">
                 <button
                   type="button"
                   onClick={() => setIsHolidayModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50"
+                  className="w-full sm:w-auto px-4 py-2.5 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50 min-h-[44px] sm:min-h-0 flex items-center justify-center"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={holidayLoading}
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 disabled:opacity-50"
+                  className="w-full sm:w-auto px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 disabled:opacity-50 min-h-[44px] sm:min-h-0 flex items-center justify-center"
                 >
                   {holidayLoading ? 'Saving...' : 'Add Holiday'}
                 </button>

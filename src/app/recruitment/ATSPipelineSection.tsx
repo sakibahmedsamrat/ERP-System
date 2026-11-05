@@ -182,12 +182,12 @@ export default function ATSPipelineSection({ candidates, companies }: Props) {
             placeholder="Search candidate name, phone, role..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500 w-56"
+            className="px-3.5 py-2.5 min-h-[44px] bg-white border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500 w-full sm:w-56"
           />
 
           <button
             onClick={() => setIsAddModalOpen(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-blue-500/20 whitespace-nowrap"
+            className="min-h-[44px] bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-md shadow-blue-500/20 whitespace-nowrap flex-1 sm:flex-none"
           >
             <UserPlus size={16} /> Add Candidate
           </button>
@@ -294,19 +294,23 @@ export default function ATSPipelineSection({ candidates, companies }: Props) {
 
       {/* MODAL: ADD CANDIDATE */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-          <div className="glass-modal bg-white/95 backdrop-blur-2xl rounded-3xl border border-white/80 shadow-2xl max-w-lg w-full p-6 relative">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-sm">
+          <div className="glass-modal bg-white/95 backdrop-blur-2xl rounded-t-3xl sm:rounded-3xl border border-white/80 shadow-2xl max-w-lg w-full p-4 sm:p-6 relative max-h-[92dvh] flex flex-col animate-in fade-in slide-in-from-bottom-4 sm:zoom-in duration-200 safe-pb">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0">
               <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
                 <UserPlus size={18} className="text-blue-600" /> Add Candidate to ATS Pipeline
               </h3>
-              <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-slate-700 text-lg font-bold">
+              <button
+                onClick={() => setIsAddModalOpen(false)}
+                className="text-slate-400 hover:text-slate-700 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl"
+                aria-label="Close"
+              >
                 &times;
               </button>
             </div>
 
-            <form onSubmit={handleAddSubmit} className="space-y-4 mt-4">
-              <div className="grid grid-cols-2 gap-4">
+            <form onSubmit={handleAddSubmit} className="space-y-4 mt-4 overflow-y-auto custom-scrollbar touch-scroll flex-1 pr-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Candidate Name *</label>
                   <input
@@ -314,7 +318,7 @@ export default function ATSPipelineSection({ candidates, companies }: Props) {
                     name="name"
                     required
                     placeholder="Full name"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2.5 min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500"
                   />
                 </div>
                 <div>
@@ -324,12 +328,12 @@ export default function ATSPipelineSection({ candidates, companies }: Props) {
                     name="phone"
                     required
                     placeholder="017XXXXXXXX"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500 font-mono"
+                    className="w-full px-3.5 py-2.5 min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500 font-mono"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Applied Role *</label>
                   <input
@@ -338,7 +342,7 @@ export default function ATSPipelineSection({ candidates, companies }: Props) {
                     required
                     placeholder="e.g. Overlock Operator, Quality Inspector"
                     defaultValue="Sewing Machine Operator"
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2.5 min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500"
                   />
                 </div>
                 <div>
@@ -348,26 +352,26 @@ export default function ATSPipelineSection({ candidates, companies }: Props) {
                     step="0.5"
                     name="experienceYears"
                     placeholder="e.g. 2.5"
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2.5 min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Expected Gross Salary (BDT)</label>
                   <input
                     type="number"
                     name="expectedSalary"
                     placeholder="e.g. 13500"
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2.5 min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Target Company</label>
                   <select
                     name="companyId"
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2.5 min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500"
                   >
                     <option value="">Any Factory</option>
                     {companies.map(c => (
@@ -383,22 +387,22 @@ export default function ATSPipelineSection({ candidates, companies }: Props) {
                   type="email"
                   name="email"
                   placeholder="Optional email address"
-                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2.5 min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500"
                 />
               </div>
 
-              <div className="pt-2 flex justify-end gap-2">
+              <div className="pt-3 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 border-t border-slate-100 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50"
+                  className="min-h-[44px] px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50 transition flex items-center justify-center"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={addLoading}
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 disabled:opacity-50"
+                  className="min-h-[44px] px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 disabled:opacity-50 transition flex items-center justify-center"
                 >
                   {addLoading ? 'Saving...' : 'Add Candidate'}
                 </button>
@@ -410,60 +414,66 @@ export default function ATSPipelineSection({ candidates, companies }: Props) {
 
       {/* MODAL: RECORD SEWING / PRACTICAL TEST SCORE */}
       {scoreModalCandidate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-          <div className="glass-modal bg-white/95 backdrop-blur-2xl rounded-3xl border border-white/80 shadow-2xl max-w-sm w-full p-6 relative space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-sm">
+          <div className="glass-modal bg-white/95 backdrop-blur-2xl rounded-t-3xl sm:rounded-3xl border border-white/80 shadow-2xl max-w-sm w-full p-4 sm:p-6 relative space-y-4 max-h-[92dvh] flex flex-col animate-in fade-in slide-in-from-bottom-4 sm:zoom-in duration-200 safe-pb">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 shrink-0">
               <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-1.5">
                 <Scissors size={16} className="text-amber-600" /> Record Practical Test Score
               </h3>
-              <button onClick={() => setScoreModalCandidate(null)} className="text-slate-400 hover:text-slate-700 text-lg font-bold">
+              <button
+                onClick={() => setScoreModalCandidate(null)}
+                className="text-slate-400 hover:text-slate-700 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl"
+                aria-label="Close"
+              >
                 &times;
               </button>
             </div>
 
-            <div className="text-xs text-slate-600">
-              Recording practical evaluation for <span className="font-bold text-slate-900">{scoreModalCandidate.name}</span> ({scoreModalCandidate.appliedRole || 'Operator'})
+            <div className="space-y-4 overflow-y-auto custom-scrollbar touch-scroll flex-1 pr-1">
+              <div className="text-xs text-slate-600">
+                Recording practical evaluation for <span className="font-bold text-slate-900">{scoreModalCandidate.name}</span> ({scoreModalCandidate.appliedRole || 'Operator'})
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Practical Test Score (0 - 100) *
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={scoreInput}
+                  onChange={(e) => setScoreInput(e.target.value)}
+                  className="w-full px-3.5 py-2.5 min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl text-base font-extrabold text-slate-900 outline-none focus:border-amber-500 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Evaluator Notes
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Good stitch tension, 85% standard speed achieved"
+                  value={scoreNotes}
+                  onChange={(e) => setScoreNotes(e.target.value)}
+                  className="w-full px-3.5 py-2.5 min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-amber-500"
+                />
+              </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Practical Test Score (0 - 100) *
-              </label>
-              <input
-                type="number"
-                min="0"
-                max="100"
-                value={scoreInput}
-                onChange={(e) => setScoreInput(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-base font-extrabold text-slate-900 outline-none focus:border-amber-500 font-mono"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Evaluator Notes
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. Good stitch tension, 85% standard speed achieved"
-                value={scoreNotes}
-                onChange={(e) => setScoreNotes(e.target.value)}
-                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-amber-500"
-              />
-            </div>
-
-            <div className="pt-2 flex justify-end gap-2">
+            <div className="pt-2 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 shrink-0 border-t border-slate-100">
               <button
                 type="button"
                 onClick={() => setScoreModalCandidate(null)}
-                className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50"
+                className="min-h-[44px] px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50 transition flex items-center justify-center"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleSaveScoreAndAdvance}
-                className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-md shadow-amber-500/20"
+                className="min-h-[44px] px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-md shadow-amber-500/20 transition flex items-center justify-center"
               >
                 Save &amp; Move to Interview
               </button>

@@ -294,7 +294,7 @@ export default function VisitorLogbookSection({ visitorLogs, workers }: Props) {
 
           {/* Visitor Log Table */}
           <div className="glass-table-container rounded-2xl shadow-sm border border-white/70 overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto custom-scrollbar touch-scroll">
               <table className="w-full text-left text-xs whitespace-nowrap">
                 <thead className="bg-slate-50/80 backdrop-blur-md border-b border-slate-200/70 text-slate-600 uppercase font-bold tracking-wider">
                   <tr>
@@ -396,19 +396,23 @@ export default function VisitorLogbookSection({ visitorLogs, workers }: Props) {
 
       {/* MODAL: CHECK IN VISITOR */}
       {isCheckInModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-          <div className="glass-modal bg-white/95 backdrop-blur-2xl rounded-3xl border border-white/80 shadow-2xl max-w-lg w-full p-6 relative">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-sm">
+          <div className="glass-modal bg-white/95 backdrop-blur-2xl rounded-t-3xl sm:rounded-3xl border border-white/80 shadow-2xl max-w-lg w-full p-4 sm:p-6 relative max-h-[92dvh] flex flex-col animate-in fade-in slide-in-from-bottom-4 sm:zoom-in duration-200 safe-pb">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0">
               <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
                 <UserCheck size={18} className="text-indigo-600" /> Check In Factory Visitor
               </h3>
-              <button onClick={() => setIsCheckInModalOpen(false)} className="text-slate-400 hover:text-slate-700 text-lg font-bold">
+              <button
+                onClick={() => setIsCheckInModalOpen(false)}
+                className="text-slate-400 hover:text-slate-700 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl"
+                aria-label="Close"
+              >
                 &times;
               </button>
             </div>
 
-            <form onSubmit={handleCheckIn} className="space-y-4 mt-4">
-              <div className="grid grid-cols-2 gap-4">
+            <form onSubmit={handleCheckIn} className="space-y-4 mt-4 overflow-y-auto custom-scrollbar touch-scroll flex-1 pr-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Visitor Full Name *</label>
                   <input
@@ -416,7 +420,7 @@ export default function VisitorLogbookSection({ visitorLogs, workers }: Props) {
                     name="visitorName"
                     required
                     placeholder="e.g. Tareq Hasan"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-500"
+                    className="w-full px-3.5 py-2.5 min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-500"
                   />
                 </div>
                 <div>
@@ -426,19 +430,19 @@ export default function VisitorLogbookSection({ visitorLogs, workers }: Props) {
                     name="visitorPhone"
                     required
                     placeholder="017XXXXXXXX"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-500 font-mono"
+                    className="w-full px-3.5 py-2.5 min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-500 font-mono"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Representing Company</label>
                   <input
                     type="text"
                     name="visitorCompany"
                     placeholder="e.g. Apex Logistics, Singer BD"
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-500"
+                    className="w-full px-3.5 py-2.5 min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-500"
                   />
                 </div>
                 <div>
@@ -447,7 +451,7 @@ export default function VisitorLogbookSection({ visitorLogs, workers }: Props) {
                     type="text"
                     name="visitorNid"
                     placeholder="Optional NID"
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-500 font-mono"
+                    className="w-full px-3.5 py-2.5 min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-500 font-mono"
                   />
                 </div>
               </div>
@@ -456,7 +460,7 @@ export default function VisitorLogbookSection({ visitorLogs, workers }: Props) {
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Host Employee *</label>
                 <select
                   name="hostWorkerId"
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-500 font-medium"
+                  className="w-full px-3.5 py-2.5 min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-500 font-medium"
                 >
                   <option value="">General Reception / Security Office</option>
                   {workers.map(w => (
@@ -474,18 +478,18 @@ export default function VisitorLogbookSection({ visitorLogs, workers }: Props) {
                   name="purpose"
                   required
                   placeholder="e.g. Machine maintenance inspection, Vendor supplier delivery"
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-500"
+                  className="w-full px-3.5 py-2.5 min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-500"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Belongings Logged</label>
                   <input
                     type="text"
                     name="belongings"
                     placeholder="e.g. Laptop HP SN4829, Tool Kit"
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-500"
+                    className="w-full px-3.5 py-2.5 min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-500"
                   />
                 </div>
                 <div>
@@ -493,7 +497,7 @@ export default function VisitorLogbookSection({ visitorLogs, workers }: Props) {
                   <select
                     name="expectedDuration"
                     defaultValue="60"
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-500 font-semibold"
+                    className="w-full px-3.5 py-2.5 min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-500 font-semibold"
                   >
                     <option value="30">30 Minutes</option>
                     <option value="60">1 Hour (Standard)</option>
@@ -504,18 +508,18 @@ export default function VisitorLogbookSection({ visitorLogs, workers }: Props) {
                 </div>
               </div>
 
-              <div className="pt-2 flex justify-end gap-2">
+              <div className="pt-3 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 border-t border-slate-100 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsCheckInModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50"
+                  className="min-h-[44px] px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50 transition flex items-center justify-center"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={checkInLoading}
-                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-500/20 disabled:opacity-50"
+                  className="min-h-[44px] px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-500/20 disabled:opacity-50 transition flex items-center justify-center"
                 >
                   {checkInLoading ? 'Checking In...' : 'Issue Pass & Check In'}
                 </button>
@@ -527,11 +531,15 @@ export default function VisitorLogbookSection({ visitorLogs, workers }: Props) {
 
       {/* MODAL: PRINT VISITOR BADGE */}
       {printingPass && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 space-y-4">
-            <div className="flex justify-between items-center pb-2 border-b">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/70 backdrop-blur-sm">
+          <div className="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl max-w-sm w-full p-4 sm:p-6 space-y-4 max-h-[92dvh] flex flex-col animate-in fade-in slide-in-from-bottom-4 sm:zoom-in duration-200 safe-pb">
+            <div className="flex justify-between items-center pb-2 border-b shrink-0">
               <h3 className="font-extrabold text-sm text-slate-900">Official Visitor Gate Pass</h3>
-              <button onClick={() => setPrintingPass(null)} className="text-slate-400 hover:text-slate-700 text-lg font-bold">
+              <button
+                onClick={() => setPrintingPass(null)}
+                className="text-slate-400 hover:text-slate-700 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl"
+                aria-label="Close"
+              >
                 &times;
               </button>
             </div>
@@ -539,7 +547,7 @@ export default function VisitorLogbookSection({ visitorLogs, workers }: Props) {
             {/* Printable Pass Badge */}
             <div 
               id="visitor-pass-badge"
-              className="border-2 border-dashed border-indigo-300 rounded-2xl p-4 bg-gradient-to-b from-indigo-50/60 to-white text-center space-y-3"
+              className="border-2 border-dashed border-indigo-300 rounded-2xl p-4 bg-gradient-to-b from-indigo-50/60 to-white text-center space-y-3 overflow-y-auto custom-scrollbar touch-scroll flex-1"
             >
               <div className="text-[10px] font-black uppercase text-indigo-700 tracking-wider">
                 MEP GROUP • FACTORY GATE PASS
@@ -569,16 +577,16 @@ export default function VisitorLogbookSection({ visitorLogs, workers }: Props) {
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 pt-2 border-t shrink-0">
               <button
                 onClick={() => setPrintingPass(null)}
-                className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold"
+                className="min-h-[44px] px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50 transition flex items-center justify-center"
               >
                 Close
               </button>
               <button
                 onClick={() => window.print()}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-500/20 flex items-center gap-1.5"
+                className="min-h-[44px] px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-500/20 flex items-center justify-center gap-1.5 transition"
               >
                 <Printer size={14} /> Print Badge
               </button>

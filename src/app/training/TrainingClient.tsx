@@ -217,7 +217,7 @@ export default function TrainingClient({
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-3 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 safe-pb">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -225,32 +225,32 @@ export default function TrainingClient({
             <Sparkles size={13} />
             <span>Learning &amp; Compliance Development</span>
           </div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Training &amp; Skills Matrix</h1>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Training &amp; Skills Matrix</h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
             Manage factory training programs, employee machine skill proficiencies, and RSC/BSCI compliance certification radar
           </p>
         </div>
 
         {/* Tab-specific top button */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap sm:flex-nowrap items-stretch sm:items-center gap-2 w-full sm:w-auto">
           {activeTab === 'programs' ? (
             <Link 
               href="/training/new" 
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 font-bold text-xs sm:text-sm transition shadow-md shadow-blue-600/20"
+              className="min-h-[44px] flex-1 sm:flex-none justify-center bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 font-bold text-xs sm:text-sm transition shadow-md shadow-blue-600/20"
             >
               <Plus size={18} /> Schedule Training
             </Link>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap sm:flex-nowrap items-stretch sm:items-center gap-2 w-full sm:w-auto">
               <button
                 onClick={() => setIsCertModalOpen(true)}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 font-bold text-xs transition shadow-md shadow-emerald-600/20"
+                className="min-h-[44px] flex-1 sm:flex-none justify-center bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 font-bold text-xs transition shadow-md shadow-emerald-600/20"
               >
                 <ShieldCheck size={16} /> Add Compliance Cert
               </button>
               <button
                 onClick={() => setIsSkillModalOpen(true)}
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 font-bold text-xs transition shadow-md shadow-blue-600/20"
+                className="min-h-[44px] flex-1 sm:flex-none justify-center bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 font-bold text-xs transition shadow-md shadow-blue-600/20"
               >
                 <Plus size={16} /> Record Worker Skill
               </button>
@@ -260,10 +260,10 @@ export default function TrainingClient({
       </div>
 
       {/* Tabs Switcher */}
-      <div className="flex items-center gap-2 p-1.5 glass-card bg-white/70 backdrop-blur-xl rounded-2xl border border-white/60 shadow-glass w-fit">
+      <div className="flex items-center gap-2 p-1.5 glass-card bg-white/70 backdrop-blur-xl rounded-2xl border border-white/60 shadow-glass w-full sm:w-fit overflow-x-auto no-scrollbar touch-scroll">
         <button
           onClick={() => switchTab('programs')}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 ${
+          className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap shrink-0 min-h-[44px] transition-all duration-200 ${
             activeTab === 'programs'
               ? 'bg-white text-blue-600 shadow-md shadow-blue-500/20 translate-y-[-1px]'
               : 'text-slate-600 hover:text-slate-900 hover:bg-white/40'
@@ -275,7 +275,7 @@ export default function TrainingClient({
 
         <button
           onClick={() => switchTab('matrix')}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 ${
+          className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap shrink-0 min-h-[44px] transition-all duration-200 ${
             activeTab === 'matrix'
               ? 'bg-white text-blue-600 shadow-md shadow-blue-500/20 translate-y-[-1px]'
               : 'text-slate-600 hover:text-slate-900 hover:bg-white/40'
@@ -531,7 +531,7 @@ export default function TrainingClient({
             </div>
 
             <div className="glass-table-container rounded-2xl shadow-sm border border-white/70 overflow-hidden">
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto custom-scrollbar touch-scroll">
                 <table className="w-full text-left text-xs whitespace-nowrap">
                   <thead className="bg-slate-50/80 backdrop-blur-md border-b border-slate-200/70 text-slate-600 uppercase font-bold tracking-wider">
                     <tr>
@@ -609,24 +609,28 @@ export default function TrainingClient({
 
       {/* MODAL: RECORD WORKER SKILL */}
       {isSkillModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-          <div className="glass-modal bg-white/95 backdrop-blur-2xl rounded-3xl border border-white/80 shadow-2xl max-w-lg w-full p-6 relative">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-sm">
+          <div className="glass-modal bg-white/95 backdrop-blur-2xl rounded-t-3xl sm:rounded-3xl border border-white/80 shadow-2xl max-w-lg w-full p-4 sm:p-6 relative max-h-[92dvh] flex flex-col animate-in fade-in slide-in-from-bottom-4 sm:zoom-in duration-200 safe-pb">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0">
               <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
                 <Plus size={16} className="text-blue-600" /> Record Worker Skill
               </h3>
-              <button onClick={() => setIsSkillModalOpen(false)} className="text-slate-400 hover:text-slate-700 text-lg font-bold">
+              <button
+                onClick={() => setIsSkillModalOpen(false)}
+                className="text-slate-400 hover:text-slate-700 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl"
+                aria-label="Close"
+              >
                 &times;
               </button>
             </div>
 
-            <form onSubmit={handleAddSkill} className="space-y-4 mt-4">
+            <form onSubmit={handleAddSkill} className="space-y-4 mt-4 overflow-y-auto custom-scrollbar touch-scroll flex-1 pr-1">
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Worker *</label>
                 <select
                   name="workerId"
                   required
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500 font-medium"
+                  className="w-full px-3.5 py-2.5 min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500 font-medium"
                 >
                   <option value="">Select Employee</option>
                   {workers.map(w => (
@@ -635,13 +639,13 @@ export default function TrainingClient({
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Skill Category *</label>
                   <select
                     name="skillCategory"
                     required
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500 font-medium"
+                    className="w-full px-3.5 py-2.5 min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500 font-medium"
                   >
                     <option value="SEWING">Sewing Operations</option>
                     <option value="QUALITY">Quality Inspection</option>
@@ -655,7 +659,7 @@ export default function TrainingClient({
                   <select
                     name="proficiency"
                     required
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500 font-bold"
+                    className="w-full px-3.5 py-2.5 min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500 font-bold"
                   >
                     <option value="BEGINNER">Beginner (L1)</option>
                     <option value="INTERMEDIATE">Intermediate (L2)</option>
@@ -672,11 +676,11 @@ export default function TrainingClient({
                   name="skillName"
                   required
                   placeholder="e.g. 4-Thread Overlock, Flatlock, Collar Stitching"
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2.5 min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Certifying Body</label>
                   <input
@@ -684,7 +688,7 @@ export default function TrainingClient({
                     name="certifyingBody"
                     placeholder="e.g. RSC, BSCI, Internal MEP"
                     defaultValue="Internal MEP"
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2.5 min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500"
                   />
                 </div>
                 <div>
@@ -692,23 +696,23 @@ export default function TrainingClient({
                   <input
                     type="date"
                     name="certifiedDate"
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2.5 min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500"
                   />
                 </div>
               </div>
 
-              <div className="pt-2 flex justify-end gap-2">
+              <div className="pt-3 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 border-t border-slate-100 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsSkillModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50"
+                  className="min-h-[44px] px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50 transition flex items-center justify-center"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={skillLoading}
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 disabled:opacity-50"
+                  className="min-h-[44px] px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 disabled:opacity-50 transition flex items-center justify-center"
                 >
                   {skillLoading ? 'Saving...' : 'Save Skill'}
                 </button>
@@ -720,24 +724,28 @@ export default function TrainingClient({
 
       {/* MODAL: ADD COMPLIANCE CERTIFICATION */}
       {isCertModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-          <div className="glass-modal bg-white/95 backdrop-blur-2xl rounded-3xl border border-white/80 shadow-2xl max-w-lg w-full p-6 relative">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-sm">
+          <div className="glass-modal bg-white/95 backdrop-blur-2xl rounded-t-3xl sm:rounded-3xl border border-white/80 shadow-2xl max-w-lg w-full p-4 sm:p-6 relative max-h-[92dvh] flex flex-col animate-in fade-in slide-in-from-bottom-4 sm:zoom-in duration-200 safe-pb">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0">
               <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
                 <ShieldCheck size={16} className="text-emerald-600" /> Add Compliance Certification
               </h3>
-              <button onClick={() => setIsCertModalOpen(false)} className="text-slate-400 hover:text-slate-700 text-lg font-bold">
+              <button
+                onClick={() => setIsCertModalOpen(false)}
+                className="text-slate-400 hover:text-slate-700 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl"
+                aria-label="Close"
+              >
                 &times;
               </button>
             </div>
 
-            <form onSubmit={handleAddCert} className="space-y-4 mt-4">
+            <form onSubmit={handleAddCert} className="space-y-4 mt-4 overflow-y-auto custom-scrollbar touch-scroll flex-1 pr-1">
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Certified Employee *</label>
                 <select
                   name="workerId"
                   required
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-emerald-500 font-medium"
+                  className="w-full px-3.5 py-2.5 min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-emerald-500 font-medium"
                 >
                   <option value="">Select Employee</option>
                   {workers.map(w => (
@@ -751,7 +759,7 @@ export default function TrainingClient({
                 <select
                   name="type"
                   required
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-emerald-500 font-bold"
+                  className="w-full px-3.5 py-2.5 min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-emerald-500 font-bold"
                 >
                   <option value="FIRE_SAFETY">Fire Safety &amp; Evacuation Team</option>
                   <option value="FIRST_AID">First Aid &amp; CPR Responder</option>
@@ -761,14 +769,14 @@ export default function TrainingClient({
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Issue Date *</label>
                   <input
                     type="date"
                     name="issueDate"
                     required
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-emerald-500"
+                    className="w-full px-3.5 py-2.5 min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-emerald-500"
                   />
                 </div>
                 <div>
@@ -777,19 +785,19 @@ export default function TrainingClient({
                     type="date"
                     name="expiryDate"
                     required
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-emerald-500"
+                    className="w-full px-3.5 py-2.5 min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-emerald-500"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Issuing Authority</label>
                   <input
                     type="text"
                     name="issuingAuthority"
                     defaultValue="Fire Service & Civil Defence"
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-emerald-500"
+                    className="w-full px-3.5 py-2.5 min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-emerald-500"
                   />
                 </div>
                 <div>
@@ -798,23 +806,23 @@ export default function TrainingClient({
                     type="text"
                     name="certificateNumber"
                     placeholder="e.g. FSCD-2026-904"
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-emerald-500 font-mono"
+                    className="w-full px-3.5 py-2.5 min-h-[44px] bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-emerald-500 font-mono"
                   />
                 </div>
               </div>
 
-              <div className="pt-2 flex justify-end gap-2">
+              <div className="pt-3 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 border-t border-slate-100 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsCertModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50"
+                  className="min-h-[44px] px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50 transition flex items-center justify-center"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={certLoading}
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-500/20 disabled:opacity-50"
+                  className="min-h-[44px] px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-500/20 disabled:opacity-50 transition flex items-center justify-center"
                 >
                   {certLoading ? 'Saving...' : 'Add Certification'}
                 </button>

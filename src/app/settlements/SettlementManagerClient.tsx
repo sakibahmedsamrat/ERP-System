@@ -330,23 +330,23 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
   }, [settlements]);
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-8">
+    <div className="p-3 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 sm:space-y-8 safe-pb">
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200/60 pb-6">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Settlements</h1>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Settlements</h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
             Search employees to update resignation dates, track pending settlements, and calculate final benefits.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap sm:flex-nowrap items-stretch sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
           <button
             type="button"
             onClick={() => {
               setIsResignPanelOpen(!isResignPanelOpen);
               if (resignationSuccess) setResignationSuccess(null);
             }}
-            className={`px-4 py-2.5 rounded-xl flex items-center gap-2 font-bold text-xs sm:text-sm transition shadow-xs ${
+            className={`min-h-[44px] flex-1 sm:flex-none justify-center px-4 py-2.5 rounded-xl flex items-center gap-2 font-bold text-xs sm:text-sm transition shadow-xs ${
               isResignPanelOpen
                 ? 'bg-white/80 hover:bg-white text-slate-800 border border-slate-200/80 shadow-xs'
                 : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/20'
@@ -358,7 +358,7 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
           <Link
             href="/settlements/new"
             prefetch={true}
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 font-bold text-xs sm:text-sm transition shadow-md shadow-blue-600/20"
+            className="min-h-[44px] flex-1 sm:flex-none justify-center bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 font-bold text-xs sm:text-sm transition shadow-md shadow-blue-600/20"
           >
             <Plus size={17} /> New Settlement
           </Link>
@@ -690,11 +690,11 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
         {/* Controls: Filter Tabs & Search */}
         <div className="p-5 border-b border-slate-200/60 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/40">
           {/* Status Tabs */}
-          <div className="flex items-center gap-1.5 bg-slate-100/70 backdrop-blur-sm p-1 rounded-2xl border border-slate-200/60">
+          <div className="flex items-center gap-1.5 bg-slate-100/70 backdrop-blur-sm p-1 rounded-2xl border border-slate-200/60 overflow-x-auto no-scrollbar touch-scroll max-w-full">
             <button
               type="button"
               onClick={() => setStatusFilter('ALL')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+              className={`whitespace-nowrap shrink-0 min-h-[38px] px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                 statusFilter === 'ALL'
                   ? 'bg-white text-slate-900 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
@@ -708,7 +708,7 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
             <button
               type="button"
               onClick={() => setStatusFilter('PENDING')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+              className={`whitespace-nowrap shrink-0 min-h-[38px] px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                 statusFilter === 'PENDING'
                   ? 'bg-white text-amber-800 shadow-xs'
                   : 'text-slate-600 hover:text-amber-700'
@@ -722,7 +722,7 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
             <button
               type="button"
               onClick={() => setStatusFilter('APPROVED')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+              className={`whitespace-nowrap shrink-0 min-h-[38px] px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                 statusFilter === 'APPROVED'
                   ? 'bg-white text-emerald-800 shadow-xs'
                   : 'text-slate-600 hover:text-emerald-700'
@@ -736,7 +736,7 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
             <button
               type="button"
               onClick={() => setStatusFilter('PAID')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+              className={`whitespace-nowrap shrink-0 min-h-[38px] px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                 statusFilter === 'PAID'
                   ? 'bg-white text-blue-800 shadow-xs'
                   : 'text-slate-600 hover:text-blue-700'
@@ -772,8 +772,8 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
+        <div className="overflow-x-auto custom-scrollbar touch-scroll">
+          <table className="w-full text-left border-collapse text-xs min-w-[720px]">
             <thead className="bg-slate-50/80 backdrop-blur-md border-b border-slate-200/70">
               <tr>
                 <th className="p-4 font-bold text-xs text-slate-600 uppercase tracking-wider">Employee</th>

@@ -32,6 +32,7 @@ import {
   Calendar,
   Clock,
   RefreshCw,
+  Eye,
 } from 'lucide-react';
 import { numberToWords, parseFlexibleDate } from '@/lib/formatDate';
 import {
@@ -789,6 +790,12 @@ export default function SalaryStatementClient({
 
   // View Mode: 'split', 'form', 'preview'
   const [viewMode, setViewMode] = useState<'split' | 'form' | 'preview'>('split');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      setViewMode('form');
+    }
+  }, []);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [activeTab, setActiveTab] = useState<'p1' | 'p2' | 'signatory'>('p1');
 
@@ -2534,6 +2541,34 @@ export default function SalaryStatementClient({
           </div>
         </div>
 
+        {/* Mobile View Mode Switcher (<1024px) */}
+        <div className="flex lg:hidden items-center bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200/90 text-xs font-bold w-full gap-2 shadow-xs mb-6 print:hidden">
+          <button
+            type="button"
+            onClick={() => setViewMode('form')}
+            className={`flex-1 py-2.5 px-3 rounded-xl min-h-[44px] flex items-center justify-center gap-2 transition ${
+              viewMode === 'form' || viewMode === 'split'
+                ? 'bg-blue-600 text-white shadow-sm font-extrabold'
+                : 'text-slate-600 hover:text-slate-900 bg-transparent'
+            }`}
+          >
+            <FileText size={16} />
+            <span>Form Editor</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('preview')}
+            className={`flex-1 py-2.5 px-3 rounded-xl min-h-[44px] flex items-center justify-center gap-2 transition ${
+              viewMode === 'preview'
+                ? 'bg-blue-600 text-white shadow-sm font-extrabold'
+                : 'text-slate-600 hover:text-slate-900 bg-transparent'
+            }`}
+          >
+            <Eye size={16} />
+            <span>Document Preview</span>
+          </button>
+        </div>
+
         {/* Workspace Layout */}
         <div
           className={`salary-statement-grid grid gap-8 print:block print:m-0 print:p-0 print:gap-0 ${
@@ -3929,7 +3964,7 @@ export default function SalaryStatementClient({
                 ? 'fixed -left-[99999px] top-0 pointer-events-none print:static print:opacity-100 print:left-auto print:w-full print:m-0 print:p-0 space-y-6 print:space-y-0'
                 : viewMode === 'preview'
                 ? 'max-w-4xl mx-auto space-y-6 w-full print:m-0 print:p-0 print:max-w-none print:w-full print:space-y-0'
-                : 'lg:col-span-7 space-y-6 print:w-full print:m-0 print:p-0 print:space-y-0'
+                : 'hidden lg:block lg:col-span-7 space-y-6 print:w-full print:m-0 print:p-0 print:space-y-0'
             }
           >
             {/* Official Letterhead Pad Print Settings Control Panel */}
@@ -5410,10 +5445,10 @@ export default function SalaryStatementClient({
             onClick={() => setIsDrawerOpen(false)}
           />
 
-          <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-            <div className="w-screen max-w-lg bg-white shadow-2xl flex flex-col border-l border-slate-200 animate-in slide-in-from-right duration-200">
+          <div className="fixed inset-y-0 right-0 max-w-full flex pl-0 sm:pl-10">
+            <div className="w-screen max-w-full sm:max-w-lg bg-white shadow-2xl flex flex-col border-l border-slate-200 animate-in slide-in-from-right duration-200 safe-pb">
               {/* Drawer Header */}
-              <div className="p-4 sm:p-5 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between gap-3">
+              <div className="p-4 sm:p-5 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between gap-3 shrink-0">
                 <div className="flex items-center gap-2.5">
                   <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
                     <Bookmark size={20} />
@@ -5433,16 +5468,18 @@ export default function SalaryStatementClient({
                     type="button"
                     onClick={() => fetchSavedStatements(savedSearchQuery)}
                     disabled={isLoadingSaved}
-                    className="p-2 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition"
+                    className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-xl transition"
                     title="Refresh statements list"
+                    aria-label="Refresh statements list"
                   >
                     <RefreshCw size={17} className={isLoadingSaved ? 'animate-spin' : ''} />
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsDrawerOpen(false)}
-                    className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition"
+                    className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition"
                     title="Close drawer"
+                    aria-label="Close drawer"
                   >
                     <X size={20} />
                   </button>
@@ -5635,7 +5672,7 @@ export default function SalaryStatementClient({
                 <button
                   type="button"
                   onClick={() => setIsDrawerOpen(false)}
-                  className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 font-semibold border border-slate-300 rounded-lg transition"
+                  className="px-4 py-2 min-h-[44px] bg-white hover:bg-slate-50 text-slate-700 font-semibold border border-slate-300 rounded-xl transition flex items-center justify-center"
                 >
                   Close
                 </button>

@@ -25,14 +25,14 @@ export default async function UsersPage() {
   });
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-3 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 safe-pb">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-1.5 text-xs font-bold text-blue-600 uppercase tracking-wider mb-1">
             <Sparkles size={13} />
             <span>Security &amp; Permissions</span>
           </div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">User Management</h1>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">User Management</h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
             Manage administrative access, roles, and module entitlements
           </p>
@@ -40,14 +40,14 @@ export default async function UsersPage() {
         <Link 
           href="/users/new" 
           prefetch={true}
-          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 font-bold text-xs sm:text-sm transition shadow-md shadow-blue-600/20 w-fit"
+          className="min-h-[44px] bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 font-bold text-xs sm:text-sm transition shadow-md shadow-blue-600/20 w-full sm:w-fit"
         >
           <Plus size={18} /> Add New User
         </Link>
       </div>
 
       <div className="glass-table-container rounded-3xl shadow-sm border border-white/70 overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto custom-scrollbar touch-scroll">
           <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
             <thead className="bg-slate-50/80 backdrop-blur-md border-b border-slate-200/70 text-slate-600 uppercase font-bold tracking-wider">
               <tr>
