@@ -1,4 +1,4 @@
-import prisma from '@/lib/prisma';
+import prisma, { withDbTimeout } from '@/lib/prisma';
 import SettlementManagerClient from './SettlementManagerClient';
 import { getSession } from '@/lib/auth';
 import { redirect } from 'next/navigation';
@@ -23,23 +23,27 @@ export default async function SettlementsPage() {
   if (!hasModule('PAYROLL') && !hasModule('SETTLEMENTS')) {
     redirect('/');
   }
-  const settlements = await prisma.settlement.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: {
-      worker: {
-        select: {
-          id: true,
-          name: true,
-          workerId: true,
-          designation: true,
-          department: { select: { name: true } },
-          company: { select: { name: true } },
-          isDeleted: true,
-          deletedAt: true,
-        }
-      }
-    }
-  });
+  const settlements = await withDbTimeout(
+    prisma.settlement.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        worker: {
+          select: {
+            id: true,
+            name: true,
+            workerId: true,
+            designation: true,
+            department: { select: { name: true } },
+            company: { select: { name: true } },
+            isDeleted: true,
+            deletedAt: true,
+          },
+        },
+      },
+    }),
+    5000,
+    []
+  );
 
   return <SettlementManagerClient initialSettlements={settlements as any} />;
 }

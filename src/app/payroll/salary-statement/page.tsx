@@ -13,13 +13,13 @@ export const dynamic = 'force-dynamic';
 export default async function SalaryStatementPage({
   searchParams,
 }: {
-  searchParams?: { id?: string };
+  searchParams?: { id?: string | string[] };
 }) {
   let session = null;
   try {
     session = await getSession();
   } catch (err) {
-    redirect('/login');
+    session = null;
   }
 
   const user = session?.user;
@@ -39,9 +39,12 @@ export default async function SalaryStatementPage({
     redirect('/');
   }
 
+  const rawId = searchParams?.id;
+  const initialStatementId = Array.isArray(rawId) ? rawId[0] : rawId;
+
   return (
     <Suspense fallback={<ModuleLoading title="Salary Statement Generator" />}>
-      <SalaryStatementClient initialStatementId={searchParams?.id} />
+      <SalaryStatementClient initialStatementId={initialStatementId} />
     </Suspense>
   );
 }

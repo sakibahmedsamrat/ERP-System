@@ -4,7 +4,13 @@ import { decrypt, encrypt } from './lib/auth';
 
 export async function middleware(request: NextRequest) {
   const isLoginPage = request.nextUrl.pathname.startsWith('/login');
+  const isVerifyPage = request.nextUrl.pathname.startsWith('/verify');
   const sessionToken = request.cookies.get('session')?.value;
+
+  // Allow public access to badge verification without authentication
+  if (isVerifyPage) {
+    return NextResponse.next();
+  }
 
   if (!sessionToken) {
     if (!isLoginPage) {

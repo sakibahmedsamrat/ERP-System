@@ -1,4 +1,4 @@
-import prisma from '@/lib/prisma';
+import prisma, { withDbTimeout } from '@/lib/prisma';
 import { 
   ShieldCheck, 
   ShieldAlert, 
@@ -26,43 +26,57 @@ export default async function GateVerificationPage({
   const queryId = decodeURIComponent(params.id);
 
   // Check if it's a worker by ID or workerId
-  let worker = await prisma.worker.findFirst({
-    where: {
-      OR: [
-        { id: queryId },
-        { workerId: queryId }
-      ],
-      isDeleted: false
-    },
-    include: {
-      company: { select: { id: true, name: true, location: true } },
-      department: { select: { id: true, name: true } },
-      section: { select: { id: true, name: true } },
-    }
-  });
+  let worker: any = null;
+  let visitor: any = null;
 
-  // Check if it's a visitor pass
-  let visitor = null;
-  if (!worker) {
-    visitor = await prisma.visitorLog.findFirst({
-      where: {
-        OR: [
-          { id: queryId },
-          { passNumber: queryId },
-          { passNumber: `VIS-${queryId}` }
-        ]
-      },
-      include: {
-        hostWorker: {
-          select: {
-            id: true,
-            workerId: true,
-            name: true,
-            department: { select: { name: true } }
-          }
+  try {
+    worker = await withDbTimeout(
+      prisma.worker.findFirst({
+        where: {
+          OR: [
+            { id: queryId },
+            { workerId: queryId }
+          ],
+          isDeleted: false
+        },
+        include: {
+          company: { select: { id: true, name: true, location: true } },
+          department: { select: { id: true, name: true } },
+          section: { select: { id: true, name: true } },
         }
-      }
-    });
+      }),
+      4000,
+      null
+    );
+
+    // Check if it's a visitor pass
+    if (!worker) {
+      visitor = await withDbTimeout(
+        prisma.visitorLog.findFirst({
+          where: {
+            OR: [
+              { id: queryId },
+              { passNumber: queryId },
+              { passNumber: `VIS-${queryId}` }
+            ]
+          },
+          include: {
+            hostWorker: {
+              select: {
+                id: true,
+                workerId: true,
+                name: true,
+                department: { select: { name: true } }
+              }
+            }
+          }
+        }),
+        4000,
+        null
+      );
+    }
+  } catch (err) {
+    console.error('Error fetching badge data:', err);
   }
 
   const now = new Date();
