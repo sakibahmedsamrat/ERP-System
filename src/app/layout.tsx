@@ -1,4 +1,4 @@
-import prisma from '@/lib/prisma';
+import prisma, { withDbTimeout } from '@/lib/prisma';
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -11,10 +11,18 @@ const inter = Inter({ subsets: ["latin"], display: 'swap' });
 
 const getUserProfileImage = unstable_cache(
   async (userId: string) => {
-    return prisma.user.findUnique({
-      where: { id: userId },
-      select: { profileImage: true },
-    });
+    try {
+      return await withDbTimeout(
+        prisma.user.findUnique({
+          where: { id: userId },
+          select: { profileImage: true },
+        }),
+        2500,
+        null
+      );
+    } catch {
+      return null;
+    }
   },
   ['user-profile-image'],
   { revalidate: 300, tags: ['user-profile'] }
@@ -47,12 +55,22 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await getSession();
+  let session = null;
+  try {
+    session = await getSession();
+  } catch (err) {
+    console.warn('Layout getSession fallback:', err);
+  }
+
   let fullUser = session?.user;
   if (session?.user?.id) {
-    const dbUser = await getUserProfileImage(session.user.id);
-    if (dbUser) {
-      fullUser = { ...session.user, profileImage: dbUser.profileImage };
+    try {
+      const dbUser = await getUserProfileImage(session.user.id);
+      if (dbUser?.profileImage) {
+        fullUser = { ...session.user, profileImage: dbUser.profileImage };
+      }
+    } catch (err) {
+      console.warn('Layout getUserProfileImage fallback:', err);
     }
   }
 

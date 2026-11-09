@@ -1,6 +1,6 @@
 'use server';
 
-import prisma from '@/lib/prisma';
+import prisma, { withDbTimeout } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
 import { logAction } from '@/lib/audit';
 import { revalidatePath } from 'next/cache';
@@ -61,12 +61,15 @@ export async function saveSalaryStatement(input: SaveSalaryStatementInput) {
     let workerDbId: string | null = null;
     if (input.workerId && input.workerId.trim()) {
       const cleanWorkerId = input.workerId.trim();
-      const worker = await prisma.worker.findFirst({
-        where: {
-          OR: [{ workerId: cleanWorkerId }, { id: cleanWorkerId }],
-        },
-        select: { id: true },
-      });
+      const worker = await withDbTimeout(
+        prisma.worker.findFirst({
+          where: {
+            OR: [{ workerId: cleanWorkerId }, { id: cleanWorkerId }],
+          },
+          select: { id: true },
+        }),
+        8000
+      );
       if (worker) {
         workerDbId = worker.id;
       }
@@ -74,28 +77,34 @@ export async function saveSalaryStatement(input: SaveSalaryStatementInput) {
 
     if (input.id) {
       // Check if statement exists
-      const existing = await prisma.salaryStatement.findUnique({
-        where: { id: input.id },
-      });
+      const existing = await withDbTimeout(
+        prisma.salaryStatement.findUnique({
+          where: { id: input.id },
+        }),
+        8000
+      );
 
       if (!existing) {
         return { success: false, error: 'Salary statement not found to update.' };
       }
 
-      const updated = await prisma.salaryStatement.update({
-        where: { id: input.id },
-        data: {
-          refNo: input.refNo.trim(),
-          workerId: input.workerId ? input.workerId.trim() : null,
-          workerDbId,
-          name: input.name.trim(),
-          designation: input.designation ? input.designation.trim() : null,
-          department: input.department ? input.department.trim() : null,
-          statementDate: input.statementDate ? input.statementDate.trim() : null,
-          data: input.data,
-          updatedAt: new Date(),
-        },
-      });
+      const updated = await withDbTimeout(
+        prisma.salaryStatement.update({
+          where: { id: input.id },
+          data: {
+            refNo: input.refNo.trim(),
+            workerId: input.workerId ? input.workerId.trim() : null,
+            workerDbId,
+            name: input.name.trim(),
+            designation: input.designation ? input.designation.trim() : null,
+            department: input.department ? input.department.trim() : null,
+            statementDate: input.statementDate ? input.statementDate.trim() : null,
+            data: input.data,
+            updatedAt: new Date(),
+          },
+        }),
+        8000
+      );
 
       await logAction(
         'PAYROLL',
@@ -108,19 +117,22 @@ export async function saveSalaryStatement(input: SaveSalaryStatementInput) {
 
       return { success: true, statement: updated };
     } else {
-      const created = await prisma.salaryStatement.create({
-        data: {
-          refNo: input.refNo.trim(),
-          workerId: input.workerId ? input.workerId.trim() : null,
-          workerDbId,
-          name: input.name.trim(),
-          designation: input.designation ? input.designation.trim() : null,
-          department: input.department ? input.department.trim() : null,
-          statementDate: input.statementDate ? input.statementDate.trim() : null,
-          data: input.data,
-          createdById: (auth.session?.user as any)?.id || (auth.session?.user as any)?.userId || null,
-        },
-      });
+      const created = await withDbTimeout(
+        prisma.salaryStatement.create({
+          data: {
+            refNo: input.refNo.trim(),
+            workerId: input.workerId ? input.workerId.trim() : null,
+            workerDbId,
+            name: input.name.trim(),
+            designation: input.designation ? input.designation.trim() : null,
+            department: input.department ? input.department.trim() : null,
+            statementDate: input.statementDate ? input.statementDate.trim() : null,
+            data: input.data,
+            createdById: (auth.session?.user as any)?.id || (auth.session?.user as any)?.userId || null,
+          },
+        }),
+        8000
+      );
 
       await logAction(
         'PAYROLL',
@@ -191,27 +203,30 @@ export async function getSavedSalaryStatements(params?: {
       }
     }
 
-    const [total, statements] = await Promise.all([
-      prisma.salaryStatement.count({ where: whereClause }),
-      prisma.salaryStatement.findMany({
-        where: whereClause,
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
-        select: {
-          id: true,
-          refNo: true,
-          workerId: true,
-          workerDbId: true,
-          name: true,
-          designation: true,
-          department: true,
-          statementDate: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      }),
-    ]);
+    const [total, statements] = await withDbTimeout(
+      Promise.all([
+        prisma.salaryStatement.count({ where: whereClause }),
+        prisma.salaryStatement.findMany({
+          where: whereClause,
+          orderBy: { createdAt: 'desc' },
+          skip: (page - 1) * limit,
+          take: limit,
+          select: {
+            id: true,
+            refNo: true,
+            workerId: true,
+            workerDbId: true,
+            name: true,
+            designation: true,
+            department: true,
+            statementDate: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        }),
+      ]),
+      8000
+    );
 
     return {
       success: true,
@@ -244,9 +259,12 @@ export async function getSalaryStatementById(id: string) {
       return { success: false, error: 'Valid statement ID is required', statement: null };
     }
 
-    const statement = await prisma.salaryStatement.findUnique({
-      where: { id: id.trim() },
-    });
+    const statement = await withDbTimeout(
+      prisma.salaryStatement.findUnique({
+        where: { id: id.trim() },
+      }),
+      8000
+    );
 
     if (!statement) {
       return { success: false, error: 'Salary statement not found', statement: null };
@@ -275,18 +293,24 @@ export async function deleteSalaryStatement(id: string) {
     }
 
     const cleanId = id.trim();
-    const existing = await prisma.salaryStatement.findUnique({
-      where: { id: cleanId },
-      select: { id: true, refNo: true, name: true },
-    });
+    const existing = await withDbTimeout(
+      prisma.salaryStatement.findUnique({
+        where: { id: cleanId },
+        select: { id: true, refNo: true, name: true },
+      }),
+      8000
+    );
 
     if (!existing) {
       return { success: false, error: 'Salary statement not found to delete.' };
     }
 
-    await prisma.salaryStatement.delete({
-      where: { id: cleanId },
-    });
+    await withDbTimeout(
+      prisma.salaryStatement.delete({
+        where: { id: cleanId },
+      }),
+      8000
+    );
 
     await logAction(
         'PAYROLL',

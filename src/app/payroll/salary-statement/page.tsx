@@ -1,6 +1,8 @@
+import { Suspense } from 'react';
 import { getSession } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import SalaryStatementClient from './SalaryStatementClient';
+import ModuleLoading from '@/components/ModuleLoading';
 
 export const metadata = {
   title: 'Salary Statement & Certificate | Payroll | HR ERP',
@@ -13,7 +15,13 @@ export default async function SalaryStatementPage({
 }: {
   searchParams?: { id?: string };
 }) {
-  const session = await getSession();
+  let session = null;
+  try {
+    session = await getSession();
+  } catch (err) {
+    redirect('/login');
+  }
+
   const user = session?.user;
 
   if (!user) {
@@ -23,13 +31,17 @@ export default async function SalaryStatementPage({
   const hasModule = (modName: string) => {
     if (user.role === 'SUPER_ADMIN') return true;
     if (user.modules === '*') return true;
-    const mods = (user.modules || '').split(',').map((m: string) => m.trim());
-    return mods.includes(modName);
+    const mods = (user.modules || '').split(',').map((m: string) => m.trim().toUpperCase());
+    return mods.includes(modName.toUpperCase());
   };
 
   if (!hasModule('PAYROLL') && !hasModule('SETTLEMENTS')) {
     redirect('/');
   }
 
-  return <SalaryStatementClient initialStatementId={searchParams?.id} />;
+  return (
+    <Suspense fallback={<ModuleLoading title="Salary Statement Generator" />}>
+      <SalaryStatementClient initialStatementId={searchParams?.id} />
+    </Suspense>
+  );
 }

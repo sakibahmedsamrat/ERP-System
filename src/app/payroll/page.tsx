@@ -1,4 +1,4 @@
-import prisma from '@/lib/prisma';
+import prisma, { withDbTimeout } from '@/lib/prisma';
 import Link from 'next/link';
 import { getSession } from '@/lib/auth';
 import { redirect } from 'next/navigation';
@@ -21,33 +21,50 @@ export default async function PayrollPage() {
   const hasModule = (modName: string) => {
     if (user.role === 'SUPER_ADMIN') return true;
     if (user.modules === '*') return true;
-    const mods = (user.modules || '').split(',').map((m: string) => m.trim());
-    return mods.includes(modName);
+    const mods = (user.modules || '').split(',').map((m: string) => m.trim().toUpperCase());
+    return mods.includes(modName.toUpperCase());
   };
 
   if (!hasModule('PAYROLL') && !hasModule('SETTLEMENTS')) {
     redirect('/');
   }
 
-  const [totalSettlements, pendingSettlements, approvedSettlements, totalActiveWorkers] = await Promise.all([
-    prisma.settlement.count(),
-    prisma.settlement.count({
-      where: {
-        status: 'PENDING'
-      }
-    }),
-    prisma.settlement.count({
-      where: {
-        status: { in: ['APPROVED', 'PAID'] }
-      }
-    }),
-    prisma.worker.count({
-      where: {
-        isDeleted: false,
-        isActive: true
-      }
-    })
-  ]);
+  let totalSettlements = 0;
+  let pendingSettlements = 0;
+  let approvedSettlements = 0;
+  let totalActiveWorkers = 0;
+
+  try {
+    const counts = await withDbTimeout(
+      Promise.all([
+        prisma.settlement.count(),
+        prisma.settlement.count({
+          where: {
+            status: 'PENDING',
+          },
+        }),
+        prisma.settlement.count({
+          where: {
+            status: { in: ['APPROVED', 'PAID'] },
+          },
+        }),
+        prisma.worker.count({
+          where: {
+            isDeleted: false,
+            isActive: true,
+          },
+        }),
+      ]),
+      5000,
+      [0, 0, 0, 0]
+    );
+    totalSettlements = counts[0];
+    pendingSettlements = counts[1];
+    approvedSettlements = counts[2];
+    totalActiveWorkers = counts[3];
+  } catch (error) {
+    console.warn('Failed or timed out fetching payroll metrics:', error);
+  }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-8">

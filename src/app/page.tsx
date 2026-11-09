@@ -1,4 +1,4 @@
-import prisma from '@/lib/prisma';
+import prisma, { withDbTimeout } from '@/lib/prisma';
 import Link from 'next/link';
 import { Users, Building2, CalendarCheck, CheckSquare, Clock, ArrowUpRight, Sparkles, CheckCircle2 } from 'lucide-react';
 import { formatDate } from '@/lib/formatDate';
@@ -13,8 +13,8 @@ export default async function Dashboard() {
     if (!user) return false;
     if (user.role === 'SUPER_ADMIN') return true;
     if (user.modules === '*') return true;
-    const mods = (user.modules || '').split(',').map((m: string) => m.trim());
-    return mods.includes(modName);
+    const mods = (user.modules || '').split(',').map((m: string) => m.trim().toUpperCase());
+    return mods.includes(modName.toUpperCase());
   };
 
   let taskWhere: any = {};
@@ -33,29 +33,48 @@ export default async function Dashboard() {
   const endOfToday = new Date(today);
   endOfToday.setUTCHours(23, 59, 59, 999);
 
-  const [totalWorkers, totalCompanies, totalTasks, todayAttendanceCount, myTasks] = await Promise.all([
-    prisma.worker.count({ where: { isDeleted: false } }),
-    prisma.company.count(),
-    prisma.task.count({ where: taskWhere }),
-    prisma.attendance.count({
-      where: {
-        status: 'PRESENT',
-        date: {
-          gte: startOfToday,
-          lte: endOfToday
-        },
-        worker: {
-          isDeleted: false
-        }
-      }
-    }),
-    user ? prisma.task.findMany({
-      where: { assigneeId: user.id, status: { not: 'DONE' } },
-      select: { id: true, title: true, description: true, deadline: true, status: true },
-      orderBy: { deadline: 'asc' },
-      take: 5
-    }) : Promise.resolve([])
-  ]);
+  let totalWorkers = 0;
+  let totalCompanies = 0;
+  let totalTasks = 0;
+  let todayAttendanceCount = 0;
+  let myTasks: any[] = [];
+
+  try {
+    const dashboardData = await withDbTimeout(
+      Promise.all([
+        prisma.worker.count({ where: { isDeleted: false } }),
+        prisma.company.count(),
+        prisma.task.count({ where: taskWhere }),
+        prisma.attendance.count({
+          where: {
+            status: 'PRESENT',
+            date: {
+              gte: startOfToday,
+              lte: endOfToday
+            },
+            worker: {
+              isDeleted: false
+            }
+          }
+        }),
+        user ? prisma.task.findMany({
+          where: { assigneeId: user.id, status: { not: 'DONE' } },
+          select: { id: true, title: true, description: true, deadline: true, status: true },
+          orderBy: { deadline: 'asc' },
+          take: 5
+        }) : Promise.resolve([])
+      ]),
+      5000,
+      [0, 0, 0, 0, []]
+    );
+    totalWorkers = dashboardData[0];
+    totalCompanies = dashboardData[1];
+    totalTasks = dashboardData[2];
+    todayAttendanceCount = dashboardData[3];
+    myTasks = dashboardData[4] || [];
+  } catch (error) {
+    console.warn('Failed or timed out fetching dashboard counts:', error);
+  }
 
   const cards = [
     { title: "Total Employees", value: totalWorkers, icon: Users, color: "text-blue-600", bg: "bg-blue-500/10", border: "border-blue-200/50", href: "/workers", mod: 'WORKERS' },

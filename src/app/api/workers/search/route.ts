@@ -1,83 +1,96 @@
-import prisma from '@/lib/prisma';
+import prisma, { withDbTimeout } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 
 export async function GET(request: Request) {
-  const session = await getSession();
-  if (!session?.user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  try {
+    const session = await getSession();
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-  const { searchParams } = new URL(request.url);
-  const q = searchParams.get('q');
-  const id = searchParams.get('id');
-  const withPhoto = searchParams.get('withPhoto') === 'true';
+    const { searchParams } = new URL(request.url);
+    const q = searchParams.get('q');
+    const id = searchParams.get('id');
+    const withPhoto = searchParams.get('withPhoto') === 'true';
 
-  if (id) {
-    const worker = await prisma.worker.findUnique({
-      where: { id },
-      include: {
-        company: true,
-        department: true,
-        section: true,
-        subSection: true
-      }
-    });
-    const validWorker = worker && !worker.isDeleted ? worker : null;
-    const res = NextResponse.json({ worker: validWorker, workers: validWorker ? [validWorker] : [] });
-    res.headers.set('Cache-Control', 'private, max-age=30, stale-while-revalidate=60');
+    if (id) {
+      const worker = await withDbTimeout(
+        prisma.worker.findUnique({
+          where: { id },
+          include: {
+            company: true,
+            department: true,
+            section: true,
+            subSection: true,
+          },
+        }),
+        5000,
+        null
+      );
+      const validWorker = worker && !worker.isDeleted ? worker : null;
+      const res = NextResponse.json({ worker: validWorker, workers: validWorker ? [validWorker] : [] });
+      res.headers.set('Cache-Control', 'private, max-age=30, stale-while-revalidate=60');
+      return res;
+    }
+
+    if (!q) {
+      return NextResponse.json({ workers: [] });
+    }
+
+    const selectFields: any = {
+      id: true,
+      workerId: true,
+      name: true,
+      designation: true,
+      phone: true,
+      gender: true,
+      bloodGroup: true,
+      religion: true,
+      nationalId: true,
+      grade: true,
+      grossSalary: true,
+      basicSalary: true,
+      houseRent: true,
+      conveyanceAllowance: true,
+      medicalAllowance: true,
+      joinDate: true,
+      companyId: true,
+      company: { select: { id: true, name: true } },
+      department: { select: { id: true, name: true } },
+      section: { select: { id: true, name: true } },
+      subSection: { select: { id: true, name: true } },
+    };
+
+    if (withPhoto) {
+      selectFields.photoUrl = true;
+      selectFields.signatureUrl = true;
+    }
+
+    const workers = await withDbTimeout(
+      prisma.worker.findMany({
+        where: {
+          isDeleted: false,
+          OR: [
+            { workerId: { contains: q, mode: 'insensitive' } },
+            { name: { contains: q, mode: 'insensitive' } },
+            { phone: { contains: q, mode: 'insensitive' } },
+          ],
+        },
+        select: selectFields,
+        take: 10,
+      }),
+      5000,
+      []
+    );
+
+    const res = NextResponse.json({ workers });
+    res.headers.set('Cache-Control', 'private, max-age=15, stale-while-revalidate=30');
     return res;
+  } catch (err: any) {
+    console.error('Failed to search workers in API route:', err);
+    return NextResponse.json({ workers: [], error: 'Failed to search workers' }, { status: 200 });
   }
-
-  if (!q) {
-    return NextResponse.json({ workers: [] });
-  }
-
-  const selectFields: any = {
-    id: true,
-    workerId: true,
-    name: true,
-    designation: true,
-    phone: true,
-    gender: true,
-    bloodGroup: true,
-    religion: true,
-    nationalId: true,
-    grade: true,
-    grossSalary: true,
-    basicSalary: true,
-    houseRent: true,
-    conveyanceAllowance: true,
-    medicalAllowance: true,
-    joinDate: true,
-    companyId: true,
-    company: { select: { id: true, name: true } },
-    department: { select: { id: true, name: true } },
-    section: { select: { id: true, name: true } },
-    subSection: { select: { id: true, name: true } }
-  };
-
-  if (withPhoto) {
-    selectFields.photoUrl = true;
-    selectFields.signatureUrl = true;
-  }
-
-  const workers = await prisma.worker.findMany({
-    where: {
-      isDeleted: false,
-      OR: [
-        { workerId: { contains: q, mode: 'insensitive' } },
-        { name: { contains: q, mode: 'insensitive' } },
-        { phone: { contains: q, mode: 'insensitive' } }
-      ]
-    },
-    select: selectFields,
-    take: 10
-  });
-
-  const res = NextResponse.json({ workers });
-  res.headers.set('Cache-Control', 'private, max-age=15, stale-while-revalidate=30');
-  return res;
 }
 
 export const dynamic = 'force-dynamic';
