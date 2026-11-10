@@ -5,6 +5,8 @@ import { Plus, Upload, Layers, Pencil, Building2, Sparkles } from 'lucide-react'
 import DeleteCompanyButton from '@/components/DeleteCompanyButton';
 import { deleteCompany } from './actions';
 
+export const dynamic = 'force-dynamic';
+
 export default async function CompaniesPage() {
   const session = await getSession();
   const role = session?.user?.role;

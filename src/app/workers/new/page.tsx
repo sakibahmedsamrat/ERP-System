@@ -4,6 +4,8 @@ import Link from 'next/link';
 import DynamicCompanySelectors from '@/components/DynamicCompanySelectors';
 import SalaryFields from './SalaryFields';
 
+export const dynamic = 'force-dynamic';
+
 
 export default async function NewWorkerPage() {
   const companies = await prisma.company.findMany({ 

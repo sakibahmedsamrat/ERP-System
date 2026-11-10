@@ -7,7 +7,7 @@ import Header from './Header';
 
 export default function MainLayout({ children, user }: { children: React.ReactNode, user?: any }) {
   const pathname = usePathname();
-  const isLoginPage = pathname.startsWith('/login');
+  const isLoginPage = pathname.startsWith('/login') || pathname.startsWith('/kpi/login');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Automatically close mobile sidebar on route navigation

@@ -7,6 +7,8 @@ export const metadata = {
   title: 'Mark Attendance | HR ERP',
 };
 
+export const dynamic = 'force-dynamic';
+
 export default async function MarkAttendancePage({ searchParams }: { searchParams: { companyId?: string } }) {
   const companies = await prisma.company.findMany({
     select: { id: true, name: true },

@@ -7,6 +7,8 @@ export const metadata = {
   title: 'Assign New Task | HR ERP',
 };
 
+export const dynamic = 'force-dynamic';
+
 export default async function NewTaskPage() {
   const users = await prisma.user.findMany({ select: { id: true, name: true, userId: true }, orderBy: { name: 'asc' } });
   

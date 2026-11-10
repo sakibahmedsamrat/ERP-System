@@ -2,7 +2,8 @@
 
 import { useFormState, useFormStatus } from 'react-dom';
 import Image from 'next/image';
-import { Lock, User, ArrowRight, Loader2, Sparkles } from 'lucide-react';
+import Link from 'next/link';
+import { Lock, User, ArrowRight, Loader2, Sparkles, Target } from 'lucide-react';
 import { loginAction } from './actions';
 
 function SubmitButton() {
@@ -113,6 +114,23 @@ export default function LoginPage() {
             <div className="pt-2">
               <SubmitButton />
             </div>
+
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-300/70" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white/80 px-2 text-slate-500 font-semibold backdrop-blur-sm rounded">or KPI Module</span>
+              </div>
+            </div>
+
+            <Link
+              href="/kpi/login"
+              className="w-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:via-orange-600 hover:to-amber-700 text-white p-3 rounded-xl font-bold shadow-md shadow-amber-500/20 hover:shadow-amber-500/30 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center justify-center gap-2 text-sm tracking-wide"
+            >
+              <Target size={18} />
+              <span>Employee / Supervisor KPI Portal Login</span>
+            </Link>
           </form>
         </div>
       </div>

@@ -20,8 +20,12 @@ import {
   Banknote,
   FileSpreadsheet,
   ChevronDown,
-  X
+  X,
+  Target,
+  Award,
+  LogOut
 } from 'lucide-react';
+import { logoutAction } from '@/app/logout/actions';
 
 interface NavItemProps {
   href: string;
@@ -66,7 +70,8 @@ export default function Sidebar({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const currentTab = searchParams ? searchParams.get('tab') : null;
-  const appName = process.env.NEXT_PUBLIC_APP_NAME || 'HR Module';
+  const isKpiUser = user?.role === 'KPI_WORKER' || user?.role === 'KPI_SUPERVISOR';
+  const appName = isKpiUser ? 'KPI Portal' : (process.env.NEXT_PUBLIC_APP_NAME || 'HR Module');
   
   const hasModule = (modName: string) => {
     if (!user) return false;
@@ -179,6 +184,9 @@ export default function Sidebar({
         normalizedPath.startsWith('/payroll/salary-statement/')
       );
     }
+    if (label.includes('KPI') || href === '/kpi') {
+      return normalizedPath.startsWith('/kpi');
+    }
     if (label === 'Employees' || href === '/workers' || href === employeesHref) {
       return (
         normalizedPath.startsWith('/workers') || 
@@ -253,14 +261,47 @@ export default function Sidebar({
           </button>
         </div>
         
-        <nav className="flex-1 p-3.5 sm:p-5 space-y-1.5 overflow-y-auto relative z-10 custom-scrollbar safe-pb">
-          {renderNavItem('/', LayoutDashboard, 'Dashboard', 'text-slate-300', true)}
-          
-          {(hasModule('WORKERS') || hasModule('CONFIRMATIONS') || hasModule('IDCARD')) && (
-            renderNavItem(employeesHref, Users, 'Employees')
-          )}
-          {hasModule('COMPANIES') && renderNavItem('/companies', Building2, 'Companies')}
-          {hasModule('ATTENDANCE') && renderNavItem('/attendance', CalendarCheck, 'Attendance')}
+        {isKpiUser ? (
+          <nav className="flex-1 p-3.5 sm:p-5 flex flex-col justify-between overflow-y-auto relative z-10 custom-scrollbar safe-pb">
+            <div className="space-y-2">
+              <div className="text-[11px] uppercase tracking-wider text-amber-400 font-bold px-4 mb-2 flex items-center gap-2">
+                <Award size={14} />
+                <span>Performance Portal</span>
+              </div>
+              {renderNavItem('/kpi', Target, 'KPI Dashboard', 'text-amber-300')}
+            </div>
+
+            <div className="pt-4 border-t border-white/10 space-y-3">
+              <div className="px-4 py-3 bg-white/5 rounded-2xl border border-white/10 text-xs backdrop-blur-sm">
+                <div className="text-slate-400 text-[11px] font-medium">Logged in as</div>
+                <div className="text-white font-bold text-sm truncate">{user?.name || 'Employee'}</div>
+                <div className="text-[10px] text-amber-400 font-bold tracking-wide uppercase mt-0.5">
+                  {user?.role === 'KPI_SUPERVISOR' ? 'Supervisor' : 'Employee / Worker'}
+                </div>
+              </div>
+              <form action={logoutAction}>
+                <button
+                  type="submit"
+                  className="w-full flex items-center gap-3 px-4 py-2.5 min-h-[44px] rounded-xl text-rose-300 hover:text-white hover:bg-rose-500/20 transition-all font-medium text-sm group"
+                >
+                  <LogOut size={18} className="group-hover:translate-x-0.5 transition-transform" />
+                  <span>Sign Out</span>
+                </button>
+              </form>
+            </div>
+          </nav>
+        ) : (
+          <nav className="flex-1 p-3.5 sm:p-5 space-y-1.5 overflow-y-auto relative z-10 custom-scrollbar safe-pb">
+            {renderNavItem('/', LayoutDashboard, 'Dashboard', 'text-slate-300', true)}
+            
+            {(hasModule('WORKERS') || hasModule('CONFIRMATIONS') || hasModule('IDCARD')) && (
+              renderNavItem(employeesHref, Users, 'Employees')
+            )}
+            {hasModule('COMPANIES') && renderNavItem('/companies', Building2, 'Companies')}
+            {hasModule('ATTENDANCE') && renderNavItem('/attendance', CalendarCheck, 'Attendance')}
+            {(user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN' || hasModule('KPI')) && (
+              renderNavItem('/kpi', Target, 'KPI Management', 'text-amber-300')
+            )}
           {(hasModule('PAYROLL') || hasModule('SETTLEMENTS')) && (
             <div className="space-y-1">
               <div
@@ -422,6 +463,7 @@ export default function Sidebar({
             {renderNavItem('/settings', Settings, 'Settings', 'text-slate-300')}
           </div>
         </nav>
+        )}
       </aside>
     </>
   );

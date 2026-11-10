@@ -93,10 +93,19 @@ model Worker {
   hiredApplicants          Applicant[] @relation("ApplicantWorker")
   salaryStatements         SalaryStatement[]
 
+  // Supervisor & KPI relations
+  supervisorId             String?
+  supervisor               Worker?                   @relation("SupervisorSubordinates", fields: [supervisorId], references: [id], onDelete: SetNull)
+  subordinates             Worker[]                  @relation("SupervisorSubordinates")
+  kpiAccount               KpiAccount?
+  kpiTargets               KpiTarget[]               @relation("WorkerKpiTargets")
+  kpiSetByMe               KpiTarget[]               @relation("SupervisorKpiTargets")
+
   @@index([companyId])
   @@index([departmentId])
   @@index([sectionId])
   @@index([subSectionId])
+  @@index([supervisorId])
   @@index([isActive])
   @@index([isDeleted])
   @@index([isDeleted, isActive])
@@ -538,4 +547,57 @@ model SalaryStatement {
   @@index([name])
   @@index([createdAt])
   @@index([workerDbId])
+}
+
+model KpiAccount {
+  id           String    @id @default(cuid())
+  workerId     String    @unique
+  worker       Worker    @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  loginId      String    @unique // worker.workerId e.g. "4917"
+  password     String    // bcrypt hashed password
+  isSupervisor Boolean   @default(false)
+  lastLogin    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([loginId])
+  @@index([isSupervisor])
+}
+
+model KpiTarget {
+  id                  String    @id @default(cuid())
+  workerId            String
+  worker              Worker    @relation("WorkerKpiTargets", fields: [workerId], references: [id], onDelete: Cascade)
+  supervisorId        String?
+  supervisor          Worker?   @relation("SupervisorKpiTargets", fields: [supervisorId], references: [id], onDelete: SetNull)
+  period              String    // e.g. "November 2026", "2026-11", "Q4 2026"
+  title               String
+  description         String?   @db.Text
+  category            String    @default("OPERATIONAL") // OPERATIONAL, QUALITY, PRODUCTIVITY, ATTENDANCE, SAFETY, BEHAVIORAL, PROJECT
+  targetValue         Float?
+  unit                String?   // e.g. "%", "Units", "Hours", "Days", "Score"
+  weightage           Float     @default(20) // Percentage weight e.g. 20%
+  deadline            DateTime?
+  status              String    @default("PENDING") // PENDING, IN_PROGRESS, SUBMITTED, REVIEWED, APPROVED, REVISION_REQUESTED
+
+  // Employee Self Assessment
+  actualValue         Float?
+  progressPercent     Float     @default(0) // 0-100%
+  employeeNotes       String?   @db.Text
+  submittedAt         DateTime?
+
+  // Supervisor Evaluation
+  supervisorScore     Float?    // 0-100 score
+  supervisorRating    String?   // EXCELLENT, GOOD, AVERAGE, NEEDS_IMPROVEMENT
+  supervisorFeedback  String?   @db.Text
+  reviewedAt          DateTime?
+
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([workerId])
+  @@index([supervisorId])
+  @@index([period])
+  @@index([status])
+  @@index([workerId, period])
 }

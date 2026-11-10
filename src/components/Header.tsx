@@ -32,6 +32,7 @@ export default function Header({
     if (pathname.startsWith('/training')) return 'Training Schedules';
     if (pathname.startsWith('/users')) return 'User Management';
     if (pathname.startsWith('/activity-logs')) return 'Activity Logs';
+    if (pathname.startsWith('/kpi')) return 'KPI Performance Management';
     if (pathname.startsWith('/settings')) return 'Account Settings';
     const path = pathname.split('/')[1];
     return path ? path.charAt(0).toUpperCase() + path.slice(1) : 'Dashboard';

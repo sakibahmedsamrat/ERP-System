@@ -4,6 +4,7 @@ import { decrypt, encrypt } from './lib/auth';
 
 export async function middleware(request: NextRequest) {
   const isLoginPage = request.nextUrl.pathname.startsWith('/login');
+  const isKpiLoginPage = request.nextUrl.pathname.startsWith('/kpi/login');
   const isVerifyPage = request.nextUrl.pathname.startsWith('/verify');
   const sessionToken = request.cookies.get('session')?.value;
 
@@ -13,7 +14,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if (!sessionToken) {
-    if (!isLoginPage) {
+    if (!isLoginPage && !isKpiLoginPage) {
       const loginUrl = request.nextUrl.clone();
       loginUrl.pathname = '/login';
       loginUrl.search = '';
@@ -31,7 +32,7 @@ export async function middleware(request: NextRequest) {
 
   // Ensure session exists and has a valid user object to prevent infinite redirect loops
   if (!session || !session.user) {
-    if (!isLoginPage) {
+    if (!isLoginPage && !isKpiLoginPage) {
       const loginUrl = request.nextUrl.clone();
       loginUrl.pathname = '/login';
       loginUrl.search = '';
@@ -47,11 +48,28 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (isLoginPage) {
-    const homeUrl = request.nextUrl.clone();
-    homeUrl.pathname = '/';
-    homeUrl.search = '';
-    return NextResponse.redirect(homeUrl);
+  const role = session.user.role;
+  const isKpiRole = role === 'KPI_WORKER' || role === 'KPI_SUPERVISOR';
+
+  // If already authenticated and navigating to login pages
+  if (isLoginPage || isKpiLoginPage) {
+    const targetUrl = request.nextUrl.clone();
+    targetUrl.pathname = isKpiRole ? '/kpi' : '/';
+    targetUrl.search = '';
+    return NextResponse.redirect(targetUrl);
+  }
+
+  // Restrict KPI workers and supervisors strictly to /kpi, /logout and /api routes
+  if (isKpiRole) {
+    const isKpiRoute = request.nextUrl.pathname.startsWith('/kpi');
+    const isApiRoute = request.nextUrl.pathname.startsWith('/api');
+    const isLogoutRoute = request.nextUrl.pathname.startsWith('/logout');
+    if (!isKpiRoute && !isApiRoute && !isLogoutRoute) {
+      const kpiUrl = request.nextUrl.clone();
+      kpiUrl.pathname = '/kpi';
+      kpiUrl.search = '';
+      return NextResponse.redirect(kpiUrl);
+    }
   }
 
   // Refresh session only if less than 15 minutes remaining (avoid re-encrypting on every single request)

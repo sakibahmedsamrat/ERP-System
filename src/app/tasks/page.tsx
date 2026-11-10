@@ -5,6 +5,8 @@ import { Plus, Clock, Trash2, CheckCircle, CheckSquare, Sparkles } from 'lucide-
 import { getSession } from '@/lib/auth';
 import { deleteTask, markTaskDone } from './actions';
 
+export const dynamic = 'force-dynamic';
+
 export default async function TasksPage() {
   const session = await getSession();
   const user = session?.user;
