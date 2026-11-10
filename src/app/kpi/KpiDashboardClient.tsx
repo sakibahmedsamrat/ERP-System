@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useTransition } from 'react';
+import React, { useState, useMemo, useTransition, useEffect } from 'react';
 import {
   Target,
   Award,
@@ -133,6 +133,119 @@ export default function KpiDashboardClient({
   const [bulkSupervisorId, setBulkSupervisorId] = useState<string>('');
 
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Search state for Set New KPI Target employee selection
+  const [targetWorkerSearchQuery, setTargetWorkerSearchQuery] = useState<string>('');
+  const [isTargetWorkerDropdownOpen, setIsTargetWorkerDropdownOpen] = useState<boolean>(false);
+  const [remoteWorkerSearchResults, setRemoteWorkerSearchResults] = useState<any[]>([]);
+  const [isSearchingRemoteWorkers, setIsSearchingRemoteWorkers] = useState<boolean>(false);
+
+  // Search state for Bulk Supervisor Assignment modal
+  const [bulkSupervisorSearchQuery, setBulkSupervisorSearchQuery] = useState<string>('');
+  const [isBulkSupervisorDropdownOpen, setIsBulkSupervisorDropdownOpen] = useState<boolean>(false);
+
+  // Remote worker search for admins
+  useEffect(() => {
+    if (activeRole !== 'ADMIN' || !targetWorkerSearchQuery.trim() || targetWorkerSearchQuery.trim().length < 2) {
+      setRemoteWorkerSearchResults([]);
+      setIsSearchingRemoteWorkers(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearchingRemoteWorkers(true);
+      try {
+        const res = await fetch(`/api/workers/search?q=${encodeURIComponent(targetWorkerSearchQuery.trim())}`);
+        const data = await res.json();
+        setRemoteWorkerSearchResults(data.workers || []);
+      } catch (err) {
+        console.error('Failed to search workers remotely:', err);
+      } finally {
+        setIsSearchingRemoteWorkers(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [activeRole, targetWorkerSearchQuery]);
+
+  const availableTargetWorkers = useMemo(() => {
+    return activeRole === 'ADMIN' ? initialWorkers : initialSubordinates;
+  }, [activeRole, initialWorkers, initialSubordinates]);
+
+  const filteredTargetWorkers = useMemo(() => {
+    const q = targetWorkerSearchQuery.trim().toLowerCase();
+    if (!q) {
+      return availableTargetWorkers.slice(0, 20);
+    }
+    return availableTargetWorkers
+      .filter((w) => {
+        const wid = String(w.workerId || '').toLowerCase();
+        const wn = String(w.name || '').toLowerCase();
+        const wd = String(w.designation || '').toLowerCase();
+        const wdept = String(w.department?.name || w.department || '').toLowerCase();
+        return wid.includes(q) || wn.includes(q) || wd.includes(q) || wdept.includes(q);
+      })
+      .sort((a, b) => {
+        const aId = String(a.workerId || '').toLowerCase();
+        const bId = String(b.workerId || '').toLowerCase();
+        if (aId === q) return -1;
+        if (bId === q) return 1;
+        if (aId.startsWith(q) && !bId.startsWith(q)) return -1;
+        if (!aId.startsWith(q) && bId.startsWith(q)) return 1;
+        return aId.localeCompare(bId);
+      });
+  }, [availableTargetWorkers, targetWorkerSearchQuery]);
+
+  const combinedTargetWorkers = useMemo(() => {
+    if (remoteWorkerSearchResults.length === 0) return filteredTargetWorkers;
+    const seen = new Set(filteredTargetWorkers.map((w) => w.id));
+    const merged = [...filteredTargetWorkers];
+    for (const rw of remoteWorkerSearchResults) {
+      if (!seen.has(rw.id)) {
+        seen.add(rw.id);
+        merged.push(rw);
+      }
+    }
+    return merged;
+  }, [filteredTargetWorkers, remoteWorkerSearchResults]);
+
+  const selectedTargetWorker = useMemo(() => {
+    if (!newTargetWorkerId) return null;
+    const found = availableTargetWorkers.find((w) => w.id === newTargetWorkerId);
+    if (found) return found;
+    const fromRemote = remoteWorkerSearchResults.find((w) => w.id === newTargetWorkerId);
+    if (fromRemote) return fromRemote;
+    return initialWorkers.find((w) => w.id === newTargetWorkerId) || null;
+  }, [newTargetWorkerId, availableTargetWorkers, remoteWorkerSearchResults, initialWorkers]);
+
+  const filteredBulkSupervisors = useMemo(() => {
+    const q = bulkSupervisorSearchQuery.trim().toLowerCase();
+    if (!q) {
+      return initialWorkers.slice(0, 20);
+    }
+    return initialWorkers
+      .filter((w) => {
+        const wid = String(w.workerId || '').toLowerCase();
+        const wn = String(w.name || '').toLowerCase();
+        const wd = String(w.designation || '').toLowerCase();
+        const wdept = String(w.department?.name || w.department || '').toLowerCase();
+        return wid.includes(q) || wn.includes(q) || wd.includes(q) || wdept.includes(q);
+      })
+      .sort((a, b) => {
+        const aId = String(a.workerId || '').toLowerCase();
+        const bId = String(b.workerId || '').toLowerCase();
+        if (aId === q) return -1;
+        if (bId === q) return 1;
+        if (aId.startsWith(q) && !bId.startsWith(q)) return -1;
+        if (!aId.startsWith(q) && bId.startsWith(q)) return 1;
+        return aId.localeCompare(bId);
+      });
+  }, [initialWorkers, bulkSupervisorSearchQuery]);
+
+  const selectedBulkSupervisor = useMemo(() => {
+    if (!bulkSupervisorId) return null;
+    return initialWorkers.find((w) => w.id === bulkSupervisorId) || null;
+  }, [bulkSupervisorId, initialWorkers]);
 
   // Distinct Periods
   const distinctPeriods = useMemo(() => {
@@ -328,8 +441,12 @@ export default function KpiDashboardClient({
 
   const handleCreateTarget = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTargetTitle || !newTargetWorkerId) {
-      setMessage({ type: 'error', text: 'Target Title and Employee are required.' });
+    if (!newTargetWorkerId) {
+      setMessage({ type: 'error', text: 'Please search and select an employee by ID number or name.' });
+      return;
+    }
+    if (!newTargetTitle) {
+      setMessage({ type: 'error', text: 'Target Title is required.' });
       return;
     }
 
@@ -349,6 +466,9 @@ export default function KpiDashboardClient({
       if (res.success) {
         setMessage({ type: 'success', text: 'KPI target created and assigned successfully!' });
         setIsCreateTargetModalOpen(false);
+        setNewTargetWorkerId('');
+        setTargetWorkerSearchQuery('');
+        setIsTargetWorkerDropdownOpen(false);
         setNewTargetTitle('');
         setNewTargetDescription('');
         setNewTargetValue('');
@@ -419,6 +539,9 @@ export default function KpiDashboardClient({
           text: `Supervisor successfully assigned to ${res.count} employees!`,
         });
         setIsBulkAssignModalOpen(false);
+        setBulkSupervisorId('');
+        setBulkSupervisorSearchQuery('');
+        setIsBulkSupervisorDropdownOpen(false);
         setSelectedWorkerIdsForBulk([]);
       } else {
         setMessage({ type: 'error', text: res.error || 'Failed to bulk assign supervisor.' });
@@ -786,11 +909,9 @@ export default function KpiDashboardClient({
             <button
               type="button"
               onClick={() => {
-                setNewTargetWorkerId(
-                  activeRole === 'KPI_SUPERVISOR' && initialSubordinates.length > 0
-                    ? initialSubordinates[0].id
-                    : ''
-                );
+                setNewTargetWorkerId('');
+                setTargetWorkerSearchQuery('');
+                setIsTargetWorkerDropdownOpen(false);
                 setIsCreateTargetModalOpen(true);
               }}
               className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-4 py-2 rounded-xl font-bold text-xs shadow-md shadow-amber-500/20 flex items-center gap-2 transition"
@@ -1108,11 +1229,10 @@ export default function KpiDashboardClient({
             <button
               type="button"
               onClick={() => {
-                setNewTargetWorkerId(
-                  selectedSubordinateId !== 'ALL'
-                    ? selectedSubordinateId
-                    : initialSubordinates[0]?.id || ''
-                );
+                const subId = selectedSubordinateId !== 'ALL' ? selectedSubordinateId : '';
+                setNewTargetWorkerId(subId);
+                setTargetWorkerSearchQuery('');
+                setIsTargetWorkerDropdownOpen(false);
                 setIsCreateTargetModalOpen(true);
               }}
               className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-4 py-2 rounded-xl font-bold text-xs shadow-md shadow-amber-500/20 flex items-center gap-2 transition"
@@ -1545,7 +1665,12 @@ export default function KpiDashboardClient({
 
             <button
               type="button"
-              onClick={() => setIsCreateTargetModalOpen(true)}
+              onClick={() => {
+                setNewTargetWorkerId('');
+                setTargetWorkerSearchQuery('');
+                setIsTargetWorkerDropdownOpen(false);
+                setIsCreateTargetModalOpen(true);
+              }}
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-bold text-xs shadow-md shadow-blue-600/20 flex items-center gap-2 transition"
             >
               <Plus size={16} />
@@ -2121,7 +2246,11 @@ export default function KpiDashboardClient({
               </div>
               <button
                 type="button"
-                onClick={() => setIsCreateTargetModalOpen(false)}
+                onClick={() => {
+                  setIsCreateTargetModalOpen(false);
+                  setTargetWorkerSearchQuery('');
+                  setIsTargetWorkerDropdownOpen(false);
+                }}
                 className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
               >
                 <X size={20} />
@@ -2130,22 +2259,142 @@ export default function KpiDashboardClient({
 
             <form onSubmit={handleCreateTarget} className="space-y-3.5">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                  Assign To Subordinate / Worker
-                </label>
-                <select
-                  value={newTargetWorkerId}
-                  onChange={(e) => setNewTargetWorkerId(e.target.value)}
-                  required
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-slate-900 text-xs font-semibold outline-none focus:ring-4 focus:ring-amber-500/15"
-                >
-                  <option value="">-- Select Worker --</option>
-                  {(activeRole === 'ADMIN' ? initialWorkers : initialSubordinates).map((w) => (
-                    <option key={w.id} value={w.id}>
-                      {w.name} ({w.workerId}) - {w.designation || 'Staff'}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                    Assign To Subordinate / Worker
+                  </label>
+                  <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wide bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200 flex items-center gap-1">
+                    <Search size={11} />
+                    <span>Search by ID Number</span>
+                  </span>
+                </div>
+
+                {selectedTargetWorker ? (
+                  /* Selected Worker Card */
+                  <div className="p-3 bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-transparent border-2 border-amber-400/80 rounded-2xl flex items-center justify-between gap-3 shadow-xs">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white font-extrabold flex items-center justify-center text-xs shadow-sm shrink-0">
+                        {selectedTargetWorker.name.substring(0, 2).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-extrabold text-slate-900 text-sm truncate">
+                            {selectedTargetWorker.name}
+                          </span>
+                          <span className="bg-amber-500 text-white font-mono font-extrabold text-xs px-2.5 py-0.5 rounded-lg shadow-xs">
+                            ID: {selectedTargetWorker.workerId}
+                          </span>
+                        </div>
+                        <div className="text-xs text-slate-600 truncate mt-0.5">
+                          {selectedTargetWorker.designation || 'Staff'} • {selectedTargetWorker.department?.name || selectedTargetWorker.department || 'Department'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNewTargetWorkerId('');
+                        setTargetWorkerSearchQuery('');
+                        setIsTargetWorkerDropdownOpen(true);
+                      }}
+                      className="px-3 py-1.5 rounded-xl border border-amber-300 bg-white text-amber-800 hover:bg-amber-50 font-bold text-xs flex items-center gap-1.5 transition shrink-0 shadow-xs"
+                      title="Search another worker"
+                    >
+                      <Search size={13} />
+                      <span>Change</span>
+                    </button>
+                  </div>
+                ) : (
+                  /* Search Input & Dropdown */
+                  <div className="relative">
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                        <Search size={16} />
+                      </div>
+                      <input
+                        type="text"
+                        value={targetWorkerSearchQuery}
+                        onChange={(e) => {
+                          setTargetWorkerSearchQuery(e.target.value);
+                          setIsTargetWorkerDropdownOpen(true);
+                        }}
+                        onFocus={() => setIsTargetWorkerDropdownOpen(true)}
+                        placeholder="Search by Employee ID (e.g. 4917) or Name..."
+                        className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-300 text-slate-900 text-xs font-semibold outline-none focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 transition placeholder:text-slate-400 bg-white shadow-xs"
+                        autoFocus
+                      />
+                      {isSearchingRemoteWorkers ? (
+                        <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-amber-500">
+                          <Loader2 size={16} className="animate-spin" />
+                        </div>
+                      ) : targetWorkerSearchQuery ? (
+                        <button
+                          type="button"
+                          onClick={() => setTargetWorkerSearchQuery('')}
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
+                        >
+                          <X size={15} />
+                        </button>
+                      ) : (
+                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
+                          <ChevronDown size={16} />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Dropdown Results */}
+                    {isTargetWorkerDropdownOpen && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={() => setIsTargetWorkerDropdownOpen(false)}
+                        />
+                        <div className="absolute z-50 left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-2xl shadow-2xl max-h-60 overflow-y-auto divide-y divide-slate-100 animate-in fade-in zoom-in-95">
+                          <div className="p-2 bg-slate-50/80 px-3 flex items-center justify-between text-[11px] font-bold text-slate-500 sticky top-0 backdrop-blur-sm border-b border-slate-100 z-10">
+                            <span>
+                              {targetWorkerSearchQuery ? `Search Results (${combinedTargetWorkers.length})` : 'Select from Subordinates / Staff:'}
+                            </span>
+                            <span className="text-amber-600 font-medium">Click to Select</span>
+                          </div>
+
+                          {combinedTargetWorkers.length > 0 ? (
+                            combinedTargetWorkers.map((w) => (
+                              <div
+                                key={w.id}
+                                onClick={() => {
+                                  setNewTargetWorkerId(w.id);
+                                  setTargetWorkerSearchQuery('');
+                                  setIsTargetWorkerDropdownOpen(false);
+                                }}
+                                className="px-3.5 py-2.5 hover:bg-amber-50/80 cursor-pointer transition flex items-center justify-between gap-3 text-left group"
+                              >
+                                <div className="min-w-0">
+                                  <div className="font-extrabold text-slate-900 text-xs sm:text-sm group-hover:text-amber-900 transition truncate">
+                                    {w.name}
+                                  </div>
+                                  <div className="text-[11px] text-slate-500 truncate mt-0.5">
+                                    {w.designation || 'Staff'} {w.department?.name ? `• ${w.department.name}` : ''}
+                                  </div>
+                                </div>
+                                <div className="shrink-0">
+                                  <span className="inline-flex items-center gap-1 font-mono font-extrabold text-xs px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800 border border-slate-200 group-hover:bg-amber-500 group-hover:text-white group-hover:border-amber-500 transition shadow-xs">
+                                    ID: {w.workerId}
+                                  </span>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="p-6 text-center text-xs text-slate-500 space-y-1">
+                              <p className="font-bold text-slate-700">No employee found matching ID &quot;{targetWorkerSearchQuery}&quot;</p>
+                              <p className="text-[11px] text-slate-400">Please double check the ID number or search by name.</p>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div>
@@ -2269,7 +2518,11 @@ export default function KpiDashboardClient({
               <div className="pt-2 flex items-center justify-end gap-3">
                 <button
                   type="button"
-                  onClick={() => setIsCreateTargetModalOpen(false)}
+                  onClick={() => {
+                    setIsCreateTargetModalOpen(false);
+                    setTargetWorkerSearchQuery('');
+                    setIsTargetWorkerDropdownOpen(false);
+                  }}
                   className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition"
                 >
                   Cancel
@@ -2305,7 +2558,11 @@ export default function KpiDashboardClient({
               </div>
               <button
                 type="button"
-                onClick={() => setIsBulkAssignModalOpen(false)}
+                onClick={() => {
+                  setIsBulkAssignModalOpen(false);
+                  setBulkSupervisorSearchQuery('');
+                  setIsBulkSupervisorDropdownOpen(false);
+                }}
                 className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
               >
                 <X size={20} />
@@ -2319,27 +2576,155 @@ export default function KpiDashboardClient({
               </p>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                  Designated Supervisor
-                </label>
-                <select
-                  value={bulkSupervisorId}
-                  onChange={(e) => setBulkSupervisorId(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-slate-900 text-xs font-semibold outline-none focus:ring-4 focus:ring-indigo-500/15"
-                >
-                  <option value="">-- Clear / Remove Supervisor --</option>
-                  {initialWorkers.map((w) => (
-                    <option key={w.id} value={w.id}>
-                      {w.name} ({w.workerId}) - {w.designation || 'Staff'}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                    Designated Supervisor
+                  </label>
+                  <span className="text-[10px] font-bold text-indigo-700 uppercase tracking-wide bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200 flex items-center gap-1">
+                    <Search size={11} />
+                    <span>Search by ID Number</span>
+                  </span>
+                </div>
+
+                {selectedBulkSupervisor ? (
+                  <div className="p-3 bg-gradient-to-r from-indigo-500/10 via-purple-500/5 to-transparent border-2 border-indigo-400/80 rounded-2xl flex items-center justify-between gap-3 shadow-xs">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-extrabold flex items-center justify-center text-xs shadow-sm shrink-0">
+                        {selectedBulkSupervisor.name.substring(0, 2).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-extrabold text-slate-900 text-sm truncate">
+                            {selectedBulkSupervisor.name}
+                          </span>
+                          <span className="bg-indigo-600 text-white font-mono font-extrabold text-xs px-2.5 py-0.5 rounded-lg shadow-xs">
+                            ID: {selectedBulkSupervisor.workerId}
+                          </span>
+                        </div>
+                        <div className="text-xs text-slate-600 truncate mt-0.5">
+                          {selectedBulkSupervisor.designation || 'Staff'} • {selectedBulkSupervisor.department?.name || 'Department'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBulkSupervisorId('');
+                        setBulkSupervisorSearchQuery('');
+                        setIsBulkSupervisorDropdownOpen(true);
+                      }}
+                      className="px-3 py-1.5 rounded-xl border border-indigo-300 bg-white text-indigo-800 hover:bg-indigo-50 font-bold text-xs flex items-center gap-1.5 transition shrink-0 shadow-xs"
+                      title="Search another supervisor"
+                    >
+                      <Search size={13} />
+                      <span>Change</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                        <Search size={16} />
+                      </div>
+                      <input
+                        type="text"
+                        value={bulkSupervisorSearchQuery}
+                        onChange={(e) => {
+                          setBulkSupervisorSearchQuery(e.target.value);
+                          setIsBulkSupervisorDropdownOpen(true);
+                        }}
+                        onFocus={() => setIsBulkSupervisorDropdownOpen(true)}
+                        placeholder="Search supervisor by ID Number (e.g. 4917) or Name..."
+                        className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-300 text-slate-900 text-xs font-semibold outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition placeholder:text-slate-400 bg-white shadow-xs"
+                      />
+                      {bulkSupervisorSearchQuery ? (
+                        <button
+                          type="button"
+                          onClick={() => setBulkSupervisorSearchQuery('')}
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
+                        >
+                          <X size={15} />
+                        </button>
+                      ) : (
+                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
+                          <ChevronDown size={16} />
+                        </div>
+                      )}
+                    </div>
+
+                    {isBulkSupervisorDropdownOpen && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={() => setIsBulkSupervisorDropdownOpen(false)}
+                        />
+                        <div className="absolute z-50 left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-2xl shadow-2xl max-h-60 overflow-y-auto divide-y divide-slate-100 animate-in fade-in zoom-in-95">
+                          <div className="p-2 bg-slate-50/80 px-3 flex items-center justify-between text-[11px] font-bold text-slate-500 sticky top-0 backdrop-blur-sm border-b border-slate-100 z-10">
+                            <span>
+                              {bulkSupervisorSearchQuery ? `Search Results (${filteredBulkSupervisors.length})` : 'Select from Staff:'}
+                            </span>
+                            <span className="text-indigo-600 font-medium">Click to Select</span>
+                          </div>
+
+                          <div
+                            onClick={() => {
+                              setBulkSupervisorId('');
+                              setBulkSupervisorSearchQuery('');
+                              setIsBulkSupervisorDropdownOpen(false);
+                            }}
+                            className="px-3.5 py-2 hover:bg-rose-50 cursor-pointer transition text-xs font-bold text-rose-600"
+                          >
+                            -- Clear / Remove Supervisor --
+                          </div>
+
+                          {filteredBulkSupervisors.length > 0 ? (
+                            filteredBulkSupervisors.map((w) => (
+                              <div
+                                key={w.id}
+                                onClick={() => {
+                                  setBulkSupervisorId(w.id);
+                                  setBulkSupervisorSearchQuery('');
+                                  setIsBulkSupervisorDropdownOpen(false);
+                                }}
+                                className="px-3.5 py-2.5 hover:bg-indigo-50/80 cursor-pointer transition flex items-center justify-between gap-3 text-left group"
+                              >
+                                <div className="min-w-0">
+                                  <div className="font-extrabold text-slate-900 text-xs sm:text-sm group-hover:text-indigo-900 transition truncate">
+                                    {w.name}
+                                  </div>
+                                  <div className="text-[11px] text-slate-500 truncate mt-0.5">
+                                    {w.designation || 'Staff'} {w.department?.name ? `• ${w.department.name}` : ''}
+                                  </div>
+                                </div>
+                                <div className="shrink-0">
+                                  <span className="inline-flex items-center gap-1 font-mono font-extrabold text-xs px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800 border border-slate-200 group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-600 transition shadow-xs">
+                                    ID: {w.workerId}
+                                  </span>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="p-6 text-center text-xs text-slate-500 space-y-1">
+                              <p className="font-bold text-slate-700">No employee found matching ID &quot;{bulkSupervisorSearchQuery}&quot;</p>
+                              <p className="text-[11px] text-slate-400">Please double check the ID number or search by name.</p>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="pt-2 flex items-center justify-end gap-3">
                 <button
                   type="button"
-                  onClick={() => setIsBulkAssignModalOpen(false)}
+                  onClick={() => {
+                    setIsBulkAssignModalOpen(false);
+                    setBulkSupervisorSearchQuery('');
+                    setIsBulkSupervisorDropdownOpen(false);
+                  }}
                   className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition"
                 >
                   Cancel
