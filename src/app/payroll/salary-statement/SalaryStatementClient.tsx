@@ -2934,7 +2934,7 @@ export default function SalaryStatementClient({
 
                       <div>
                         <div className="flex items-center justify-between mb-1">
-                          <label className="text-xs font-semibold text-gray-600">Staff / Worker ID</label>
+                          <label className="text-xs font-semibold text-gray-600">Staff / Employee ID</label>
                           <button
                             type="button"
                             onClick={() => handleResetField('workerId')}

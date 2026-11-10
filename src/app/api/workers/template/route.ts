@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   const headers = [
-    'Worker ID',
+    'Employee ID',
     'Name',
     'Designation',
     'Department',
@@ -107,7 +107,7 @@ export async function GET() {
   return new NextResponse(csvContent, {
     headers: {
       'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': 'attachment; filename="worker_import_template.csv"',
+      'Content-Disposition': 'attachment; filename="employee_import_template.csv"',
     },
   });
 }

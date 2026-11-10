@@ -78,7 +78,7 @@ export default async function CompaniesPage() {
               </div>
               <div className="flex items-center gap-4 self-end sm:self-center">
                 <div className="text-right">
-                  <span className="text-[10px] uppercase font-bold text-slate-500 block">Total Workers</span>
+                  <span className="text-[10px] uppercase font-bold text-slate-500 block">Total Employees</span>
                   <span className="bg-blue-50 text-blue-700 border border-blue-100 text-xs font-bold px-3 py-0.5 rounded-full inline-block mt-0.5 shadow-xs">
                     {company._count.workers}
                   </span>

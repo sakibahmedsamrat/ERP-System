@@ -102,7 +102,7 @@ export async function createSettlement(formData: FormData): Promise<{ error?: st
       where: { id: workerId },
       select: { id: true, isDeleted: true }
     });
-    if (!targetWorker) return { error: 'Worker not found' };
+    if (!targetWorker) return { error: 'Employee not found' };
     if (targetWorker.isDeleted) {
       return { error: 'Cannot create settlement for an inactive or deleted employee. Please restore the employee first.' };
     }

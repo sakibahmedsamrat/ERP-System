@@ -8,7 +8,7 @@ export async function logoutAction() {
   try {
     const session = await getSession();
     const role = session?.user?.role;
-    isKpi = role === 'KPI_WORKER' || role === 'KPI_SUPERVISOR';
+    isKpi = role === 'KPI_WORKER' || role === 'KPI_EMPLOYEE' || role === 'KPI_SUPERVISOR';
   } catch (err) {
     console.error('Logout session check error:', err);
   }

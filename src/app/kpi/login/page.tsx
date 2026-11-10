@@ -77,7 +77,7 @@ export default function KpiLoginPage() {
             Key Performance Indicators
           </h1>
           <p className="text-slate-400 text-xs max-w-xs">
-            Workers &amp; Supervisors Login with your ID Number as Default Username and Password
+            Employees &amp; Supervisors Login with your ID Number as Default Username and Password
           </p>
         </div>
 

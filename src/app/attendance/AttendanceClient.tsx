@@ -583,7 +583,7 @@ export default function AttendanceClient({
                     {statutoryLedger.length === 0 && (
                       <tr>
                         <td colSpan={6} className="p-10 text-center text-slate-500 font-medium">
-                          No workers available in the statutory ledger.
+                          No employees available in the statutory ledger.
                         </td>
                       </tr>
                     )}

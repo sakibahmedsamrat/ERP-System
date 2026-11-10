@@ -304,7 +304,7 @@ export default function ConfirmationsClient({
 
     const headers = [
       'SL',
-      'Worker ID',
+      'Employee ID',
       'Name',
       'Designation',
       'Department',

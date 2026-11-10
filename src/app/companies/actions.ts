@@ -34,7 +34,7 @@ export async function deleteCompany(id: string) {
   try {
     const workerCount = await prisma.worker.count({ where: { companyId: id, isDeleted: false } });
     if (workerCount > 0) {
-      return { error: `Cannot delete company because it has ${workerCount} workers assigned. Please reassign or delete them first.` };
+      return { error: `Cannot delete company because it has ${workerCount} employees assigned. Please reassign or delete them first.` };
     }
 
     await prisma.company.delete({

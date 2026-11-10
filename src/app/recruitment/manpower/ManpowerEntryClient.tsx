@@ -472,7 +472,7 @@ export default function ManpowerEntryClient({
                         {newDiff > 0 ? `+${newDiff} Vacancy` : newDiff === 0 ? '0 Fulfilled' : `${Math.abs(newDiff)} Surplus`}
                       </strong>
                     </span>
-                    <span>Active workers: <strong>{currentExisting}</strong></span>
+                    <span>Active employees: <strong>{currentExisting}</strong></span>
                   </div>
                 </div>
 
@@ -556,7 +556,7 @@ export default function ManpowerEntryClient({
                 <tr>
                   <th className="py-3 px-4 w-12 text-center">#</th>
                   <th className="py-3 px-4">Sub Section Name</th>
-                  <th className="py-3 px-4 text-center">Existing Workers</th>
+                  <th className="py-3 px-4 text-center">Existing Employees</th>
                   <th className="py-3 px-4 text-center w-48">Authorized Manpower</th>
                   <th className="py-3 px-4 text-center">Calculated Vacancy / Remaining</th>
                 </tr>

@@ -95,7 +95,7 @@ export async function addWorkerSkill(formData: FormData) {
   const certifyingBody = (formData.get('certifyingBody') as string) || 'Internal MEP';
 
   if (!workerId || !skillName) {
-    return { success: false, error: 'Worker and Skill Name are required.' };
+    return { success: false, error: 'Employee and Skill Name are required.' };
   }
 
   try {
@@ -129,7 +129,7 @@ export async function addWorkerSkill(formData: FormData) {
     return { success: true };
   } catch (err: any) {
     console.error('Failed to add worker skill:', err);
-    return { success: false, error: err.message || 'Failed to record worker skill.' };
+    return { success: false, error: err.message || 'Failed to record employee skill.' };
   }
 }
 
@@ -155,7 +155,7 @@ export async function addComplianceCertification(formData: FormData) {
   const issuingAuthority = (formData.get('issuingAuthority') as string) || 'Fire Service & Civil Defence';
 
   if (!workerId || !issueDateStr || !expiryDateStr) {
-    return { success: false, error: 'Worker, Issue Date, and Expiry Date are required.' };
+    return { success: false, error: 'Employee, Issue Date, and Expiry Date are required.' };
   }
 
   try {

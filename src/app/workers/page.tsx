@@ -255,7 +255,7 @@ export default async function WorkersPage({
               type="text" 
               name="workerId" 
               defaultValue={workerId} 
-              placeholder="Worker ID..." 
+              placeholder="Employee ID..." 
               className="w-full pl-8 pr-3 py-2 bg-white/70 backdrop-blur-sm border border-slate-200/80 rounded-xl outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15 transition-all text-slate-900" 
             />
           </div>

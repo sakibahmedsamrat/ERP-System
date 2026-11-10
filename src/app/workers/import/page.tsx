@@ -42,7 +42,7 @@ export default function ImportWorkersPage() {
             if (response.count) totalCount += response.count;
           }
           if (!hasError) {
-            setMessage('Success! Imported ' + totalCount + ' workers.');
+            setMessage('Success! Imported ' + totalCount + ' employees.');
             setTimeout(() => {
               router.push('/workers');
             }, 2000);
@@ -96,7 +96,7 @@ export default function ImportWorkersPage() {
             </div>
             <a
               href="/api/workers/template"
-              download="worker_import_template.csv"
+              download="employee_import_template.csv"
               className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md shadow-blue-600/20 transition whitespace-nowrap"
             >
               <Download size={15} />
@@ -110,7 +110,7 @@ export default function ImportWorkersPage() {
             </div>
             <div className="flex flex-wrap gap-1.5 text-xs text-slate-700">
               {[
-                'Worker ID', 'Name', 'Designation', 'Department', 'Section',
+                'Employee ID', 'Name', 'Designation', 'Department', 'Section',
                 'Sub Section', 'Grade', 'Join Date (DD/MM/YY)', 'Gross Salary', 'Phone',
                 'NID', 'Date of Birth (DD/MM/YY)', 'Gender', 'Blood Group', 'Father Name',
                 'Mother Name', 'Address', 'Company'
@@ -192,7 +192,7 @@ export default function ImportWorkersPage() {
               className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-3.5 rounded-xl font-bold transition w-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 text-sm"
             >
               <Upload size={18} />
-              {loading ? 'Processing Import...' : 'Upload & Import Workers'}
+              {loading ? 'Processing Import...' : 'Upload & Import Employees'}
             </button>
           </div>
         </div>

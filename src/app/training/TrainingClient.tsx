@@ -521,7 +521,7 @@ export default function TrainingClient({
                 <div className="w-52">
                   <input
                     type="text"
-                    placeholder="Search worker or skill..."
+                    placeholder="Search employee or skill..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full px-3.5 py-1.5 bg-white border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500"
@@ -626,7 +626,7 @@ export default function TrainingClient({
 
             <form onSubmit={handleAddSkill} className="space-y-4 mt-4 overflow-y-auto custom-scrollbar touch-scroll flex-1 pr-1">
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Worker *</label>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Employee *</label>
                 <select
                   name="workerId"
                   required

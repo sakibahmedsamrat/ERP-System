@@ -15,7 +15,7 @@ async function getAuthContext() {
 }
 
 /**
- * Assign or reassign supervisor to a worker
+ * Assign or reassign supervisor to an employee
  */
 export async function assignSupervisor(workerId: string, supervisorId: string | null) {
   try {
@@ -68,7 +68,7 @@ export async function assignSupervisor(workerId: string, supervisorId: string | 
 }
 
 /**
- * Bulk assign supervisor to multiple workers
+ * Bulk assign supervisor to multiple employees
  */
 export async function bulkAssignSupervisor(workerIds: string[], supervisorId: string | null) {
   try {
@@ -80,7 +80,7 @@ export async function bulkAssignSupervisor(workerIds: string[], supervisorId: st
     }
 
     if (!workerIds || workerIds.length === 0) {
-      return { success: false, error: 'No workers selected.' };
+      return { success: false, error: 'No employees selected.' };
     }
 
     // Filter out supervisor if selected among subordinates

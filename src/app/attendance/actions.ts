@@ -69,7 +69,7 @@ export async function applyLeaveRequest(formData: FormData) {
   const reason = formData.get('reason') as string || null;
 
   if (!workerId || !startDateStr || !endDateStr) {
-    return { success: false, error: 'Worker, start date, and end date are required.' };
+    return { success: false, error: 'Employee, start date, and end date are required.' };
   }
 
   const startDate = new Date(startDateStr);

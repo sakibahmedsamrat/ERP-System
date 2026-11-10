@@ -70,8 +70,8 @@ export default function KpiDashboardClient({
   const isAdmin = realRole === 'SUPER_ADMIN' || realRole === 'ADMIN';
 
   // Role switcher for Admin preview
-  const [previewRole, setPreviewRole] = useState<'ADMIN' | 'KPI_SUPERVISOR' | 'KPI_WORKER'>(
-    isAdmin ? 'ADMIN' : (realRole as 'KPI_SUPERVISOR' | 'KPI_WORKER')
+  const [previewRole, setPreviewRole] = useState<'ADMIN' | 'KPI_SUPERVISOR' | 'KPI_EMPLOYEE'>(
+    isAdmin ? 'ADMIN' : (realRole === 'KPI_SUPERVISOR' ? 'KPI_SUPERVISOR' : 'KPI_EMPLOYEE')
   );
 
   const activeRole = isAdmin ? previewRole : realRole;
@@ -564,8 +564,8 @@ export default function KpiDashboardClient({
   // Export to CSV
   const handleExportCsv = () => {
     const headers = [
-      'Worker ID',
-      'Worker Name',
+      'Employee ID',
+      'Employee Name',
       'Department',
       'Designation',
       'Supervisor',
@@ -702,11 +702,11 @@ export default function KpiDashboardClient({
                 <button
                   type="button"
                   onClick={() => {
-                    setPreviewRole('KPI_WORKER');
+                    setPreviewRole('KPI_EMPLOYEE');
                     setActiveTab('MY_KPI');
                   }}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                    activeRole === 'KPI_WORKER'
+                    activeRole === 'KPI_EMPLOYEE' || activeRole === 'KPI_WORKER'
                       ? 'bg-amber-500 text-white shadow-md'
                       : 'text-slate-300 hover:text-white hover:bg-white/10'
                   }`}
@@ -716,7 +716,7 @@ export default function KpiDashboardClient({
               </div>
             )}
 
-            {/* Change Password for Worker/Supervisor */}
+            {/* Change Password for Employee/Supervisor */}
             {!isAdmin && (
               <button
                 type="button"
@@ -740,7 +740,7 @@ export default function KpiDashboardClient({
           </div>
         </div>
 
-        {/* Worker/Supervisor Profile strip if logged in as employee */}
+        {/* Employee/Supervisor Profile strip if logged in as employee */}
         {currentWorker && activeRole !== 'ADMIN' && (
           <div className="mt-6 pt-6 border-t border-white/15 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
             <div>
@@ -779,7 +779,7 @@ export default function KpiDashboardClient({
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 pb-3 print:hidden">
         <div className="flex flex-wrap items-center gap-2">
           {/* Employee Tabs */}
-          {activeRole === 'KPI_WORKER' && (
+          {(activeRole === 'KPI_WORKER' || activeRole === 'KPI_EMPLOYEE') && (
             <button
               type="button"
               onClick={() => setActiveTab('MY_KPI')}
@@ -1605,7 +1605,7 @@ export default function KpiDashboardClient({
                 <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Search worker or target..."
+                  placeholder="Search employee or target..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9 pr-4 py-2 bg-white/90 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500/20 w-64"
@@ -1791,7 +1791,7 @@ export default function KpiDashboardClient({
             <div>
               <h2 className="text-base font-extrabold text-slate-900">Supervisor Hierarchy &amp; Assignment Manager</h2>
               <p className="text-xs text-slate-500 max-w-xl">
-                Assign supervisors to workers individually or in bulk. Once assigned, the supervisor will be able to set
+                Assign supervisors to employees individually or in bulk. Once assigned, the supervisor will be able to set
                 KPI targets, review subordinate submissions, and grade achievements.
               </p>
             </div>
@@ -1822,7 +1822,7 @@ export default function KpiDashboardClient({
                 <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Search worker name or ID..."
+                  placeholder="Search employee name or ID..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9 pr-4 py-2 bg-white/90 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500/20 w-64"
@@ -1864,7 +1864,7 @@ export default function KpiDashboardClient({
             </div>
           </div>
 
-          {/* Workers Hierarchy Table */}
+          {/* Employees Hierarchy Table */}
           <div className="glass-card rounded-3xl border border-white/80 overflow-hidden shadow-xs">
             <div className="divide-y divide-slate-100 overflow-x-auto">
               <table className="w-full text-left text-xs">
@@ -1952,7 +1952,7 @@ export default function KpiDashboardClient({
                             {worker.kpiAccount ? (
                               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
                                 Initialized (
-                                {worker.kpiAccount.isSupervisor ? 'Supervisor' : 'Worker'})
+                                {worker.kpiAccount.isSupervisor ? 'Supervisor' : 'Employee'})
                               </span>
                             ) : (
                               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">
@@ -2261,7 +2261,7 @@ export default function KpiDashboardClient({
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                    Assign To Subordinate / Worker
+                    Assign To Subordinate / Employee
                   </label>
                   <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wide bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200 flex items-center gap-1">
                     <Search size={11} />
@@ -2299,7 +2299,7 @@ export default function KpiDashboardClient({
                         setIsTargetWorkerDropdownOpen(true);
                       }}
                       className="px-3 py-1.5 rounded-xl border border-amber-300 bg-white text-amber-800 hover:bg-amber-50 font-bold text-xs flex items-center gap-1.5 transition shrink-0 shadow-xs"
-                      title="Search another worker"
+                      title="Search another employee"
                     >
                       <Search size={13} />
                       <span>Change</span>
@@ -2553,7 +2553,7 @@ export default function KpiDashboardClient({
                   Bulk Assignment
                 </span>
                 <h3 className="text-lg font-extrabold text-slate-900">
-                  Assign Supervisor to {selectedWorkerIdsForBulk.length} Workers
+                  Assign Supervisor to {selectedWorkerIdsForBulk.length} Employees
                 </h3>
               </div>
               <button
@@ -2571,7 +2571,7 @@ export default function KpiDashboardClient({
 
             <div className="space-y-4 text-xs">
               <p className="text-slate-600">
-                Choose the designated supervisor. All selected workers will be assigned under this supervisor for KPI
+                Choose the designated supervisor. All selected employees will be assigned under this supervisor for KPI
                 setting and evaluation.
               </p>
 

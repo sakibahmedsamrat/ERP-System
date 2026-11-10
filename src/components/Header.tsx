@@ -5,6 +5,22 @@ import { Search, UserCircle, LogOut, Menu } from 'lucide-react';
 import { logoutAction } from '@/app/logout/actions';
 import NotificationBell from './NotificationBell';
 
+function formatRoleBadge(role?: string): string {
+  if (!role) return 'Guest';
+  const r = role.trim();
+  if (r === 'KPI_WORKER' || r === 'KPI_EMPLOYEE') return 'Employee';
+  if (r === 'KPI_SUPERVISOR') return 'Supervisor';
+  if (r === 'SUPER_ADMIN') return 'Super Admin';
+  if (r === 'ADMIN') return 'Admin';
+  if (r === 'USER') return 'User';
+  return r
+    .replace(/_?WORKER_?/gi, ' EMPLOYEE ')
+    .replace(/_/g, ' ')
+    .trim()
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 export default function Header({ 
   user,
   onToggleMobileSidebar
@@ -77,7 +93,7 @@ export default function Header({
             <div className="hidden sm:flex flex-col items-end">
               <span className="text-xs sm:text-sm font-bold text-slate-800">{user?.name || 'User'}</span>
               <span className="text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
-                {user?.role || 'Guest'}
+                {formatRoleBadge(user?.role)}
               </span>
             </div>
             {user?.profileImage ? (

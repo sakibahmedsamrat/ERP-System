@@ -279,7 +279,7 @@ export default function EmployeeIdCardSection({
 
   return (
     <div className="space-y-6">
-      {/* Top Search & Worker Auto-Fill Bar */}
+      {/* Top Search & Employee Auto-Fill Bar */}
       <div className="relative z-50 glass-card bg-white/70 backdrop-blur-xl p-5 rounded-2xl border border-white/60 shadow-glass">
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
           

@@ -68,7 +68,7 @@ export default function BulkDeleteWorkersModal() {
 
   const handleValidate = async () => {
     if (!rawInput.trim()) {
-      setError('Please enter at least one Worker ID.');
+      setError('Please enter at least one Employee ID.');
       return;
     }
 
@@ -91,7 +91,7 @@ export default function BulkDeleteWorkersModal() {
       setPreviewFilter('');
       setStep('preview');
     } catch (err: any) {
-      setError(err?.message || 'Failed to validate Worker IDs. Please try again.');
+      setError(err?.message || 'Failed to validate Employee IDs. Please try again.');
     } finally {
       setIsValidating(false);
     }
@@ -157,7 +157,7 @@ export default function BulkDeleteWorkersModal() {
         resetModal();
       }, 1800);
     } catch (err: any) {
-      setError(err?.message || 'Failed to bulk delete workers. Please try again.');
+      setError(err?.message || 'Failed to bulk delete employees. Please try again.');
       setIsDeleting(false);
     }
   };
@@ -211,7 +211,7 @@ export default function BulkDeleteWorkersModal() {
                   </h3>
                   <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">
                     {step === 'input'
-                      ? 'Step 1: Enter multiple Worker IDs'
+                      ? 'Step 1: Enter multiple Employee IDs'
                       : 'Step 2: Review matching records and confirm'}
                   </p>
                 </div>
@@ -246,7 +246,7 @@ export default function BulkDeleteWorkersModal() {
               {step === 'input' ? (
                 <div className="space-y-4">
                   <p className="text-xs text-slate-600 leading-relaxed">
-                    Paste or type multiple Worker IDs below. You can separate IDs with{' '}
+                    Paste or type multiple Employee IDs below. You can separate IDs with{' '}
                     <strong className="text-slate-800">commas, spaces, or line breaks</strong>.
                   </p>
 
@@ -399,7 +399,7 @@ export default function BulkDeleteWorkersModal() {
                                   className="rounded text-rose-600 focus:ring-rose-500 cursor-pointer"
                                 />
                               </th>
-                              <th className="p-2.5 font-bold">Worker ID</th>
+                              <th className="p-2.5 font-bold">Employee ID</th>
                               <th className="p-2.5 font-bold">Name</th>
                               <th className="p-2.5 font-bold">Designation</th>
                               <th className="p-2.5 font-bold">Department</th>

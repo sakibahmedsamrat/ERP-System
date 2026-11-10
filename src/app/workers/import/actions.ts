@@ -270,6 +270,6 @@ export async function bulkImportWorkers(workers: any[]) {
     return { success: true, count: upsertOperations.length };
   } catch (error: any) {
     console.error("Bulk import failed:", error);
-    return { error: 'Failed to import workers. Check format and data types.' };
+    return { error: 'Failed to import employees. Check format and data types.' };
   }
 }

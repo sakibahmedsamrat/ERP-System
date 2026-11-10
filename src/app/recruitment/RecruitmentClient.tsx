@@ -405,10 +405,10 @@ export default function RecruitmentClient({
       if (res.success) {
         setWorkerList(res.workers || []);
       } else {
-        showToast(res.error || 'Failed to load workers', 'error');
+        showToast(res.error || 'Failed to load employees', 'error');
       }
     } catch (err: any) {
-      showToast('Error loading workers', 'error');
+      showToast('Error loading employees', 'error');
     } finally {
       setIsLoadingWorkers(false);
     }
@@ -996,7 +996,7 @@ export default function RecruitmentClient({
                                                             <button
                                                               onClick={() => handleInspectWorkers(flatItem)}
                                                               className="inline-flex items-center gap-1 px-3 py-1 rounded-lg font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/60 transition group cursor-pointer text-xs"
-                                                              title="Click to view assigned workers"
+                                                              title="Click to view assigned employees"
                                                             >
                                                               <span>{exist}</span>
                                                               <Eye size={11} className="text-emerald-600 opacity-60 group-hover:opacity-100" />
@@ -1275,7 +1275,7 @@ export default function RecruitmentClient({
                               <button
                                 onClick={() => handleInspectWorkers(item)}
                                 className="inline-flex items-center gap-1 px-3 py-1 rounded-lg font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/60 transition group cursor-pointer"
-                                title="Click to view assigned workers"
+                                title="Click to view assigned employees"
                               >
                                 <span>{item.existingManpower}</span>
                                 <Eye size={12} className="opacity-40 group-hover:opacity-100 text-emerald-600 transition-opacity" />
@@ -1623,13 +1623,13 @@ export default function RecruitmentClient({
                 <div className="py-12 text-center text-gray-500">
                   <Users size={36} className="mx-auto text-gray-300 mb-2" />
                   <p className="font-semibold text-gray-700">No active employees assigned</p>
-                  <p className="text-xs text-gray-400 mt-1">No active workers currently linked to this sub-section</p>
+                  <p className="text-xs text-gray-400 mt-1">No active employees currently linked to this sub-section</p>
                 </div>
               )}
             </div>
 
             <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500 shrink-0">
-              <span>Total Active Workers: <strong className="text-emerald-700">{workerList.length}</strong></span>
+              <span>Total Active Employees: <strong className="text-emerald-700">{workerList.length}</strong></span>
               <button
                 onClick={() => setInspectingItem(null)}
                 className="min-h-[44px] px-5 py-2 font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition flex items-center justify-center"

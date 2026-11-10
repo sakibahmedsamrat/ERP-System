@@ -81,7 +81,7 @@ export async function kpiLoginAction(prevState: any, formData: FormData) {
       );
     }
 
-    const role = isSupervisor ? 'KPI_SUPERVISOR' : 'KPI_WORKER';
+    const role = isSupervisor ? 'KPI_SUPERVISOR' : 'KPI_EMPLOYEE';
 
     await login({
       id: worker.id,

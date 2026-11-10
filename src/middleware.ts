@@ -49,7 +49,7 @@ export async function middleware(request: NextRequest) {
   }
 
   const role = session.user.role;
-  const isKpiRole = role === 'KPI_WORKER' || role === 'KPI_SUPERVISOR';
+  const isKpiRole = role === 'KPI_WORKER' || role === 'KPI_EMPLOYEE' || role === 'KPI_SUPERVISOR';
 
   // If already authenticated and navigating to login pages
   if (isLoginPage || isKpiLoginPage) {
@@ -59,7 +59,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(targetUrl);
   }
 
-  // Restrict KPI workers and supervisors strictly to /kpi, /logout and /api routes
+  // Restrict KPI employees and supervisors strictly to /kpi, /logout and /api routes
   if (isKpiRole) {
     const isKpiRoute = request.nextUrl.pathname.startsWith('/kpi');
     const isApiRoute = request.nextUrl.pathname.startsWith('/api');

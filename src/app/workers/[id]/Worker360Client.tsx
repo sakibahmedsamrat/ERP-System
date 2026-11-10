@@ -220,7 +220,7 @@ export default function Worker360Client({ worker }: Props) {
           </Link>
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold uppercase tracking-wider text-blue-600 flex items-center gap-1">
-              <Sparkles size={13} /> Worker 360° Digital Dossier
+              <Sparkles size={13} /> Employee 360° Digital Dossier
             </span>
           </div>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3">
@@ -509,7 +509,7 @@ export default function Worker360Client({ worker }: Props) {
               <div className="col-span-full glass-card p-10 text-center rounded-3xl border border-white/70">
                 <FileText size={36} className="text-slate-300 mx-auto mb-2" />
                 <h4 className="font-bold text-slate-800 text-sm">No Documents Uploaded</h4>
-                <p className="text-xs text-slate-400 mt-1">Upload NID copy, appointment letter, or medical slips to this worker&apos;s digital vault.</p>
+                <p className="text-xs text-slate-400 mt-1">Upload NID copy, appointment letter, or medical slips to this employee&apos;s digital vault.</p>
               </div>
             )}
           </div>

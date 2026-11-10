@@ -115,7 +115,7 @@ export async function deleteWorker(id: string) {
       where: { id },
       select: { id: true, workerId: true, name: true }
     });
-    if (!w) return { error: 'Worker not found' };
+    if (!w) return { error: 'Employee not found' };
 
     // Soft delete: move to recycle bin
     await prisma.worker.update({
@@ -127,15 +127,15 @@ export async function deleteWorker(id: string) {
       }
     });
 
-    await logAction('WORKERS', 'DELETE', `Moved worker to recycle bin: ${w.workerId} (${w.name})`);
+    await logAction('WORKERS', 'DELETE', `Moved employee to recycle bin: ${w.workerId} (${w.name})`);
     safeRevalidatePath('/workers');
     safeRevalidatePath('/workers/recycle-bin');
     safeRevalidatePath('/');
     safeRevalidatePath('/payroll');
     return { success: true };
   } catch (error) {
-    console.error("Failed to delete worker:", error);
-    return { error: 'Failed to delete worker' };
+    console.error("Failed to delete employee:", error);
+    return { error: 'Failed to delete employee' };
   }
 }
 
@@ -151,7 +151,7 @@ export async function restoreWorker(id: string) {
       where: { id },
       select: { id: true, workerId: true, name: true }
     });
-    if (!w) return { error: 'Worker not found' };
+    if (!w) return { error: 'Employee not found' };
 
     await prisma.worker.update({
       where: { id },
@@ -162,7 +162,7 @@ export async function restoreWorker(id: string) {
       }
     });
 
-    await logAction('WORKERS', 'RESTORE', `Restored worker: ${w.workerId} (${w.name})`);
+    await logAction('WORKERS', 'RESTORE', `Restored employee: ${w.workerId} (${w.name})`);
     safeRevalidatePath('/workers');
     safeRevalidatePath('/workers/recycle-bin');
     safeRevalidatePath('/settlements');
@@ -170,8 +170,8 @@ export async function restoreWorker(id: string) {
     safeRevalidatePath('/payroll');
     return { success: true };
   } catch (error) {
-    console.error("Failed to restore worker:", error);
-    return { error: 'Failed to restore worker' };
+    console.error("Failed to restore employee:", error);
+    return { error: 'Failed to restore employee' };
   }
 }
 
@@ -187,7 +187,7 @@ export async function permanentDeleteWorker(id: string) {
       where: { id },
       select: { id: true, workerId: true, name: true }
     });
-    if (!w) return { error: 'Worker not found' };
+    if (!w) return { error: 'Employee not found' };
 
     // Hard delete related records first
     await prisma.attendance.deleteMany({ where: { workerId: id } });
@@ -208,7 +208,7 @@ export async function permanentDeleteWorker(id: string) {
       });
     }
 
-    await logAction('WORKERS', 'PERMANENT_DELETE', `Permanently deleted worker: ${w.workerId} (${w.name})`);
+    await logAction('WORKERS', 'PERMANENT_DELETE', `Permanently deleted employee: ${w.workerId} (${w.name})`);
     await prisma.worker.delete({ where: { id } });
     safeRevalidatePath('/workers');
     safeRevalidatePath('/workers/recycle-bin');
@@ -217,8 +217,8 @@ export async function permanentDeleteWorker(id: string) {
     safeRevalidatePath('/payroll');
     return { success: true };
   } catch (error) {
-    console.error("Failed to permanently delete worker:", error);
-    return { error: 'Failed to permanently delete worker' };
+    console.error("Failed to permanently delete employee:", error);
+    return { error: 'Failed to permanently delete employee' };
   }
 }
 
@@ -329,7 +329,7 @@ export async function validateBulkDeleteWorkers(rawInput: string): Promise<BulkD
     }
 
     if (!rawInput || typeof rawInput !== 'string') {
-      return { error: 'Please enter at least one Worker ID.' };
+      return { error: 'Please enter at least one Employee ID.' };
     }
 
     // Strip line bullet markers (e.g. "1. ", "2) ", "- ", "* ") and split on standard delimiters
@@ -356,7 +356,7 @@ export async function validateBulkDeleteWorkers(rawInput: string): Promise<BulkD
     }
 
     if (idList.length === 0) {
-      return { error: 'Please enter at least one valid Worker ID.' };
+      return { error: 'Please enter at least one valid Employee ID.' };
     }
 
     // Query active and deleted workers in chunks to guard against PostgreSQL parameter limits
@@ -431,7 +431,7 @@ export async function validateBulkDeleteWorkers(rawInput: string): Promise<BulkD
     };
   } catch (error) {
     console.error('Failed to validate worker IDs for bulk deletion:', error);
-    return { error: 'Failed to validate Worker IDs. Please check database connection.' };
+    return { error: 'Failed to validate Employee IDs. Please check database connection.' };
   }
 }
 
@@ -445,7 +445,7 @@ export async function bulkDeleteWorkers(workerDbIds: string[]) {
     }
 
     if (!Array.isArray(workerDbIds) || workerDbIds.length === 0) {
-      return { error: 'No workers selected for deletion.' };
+      return { error: 'No employees selected for deletion.' };
     }
 
     // Support matching by either database ID or employee Worker ID
@@ -502,7 +502,7 @@ export async function bulkDeleteWorkers(workerDbIds: string[]) {
     await logAction(
       'WORKERS',
       'BULK_DELETE',
-      `Bulk moved ${totalUpdated} worker(s) to recycle bin: ${sampleSummary}${moreSuffix}`
+      `Bulk moved ${totalUpdated} employee(s) to recycle bin: ${sampleSummary}${moreSuffix}`
     );
 
     safeRevalidatePath('/workers');
@@ -519,7 +519,7 @@ export async function bulkDeleteWorkers(workerDbIds: string[]) {
     };
   } catch (error) {
     console.error('Failed to bulk delete workers:', error);
-    return { error: 'Failed to bulk delete workers. Please try again.' };
+    return { error: 'Failed to bulk delete employees. Please try again.' };
   }
 }
 
@@ -532,7 +532,7 @@ export async function uploadWorkerDocument(formData: FormData) {
   const file = formData.get('file') as any;
 
   if (!workerId || !title) {
-    return { success: false, error: 'Worker ID and Document Title are required.' };
+    return { success: false, error: 'Employee ID and Document Title are required.' };
   }
 
   let fileUrl = '';
@@ -603,7 +603,7 @@ export async function addCareerHistory(formData: FormData) {
   const remarks = (formData.get('remarks') as string) || null;
 
   if (!workerId || !effectiveDateStr) {
-    return { success: false, error: 'Worker ID and Effective Date are required.' };
+    return { success: false, error: 'Employee ID and Effective Date are required.' };
   }
 
   const effectiveDate = new Date(effectiveDateStr);
@@ -671,7 +671,7 @@ export async function updateNomineeAndEmergency(formData: FormData) {
   const nomineePhone = (formData.get('nomineePhone') as string) || null;
 
   if (!workerId) {
-    return { success: false, error: 'Worker ID is required.' };
+    return { success: false, error: 'Employee ID is required.' };
   }
 
   try {
@@ -706,7 +706,7 @@ export async function addDisciplinaryRecord(formData: FormData) {
   const status = (formData.get('status') as string) || 'OPEN';
 
   if (!workerId || !incidentDateStr || !subject || !description) {
-    return { success: false, error: 'Worker, Incident Date, Subject, and Description are required.' };
+    return { success: false, error: 'Employee, Incident Date, Subject, and Description are required.' };
   }
 
   const incidentDate = new Date(incidentDateStr);

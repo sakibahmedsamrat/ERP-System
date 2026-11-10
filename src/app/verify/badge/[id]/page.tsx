@@ -114,7 +114,7 @@ export default async function GateVerificationPage({
           <h1 className="text-xl font-extrabold tracking-tight text-white">Security Badge Verification</h1>
         </div>
 
-        {/* WORKER VERIFIED */}
+        {/* EMPLOYEE VERIFIED */}
         {worker && (
           <div className="glass-card bg-slate-900/80 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-2xl p-6 space-y-5 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />

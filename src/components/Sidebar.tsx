@@ -70,7 +70,7 @@ export default function Sidebar({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const currentTab = searchParams ? searchParams.get('tab') : null;
-  const isKpiUser = user?.role === 'KPI_WORKER' || user?.role === 'KPI_SUPERVISOR';
+  const isKpiUser = user?.role === 'KPI_WORKER' || user?.role === 'KPI_EMPLOYEE' || user?.role === 'KPI_SUPERVISOR';
   const appName = isKpiUser ? 'KPI Portal' : (process.env.NEXT_PUBLIC_APP_NAME || 'HR Module');
   
   const hasModule = (modName: string) => {
@@ -276,7 +276,7 @@ export default function Sidebar({
                 <div className="text-slate-400 text-[11px] font-medium">Logged in as</div>
                 <div className="text-white font-bold text-sm truncate">{user?.name || 'Employee'}</div>
                 <div className="text-[10px] text-amber-400 font-bold tracking-wide uppercase mt-0.5">
-                  {user?.role === 'KPI_SUPERVISOR' ? 'Supervisor' : 'Employee / Worker'}
+                  {user?.role === 'KPI_SUPERVISOR' ? 'Supervisor' : 'Employee'}
                 </div>
               </div>
               <form action={logoutAction}>

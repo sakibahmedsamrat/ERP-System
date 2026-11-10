@@ -149,7 +149,7 @@ export default function ATSPipelineSection({ candidates, companies }: Props) {
   };
 
   const handle1ClickOnboard = async (candidate: CandidateItem) => {
-    if (!confirm(`Confirm 1-Click Onboard for ${candidate.name}?\nThis will create an active Worker profile in the ERP.`)) return;
+    if (!confirm(`Confirm 1-Click Onboard for ${candidate.name}?\nThis will create an active Employee profile in the ERP.`)) return;
 
     setOnboardLoadingId(candidate.id);
     const res = await onboardCandidate(candidate.id);

@@ -89,7 +89,7 @@ export async function GET(request: Request) {
     return res;
   } catch (err: any) {
     console.error('Failed to search workers in API route:', err);
-    return NextResponse.json({ workers: [], error: 'Failed to search workers' }, { status: 200 });
+    return NextResponse.json({ workers: [], error: 'Failed to search employees' }, { status: 200 });
   }
 }
 

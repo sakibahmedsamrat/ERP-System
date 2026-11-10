@@ -15,7 +15,7 @@ export default async function KpiPage() {
 
   const isAdmin = user.role === 'SUPER_ADMIN' || user.role === 'ADMIN';
   const isSupervisor = user.role === 'KPI_SUPERVISOR';
-  const isWorker = user.role === 'KPI_WORKER';
+  const isWorker = user.role === 'KPI_WORKER' || user.role === 'KPI_EMPLOYEE';
 
   let currentWorker: any = null;
   let workers: any[] = [];

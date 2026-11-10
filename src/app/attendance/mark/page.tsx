@@ -84,7 +84,7 @@ export default async function MarkAttendancePage({ searchParams }: { searchParam
             className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition shadow-sm flex items-center justify-center gap-2"
           >
             <Users size={16} />
-            <span>Load Workers</span>
+            <span>Load Employees</span>
           </button>
         </form>
       </div>
@@ -112,7 +112,7 @@ export default async function MarkAttendancePage({ searchParams }: { searchParam
                 </div>
               </div>
               <div className="text-xs font-bold text-slate-500 bg-white/70 px-3 py-1.5 rounded-full border border-slate-200/60">
-                {workers.length} Total Workers
+                {workers.length} Total Employees
               </div>
             </div>
 
@@ -175,7 +175,7 @@ export default async function MarkAttendancePage({ searchParams }: { searchParam
       {selectedCompanyId && workers.length === 0 && (
         <div className="glass-card p-12 text-center rounded-3xl shadow-sm border border-white/70 text-slate-500">
           <Users size={36} className="mx-auto text-slate-300 mb-2" />
-          <p className="font-bold text-slate-800">No active workers found</p>
+          <p className="font-bold text-slate-800">No active employees found</p>
           <p className="text-xs text-slate-400 mt-1">There are no active employees assigned to this company.</p>
         </div>
       )}
