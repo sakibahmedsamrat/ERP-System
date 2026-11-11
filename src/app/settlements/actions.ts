@@ -123,10 +123,13 @@ export async function createSettlement(formData: FormData): Promise<{ error?: st
 
     const statusVal = (formData.get('status') as string) || 'PENDING';
     const lwd = getDate('lastWorkingDay');
+    const settlementType = (formData.get('settlementType') as string) || 'RESIGN';
+    const terminationBenefit = settlementType === 'TERMINATION' ? getFloat('terminationBenefit') : 0;
 
     const createdSettlement = await prisma.settlement.create({
       data: {
         workerId,
+        settlementType,
         resignApplyDate: getDate('resignApplyDate'),
         lastWorkingDay: lwd,
         serviceAge,
@@ -143,11 +146,12 @@ export async function createSettlement(formData: FormData): Promise<{ error?: st
         absentDays: getFloat('absentDays'),
         
         serviceBenefitAmount: getFloat('serviceBenefitAmount'),
+        terminationBenefit,
         currentMonthWorkDayPay: getFloat('currentMonthWorkDayPay'),
         extraDutyOTPay: getFloat('extraDutyOTPay'),
         earnLeavePay: getFloat('earnLeavePay'),
         
-        deductMoneyAct2006: getFloat('deductMoneyAct2006'),
+        deductMoneyAct2006: settlementType === 'TERMINATION' ? 0 : getFloat('deductMoneyAct2006'),
         absentDeduction: getFloat('absentDeduction'),
         lateEarlyDeduction: getFloat('lateEarlyDeduction'),
         
@@ -267,6 +271,8 @@ export async function updateSettlement(id: string, formData: FormData): Promise<
 
     const status = (formData.get('status') as string) || currentSettlement?.status || 'PENDING';
     const lwd = getDate('lastWorkingDay') || currentSettlement?.lastWorkingDay;
+    const settlementType = (formData.get('settlementType') as string) || currentSettlement?.settlementType || 'RESIGN';
+    const terminationBenefit = settlementType === 'TERMINATION' ? getFloat('terminationBenefit') : 0;
     const paymentReceiverDateInput = getDate('paymentReceiverDate');
     const effectivePaymentReceiverDate = status === 'PAID'
       ? (paymentReceiverDateInput || currentSettlement?.paymentReceiverDate || new Date())
@@ -276,6 +282,7 @@ export async function updateSettlement(id: string, formData: FormData): Promise<
       where: { id },
       data: {
         status,
+        settlementType,
         resignApplyDate: getDate('resignApplyDate'),
         lastWorkingDay: lwd,
         serviceAge,
@@ -292,11 +299,12 @@ export async function updateSettlement(id: string, formData: FormData): Promise<
         absentDays: getFloat('absentDays'),
         
         serviceBenefitAmount: getFloat('serviceBenefitAmount'),
+        terminationBenefit,
         currentMonthWorkDayPay: getFloat('currentMonthWorkDayPay'),
         extraDutyOTPay: getFloat('extraDutyOTPay'),
         earnLeavePay: getFloat('earnLeavePay'),
         
-        deductMoneyAct2006: getFloat('deductMoneyAct2006'),
+        deductMoneyAct2006: settlementType === 'TERMINATION' ? 0 : getFloat('deductMoneyAct2006'),
         absentDeduction: getFloat('absentDeduction'),
         lateEarlyDeduction: getFloat('lateEarlyDeduction'),
         
@@ -366,12 +374,15 @@ export async function recordEmployeeResignation(data: {
   workerId: string;
   resignApplyDate: string;
   lastWorkingDay: string;
+  settlementType?: 'RESIGN' | 'TERMINATION';
   remarks?: string;
 }): Promise<{ success: boolean; settlementId?: string; settlement?: any; error?: string }> {
   try {
     const { workerId, resignApplyDate, lastWorkingDay } = data;
+    const settlementType = data.settlementType || 'RESIGN';
+    const isTermination = settlementType === 'TERMINATION';
     if (!workerId) return { success: false, error: 'Employee is required.' };
-    if (!resignApplyDate) return { success: false, error: 'Resign Apply Date is required.' };
+    if (!resignApplyDate) return { success: false, error: isTermination ? 'Notice / Termination Date is required.' : 'Resign Apply Date is required.' };
     if (!lastWorkingDay) return { success: false, error: 'Last Working Day is required.' };
 
     const worker = await prisma.worker.findUnique({
@@ -433,9 +444,13 @@ export async function recordEmployeeResignation(data: {
       }
     }
 
-    // 3. Deduct Money (Act of 2006) - shortfall from 60 days notice
+    // 3. Deduct Money (Act of 2006) - shortfall from 60 days notice (Resignation only)
     let deductMoneyAct2006 = 0;
-    if (basicSalary > 0 && resignDate && lwdDate) {
+    let terminationBenefit = 0;
+    if (isTermination) {
+      deductMoneyAct2006 = 0;
+      terminationBenefit = Math.round(4 * basicSalary);
+    } else if (basicSalary > 0 && resignDate && lwdDate) {
       const diffTime = lwdDate.getTime() - resignDate.getTime();
       const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
       const shortfall = Math.min(60, Math.max(0, 60 - diffDays));
@@ -478,7 +493,7 @@ export async function recordEmployeeResignation(data: {
       ? Math.round((grossSalary / daysInMonth / 8 / 60) * totalLateEarlyMinutes)
       : (existingPending?.lateEarlyDeduction || 0);
 
-    const payableSubTotal = serviceBenefitAmount + currentMonthWorkDayPay + extraDutyOTPay + earnLeavePay;
+    const payableSubTotal = serviceBenefitAmount + terminationBenefit + currentMonthWorkDayPay + extraDutyOTPay + earnLeavePay;
     const deductionSubTotal = deductMoneyAct2006 + absentDeduction + lateEarlyDeduction;
     const totalPayAmount = payableSubTotal - deductionSubTotal;
 
@@ -496,6 +511,7 @@ export async function recordEmployeeResignation(data: {
       settlement = await prisma.settlement.update({
         where: { id: existingPending.id },
         data: {
+          settlementType,
           resignApplyDate: resignDate,
           lastWorkingDay: lwdDate,
           serviceAge: serviceAgeText,
@@ -505,6 +521,7 @@ export async function recordEmployeeResignation(data: {
           conveyanceAllowance,
           medicalAllowance,
           serviceBenefitAmount,
+          terminationBenefit,
           currentMonthWorkDayPay,
           earnLeavePay,
           extraDutyOTPay,
@@ -518,12 +535,13 @@ export async function recordEmployeeResignation(data: {
           status: 'PENDING'
         }
       });
-      const logMsg = `Updated resignation details for worker: ${worker.workerId} (${worker.name})${data.remarks ? ` [Remarks: ${data.remarks}]` : ''}`;
+      const logMsg = `Updated ${isTermination ? 'termination' : 'resignation'} details for worker: ${worker.workerId} (${worker.name})${data.remarks ? ` [Remarks: ${data.remarks}]` : ''}`;
       await logAction('SETTLEMENTS', 'UPDATE', logMsg);
     } else {
       settlement = await prisma.settlement.create({
         data: {
           workerId: worker.id,
+          settlementType,
           resignApplyDate: resignDate,
           lastWorkingDay: lwdDate,
           serviceAge: serviceAgeText,
@@ -533,6 +551,7 @@ export async function recordEmployeeResignation(data: {
           conveyanceAllowance,
           medicalAllowance,
           serviceBenefitAmount,
+          terminationBenefit,
           currentMonthWorkDayPay: 0,
           earnLeavePay: 0,
           extraDutyOTPay: 0,
@@ -546,7 +565,7 @@ export async function recordEmployeeResignation(data: {
           status: 'PENDING'
         }
       });
-      const logMsg = `Recorded resignation and created pending settlement for worker: ${worker.workerId} (${worker.name})${data.remarks ? ` [Remarks: ${data.remarks}]` : ''}`;
+      const logMsg = `Recorded ${isTermination ? 'termination' : 'resignation'} and created pending settlement for worker: ${worker.workerId} (${worker.name})${data.remarks ? ` [Remarks: ${data.remarks}]` : ''}`;
       await logAction('SETTLEMENTS', 'CREATE', logMsg);
     }
 

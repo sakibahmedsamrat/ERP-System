@@ -19,6 +19,7 @@ export default function NewSettlementPage() {
   const [joinDateOverride, setJoinDateOverride] = useState('');
   const [serviceAge, setServiceAge] = useState('');
   const [isDateInverted, setIsDateInverted] = useState(false);
+  const [settlementType, setSettlementType] = useState<'RESIGN' | 'TERMINATION'>('RESIGN');
 
   // Track which fields the user has manually edited/overridden
   const [manualOverrides, setManualOverrides] = useState<Record<string, boolean>>({});
@@ -64,6 +65,7 @@ export default function NewSettlementPage() {
     otHour: 0,
     extraDutyDays: 0,
     serviceBenefitAmount: 0,
+    terminationBenefit: 0,
     currentMonthWorkDayPay: 0,
     extraDutyOTPay: 0,
     earnLeavePay: 0,
@@ -126,6 +128,7 @@ export default function NewSettlementPage() {
       otHour: 0,
       extraDutyDays: 0,
       serviceBenefitAmount: 0,
+      terminationBenefit: 0,
       currentMonthWorkDayPay: 0,
       extraDutyOTPay: 0,
       earnLeavePay: 0,
@@ -223,23 +226,32 @@ export default function NewSettlementPage() {
         }
       }
 
-      // 6. Deduct Money (Act of 2006)
-      if (!manualOverrides.deductMoneyAct2006) {
-        if (prev.basicSalary > 0 && resignApplyDate && lastWorkingDay) {
-          const resignDate = new Date(resignApplyDate);
-          const lwdDate = new Date(lastWorkingDay);
-          if (!isNaN(resignDate.getTime()) && !isNaN(lwdDate.getTime())) {
-            const diffTime = lwdDate.getTime() - resignDate.getTime();
-            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-            const shortfall = Math.min(60, Math.max(0, 60 - diffDays));
-            if (shortfall > 0) {
-              newDeductMoneyAct2006 = Math.round(shortfall * (prev.basicSalary / 30));
-            } else {
-              newDeductMoneyAct2006 = 0;
+      // 6. Termination Benefit or Deduct Money (Act of 2006)
+      let newTerminationBenefit = prev.terminationBenefit;
+      if (settlementType === 'TERMINATION') {
+        newDeductMoneyAct2006 = 0;
+        if (!manualOverrides.terminationBenefit) {
+          newTerminationBenefit = prev.basicSalary > 0 ? Math.round(4 * prev.basicSalary) : 0;
+        }
+      } else {
+        newTerminationBenefit = 0;
+        if (!manualOverrides.deductMoneyAct2006) {
+          if (prev.basicSalary > 0 && resignApplyDate && lastWorkingDay) {
+            const resignDate = new Date(resignApplyDate);
+            const lwdDate = new Date(lastWorkingDay);
+            if (!isNaN(resignDate.getTime()) && !isNaN(lwdDate.getTime())) {
+              const diffTime = lwdDate.getTime() - resignDate.getTime();
+              const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+              const shortfall = Math.min(60, Math.max(0, 60 - diffDays));
+              if (shortfall > 0) {
+                newDeductMoneyAct2006 = Math.round(shortfall * (prev.basicSalary / 30));
+              } else {
+                newDeductMoneyAct2006 = 0;
+              }
             }
+          } else {
+            newDeductMoneyAct2006 = 0;
           }
-        } else {
-          newDeductMoneyAct2006 = 0;
         }
       }
 
@@ -258,6 +270,7 @@ export default function NewSettlementPage() {
         ...prev,
         earnLeavePay: newEarnLeavePay,
         serviceBenefitAmount: newServiceBenefit,
+        terminationBenefit: newTerminationBenefit,
         currentMonthWorkDayPay: newCurrentMonthPay,
         lateEarlyDeduction: newLateEarlyDeduction,
         absentDeduction: newAbsentDeduction,
@@ -266,6 +279,7 @@ export default function NewSettlementPage() {
       };
     });
   }, [
+    settlementType,
     formVals.grossSalary, 
     formVals.basicSalary, 
     formVals.totalEarnLeaveDays, 
@@ -290,6 +304,7 @@ export default function NewSettlementPage() {
   // Compute subtotals and total, allowing manual override if the user edited them directly
   const calculatedPayableSubTotal = 
     (Number(formVals.serviceBenefitAmount) || 0) + 
+    (settlementType === 'TERMINATION' ? (Number(formVals.terminationBenefit) || 0) : 0) + 
     (Number(formVals.currentMonthWorkDayPay) || 0) + 
     (Number(formVals.extraDutyOTPay) || 0) + 
     (Number(formVals.earnLeavePay) || 0);
@@ -299,7 +314,7 @@ export default function NewSettlementPage() {
     : calculatedPayableSubTotal;
 
   const calculatedDeductionSubTotal = 
-    (Number(formVals.deductMoneyAct2006) || 0) + 
+    (settlementType === 'TERMINATION' ? 0 : (Number(formVals.deductMoneyAct2006) || 0)) + 
     (Number(formVals.absentDeduction) || 0) + 
     (Number(formVals.lateEarlyDeduction) || 0);
 
@@ -339,13 +354,15 @@ export default function NewSettlementPage() {
     setLoading(true);
     const formData = new FormData(e.currentTarget);
     formData.set('workerId', selectedWorker.id);
+    formData.set('settlementType', settlementType);
     formData.set('grossSalary', (formVals.grossSalary || 0).toString());
     formData.set('basicSalary', (formVals.basicSalary || 0).toString());
     formData.set('houseRent', (formVals.houseRent || 0).toString());
     formData.set('medicalAllowance', (formVals.medicalAllowance || 0).toString());
     formData.set('conveyanceAllowance', (formVals.conveyanceAllowance || 0).toString());
     formData.set('serviceBenefitAmount', (formVals.serviceBenefitAmount || 0).toString());
-    formData.set('deductMoneyAct2006', (formVals.deductMoneyAct2006 || 0).toString());
+    formData.set('terminationBenefit', (settlementType === 'TERMINATION' ? (formVals.terminationBenefit || 0) : 0).toString());
+    formData.set('deductMoneyAct2006', (settlementType === 'TERMINATION' ? 0 : (formVals.deductMoneyAct2006 || 0)).toString());
     formData.set('currentMonthWorkDayPay', (formVals.currentMonthWorkDayPay || 0).toString());
     formData.set('absentDeduction', (formVals.absentDeduction || 0).toString());
     formData.set('extraDutyOTPay', (formVals.extraDutyOTPay || 0).toString());
@@ -380,6 +397,7 @@ export default function NewSettlementPage() {
       setServiceAgeDays(0);
       setAmountInWords('');
       setBankAccNo('');
+      setSettlementType('RESIGN');
       setManualOverrides({});
       setFormVals({
         grossSalary: 0,
@@ -394,6 +412,7 @@ export default function NewSettlementPage() {
         otHour: 0,
         extraDutyDays: 0,
         serviceBenefitAmount: 0,
+        terminationBenefit: 0,
         currentMonthWorkDayPay: 0,
         extraDutyOTPay: 0,
         earnLeavePay: 0,
@@ -472,9 +491,64 @@ export default function NewSettlementPage() {
       {selectedWorker && (
         <form onSubmit={handleSubmit} className="glass-card rounded-3xl p-4 sm:p-10 border border-white/70 shadow-sm space-y-6">
           
-          <div className="text-center pb-6 border-b border-slate-200/70">
-            <h2 className="text-2xl font-extrabold uppercase text-slate-900 tracking-tight">{selectedWorker.company?.name || 'MEP GROUP'}</h2>
-            <h3 className="text-base font-bold text-blue-600 mt-1 uppercase tracking-wider">Final Settlement &amp; Resign Benefits</h3>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-slate-200/70 gap-4">
+            <div className="text-center sm:text-left">
+              <h2 className="text-2xl font-extrabold uppercase text-slate-900 tracking-tight">{selectedWorker.company?.name || 'MEP GROUP'}</h2>
+              <h3 className="text-base font-bold text-blue-600 mt-1 uppercase tracking-wider">
+                {settlementType === 'TERMINATION' ? 'Final Settlement & Termination Benefits' : 'Final Settlement & Resign Benefits'}
+              </h3>
+            </div>
+            
+            {/* Settlement Type Toggle */}
+            <div className="flex items-center gap-2 self-center sm:self-auto bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
+              <span className="text-xs font-bold text-slate-600 px-2">Type:</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setSettlementType('RESIGN');
+                  setManualOverrides(prev => {
+                    const next = { ...prev };
+                    delete next.deductMoneyAct2006;
+                    delete next.terminationBenefit;
+                    delete next.payableSubTotal;
+                    delete next.deductionSubTotal;
+                    delete next.totalPayAmount;
+                    delete next.amountInWords;
+                    return next;
+                  });
+                }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+                  settlementType === 'RESIGN'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Resign Benefit
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSettlementType('TERMINATION');
+                  setManualOverrides(prev => {
+                    const next = { ...prev };
+                    delete next.deductMoneyAct2006;
+                    delete next.terminationBenefit;
+                    delete next.payableSubTotal;
+                    delete next.deductionSubTotal;
+                    delete next.totalPayAmount;
+                    delete next.amountInWords;
+                    return next;
+                  });
+                }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+                  settlementType === 'TERMINATION'
+                    ? 'bg-purple-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Termination Benefit
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 lg:gap-x-12 gap-y-4 mb-8">
@@ -505,7 +579,18 @@ export default function NewSettlementPage() {
             <div className="flex"><strong className="w-36 sm:w-40 shrink-0">Sub-Section :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{selectedWorker.subSection?.name || ''}</span></div>
             
             {/* Row 5 */}
-            <div className="flex items-center"><strong className="w-36 sm:w-40 shrink-0">Resign Apply Date :</strong> <input type="date" name="resignApplyDate" value={resignApplyDate} onChange={(e) => setResignApplyDate(e.target.value)} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
+            <div className="flex items-center">
+              <strong className="w-36 sm:w-40 shrink-0">
+                {settlementType === 'TERMINATION' ? 'Notice / Termination Date :' : 'Resign Apply Date :'}
+              </strong> 
+              <input 
+                type="date" 
+                name="resignApplyDate" 
+                value={resignApplyDate} 
+                onChange={(e) => setResignApplyDate(e.target.value)} 
+                className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" 
+              />
+            </div>
             <div className="flex items-center"><strong className="w-36 sm:w-40 shrink-0">Basic Salary :</strong> <input type="number" name="basicSalary" value={formVals.basicSalary || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
             
             {/* Row 6 */}
@@ -569,7 +654,7 @@ export default function NewSettlementPage() {
             {selectedWorker.grade === 'M' && (
               <div className="flex items-center"><strong className="w-48 text-sm">Extra Duty Days :</strong> <input type="number" name="extraDutyDays" value={formVals.extraDutyDays || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
             )}
-            {(() => {
+            {settlementType !== 'TERMINATION' && (() => {
               let noticePeriodDue = 0;
               if (resignApplyDate && lastWorkingDay) {
                 const rDate = new Date(resignApplyDate);
@@ -616,14 +701,32 @@ export default function NewSettlementPage() {
               <span className="text-gray-500 ml-2 text-xs">Taka</span>
             </div>
             
-            <div className="flex items-center">
-              <strong className="w-56 text-sm text-red-600 flex items-center gap-1">
-                Deduct Money (Act of 2006) :
-                {manualOverrides.deductMoneyAct2006 && <span className="text-[10px] text-amber-600 font-normal">(Manual)</span>}
-              </strong> 
-              <input type="number" name="deductMoneyAct2006" value={formVals.deductMoneyAct2006 || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 text-red-600 bg-red-50 font-medium" /> 
-              <span className="text-gray-500 ml-2 text-xs">Taka</span>
-            </div>
+            {settlementType === 'TERMINATION' ? (
+              <div className="flex items-center">
+                <strong className="w-56 text-sm text-purple-700 flex items-center gap-1">
+                  Termination Benefit :
+                  <span className="text-[10px] text-purple-600 font-semibold">(4 × Basic)</span>
+                  {manualOverrides.terminationBenefit && <span className="text-[10px] text-amber-600 font-normal">(Manual)</span>}
+                </strong> 
+                <input 
+                  type="number" 
+                  name="terminationBenefit" 
+                  value={formVals.terminationBenefit || ''} 
+                  onChange={handleValChange} 
+                  className="border-b border-dashed border-purple-300 flex-1 outline-none px-1 text-purple-700 bg-purple-50 font-bold" 
+                /> 
+                <span className="text-gray-500 ml-2 text-xs">Taka</span>
+              </div>
+            ) : (
+              <div className="flex items-center">
+                <strong className="w-56 text-sm text-red-600 flex items-center gap-1">
+                  Deduct Money (Act of 2006) :
+                  {manualOverrides.deductMoneyAct2006 && <span className="text-[10px] text-amber-600 font-normal">(Manual)</span>}
+                </strong> 
+                <input type="number" name="deductMoneyAct2006" value={formVals.deductMoneyAct2006 || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 text-red-600 bg-red-50 font-medium" /> 
+                <span className="text-gray-500 ml-2 text-xs">Taka</span>
+              </div>
+            )}
             
             <div className="flex items-center">
               <strong className="w-56 text-sm flex items-center gap-1">

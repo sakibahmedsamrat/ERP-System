@@ -14,6 +14,8 @@ import DeleteSettlementButton from '@/components/DeleteSettlementButton';
 interface SettlementItem {
   id: string;
   workerId: string;
+  settlementType?: string | null;
+  terminationBenefit?: number | null;
   resignApplyDate: Date | string | null;
   lastWorkingDay: Date | string | null;
   serviceAge: string | null;
@@ -46,7 +48,8 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
   const [isSearchingEmployee, setIsSearchingEmployee] = useState(false);
   const [selectedWorker, setSelectedWorker] = useState<any | null>(null);
 
-  // Resignation Form Fields
+  // Settlement Form Fields (Resign / Termination)
+  const [panelSettlementType, setPanelSettlementType] = useState<'RESIGN' | 'TERMINATION'>('RESIGN');
   const [resignApplyDate, setResignApplyDate] = useState('');
   const [lastWorkingDay, setLastWorkingDay] = useState('');
   const [remarks, setRemarks] = useState('');
@@ -106,6 +109,9 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
       s => s.workerId === worker.id && s.status === 'PENDING'
     );
     if (existing) {
+      if (existing.settlementType) {
+        setPanelSettlementType(existing.settlementType as any || 'RESIGN');
+      }
       if (existing.resignApplyDate) {
         setResignApplyDate(formatDateToInput(existing.resignApplyDate));
       }
@@ -113,6 +119,7 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
         setLastWorkingDay(formatDateToInput(existing.lastWorkingDay));
       }
     } else {
+      setPanelSettlementType('RESIGN');
       setResignApplyDate('');
       setLastWorkingDay('');
     }
@@ -122,6 +129,7 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
     setSelectedWorker(null);
     setEmployeeQuery('');
     setEmployeeResults([]);
+    setPanelSettlementType('RESIGN');
     setResignApplyDate('');
     setLastWorkingDay('');
     setRemarks('');
@@ -154,13 +162,19 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
     };
   }, [resignApplyDate, lastWorkingDay]);
 
+  const estimatedTerminationBenefit = useMemo(() => {
+    if (panelSettlementType !== 'TERMINATION' || !selectedWorker?.basicSalary) return 0;
+    return Math.round(4 * selectedWorker.basicSalary);
+  }, [panelSettlementType, selectedWorker?.basicSalary]);
+
   const estimatedDeduction2006 = useMemo(() => {
+    if (panelSettlementType === 'TERMINATION') return 0;
     if (!calculatedNoticePeriod || !selectedWorker?.basicSalary) return 0;
     if (calculatedNoticePeriod.shortfallDays > 0) {
       return Math.round(calculatedNoticePeriod.shortfallDays * (selectedWorker.basicSalary / 30));
     }
     return 0;
-  }, [calculatedNoticePeriod, selectedWorker?.basicSalary]);
+  }, [panelSettlementType, calculatedNoticePeriod, selectedWorker?.basicSalary]);
 
   const estimatedServiceBenefit = useMemo(() => {
     if (!selectedWorker?.basicSalary || !calculatedServiceAge?.isValid || calculatedServiceAge.isInverted) {
@@ -189,7 +203,7 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
       return;
     }
     if (!resignApplyDate) {
-      setErrorMessage('Please select Resign Apply Date.');
+      setErrorMessage(panelSettlementType === 'TERMINATION' ? 'Please select Notice / Termination Date.' : 'Please select Resign Apply Date.');
       return;
     }
     if (!lastWorkingDay) {
@@ -203,6 +217,7 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
     try {
       const res = await recordEmployeeResignation({
         workerId: selectedWorker.id,
+        settlementType: panelSettlementType,
         resignApplyDate,
         lastWorkingDay,
         remarks: remarks.trim() || undefined,
@@ -221,7 +236,7 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
           setStatusFilter('ALL');
         }
         setResignationSuccess({
-          message: 'Resignation details recorded successfully! Settlement is now PENDING.',
+          message: `${panelSettlementType === 'TERMINATION' ? 'Termination' : 'Resignation'} details recorded successfully! Settlement is now PENDING.`,
           settlementId: res.settlementId,
           workerName: selectedWorker.name,
         });
@@ -524,11 +539,43 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
                 </button>
               </div>
 
+              {/* Settlement Type Toggle */}
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 border border-slate-200/80 rounded-2xl p-3.5">
+                <div>
+                  <span className="text-xs font-bold text-slate-800 uppercase tracking-wider block">Settlement Type</span>
+                  <span className="text-[11px] text-slate-500">Choose whether this is voluntary Resignation or employer Termination</span>
+                </div>
+                <div className="inline-flex rounded-xl p-1 bg-white border border-slate-200 shadow-xs">
+                  <button
+                    type="button"
+                    onClick={() => setPanelSettlementType('RESIGN')}
+                    className={`px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                      panelSettlementType === 'RESIGN'
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Resign Benefit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPanelSettlementType('TERMINATION')}
+                    className={`px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                      panelSettlementType === 'TERMINATION'
+                        ? 'bg-purple-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Termination Benefit
+                  </button>
+                </div>
+              </div>
+
               {/* Resignation Form Fields */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                    Resign Apply Date <span className="text-red-500">*</span>
+                    {panelSettlementType === 'TERMINATION' ? 'Notice / Termination Date' : 'Resign Apply Date'} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="date"
@@ -538,7 +585,9 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
                     className="w-full border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
                   />
                   <span className="text-[11px] text-gray-400 mt-1 block">
-                    The official date the resignation letter was submitted.
+                    {panelSettlementType === 'TERMINATION' 
+                      ? 'The official date the termination notice was issued.'
+                      : 'The official date the resignation letter was submitted.'}
                   </span>
                 </div>
 
@@ -561,11 +610,11 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
 
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                  Resignation Remarks / Reason <span className="text-gray-400 font-normal">(Optional)</span>
+                  {panelSettlementType === 'TERMINATION' ? 'Termination Remarks / Reason' : 'Resignation Remarks / Reason'} <span className="text-gray-400 font-normal">(Optional)</span>
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Higher studies, Personal reasons, Relocation..."
+                  placeholder="e.g. Higher studies, Personal reasons, Relocation, Restructuring..."
                   value={remarks}
                   onChange={e => setRemarks(e.target.value)}
                   className="w-full border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
@@ -612,36 +661,57 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
                       )}
                     </div>
 
-                    {/* Notice Period Status */}
-                    <div className="bg-white p-3 rounded-lg border border-gray-200">
-                      <span className="text-gray-500 block font-medium">Notice Period (60d standard)</span>
-                      {calculatedNoticePeriod ? (
-                        calculatedNoticePeriod.isSatisfied ? (
-                          <span className="text-sm font-bold text-emerald-700 mt-0.5 block">
-                            ✅ Full Notice Served ({calculatedNoticePeriod.servedDays}d)
-                          </span>
+                    {/* Notice Period Status or Termination Benefit */}
+                    {panelSettlementType === 'TERMINATION' ? (
+                      <div className="bg-purple-50/70 p-3 rounded-lg border border-purple-200">
+                        <span className="text-purple-700 block font-medium">Termination Benefit (4 × Basic)</span>
+                        <span className="text-sm font-bold text-purple-900 mt-0.5 block">
+                          ~{estimatedTerminationBenefit.toLocaleString()} BDT
+                        </span>
+                        <span className="text-[11px] text-purple-600 block mt-0.5">
+                          Calculated: 4 × Basic ({selectedWorker.basicSalary || 0} BDT)
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <span className="text-gray-500 block font-medium">Notice Period (60d standard)</span>
+                        {calculatedNoticePeriod ? (
+                          calculatedNoticePeriod.isSatisfied ? (
+                            <span className="text-sm font-bold text-emerald-700 mt-0.5 block">
+                              ✅ Full Notice Served ({calculatedNoticePeriod.servedDays}d)
+                            </span>
+                          ) : (
+                            <div>
+                              <span className="text-sm font-bold text-red-600 mt-0.5 block">
+                                ⚠️ Shortfall: {calculatedNoticePeriod.shortfallDays} Days
+                              </span>
+                              <span className="text-[11px] text-red-500 block mt-0.5">
+                                Act 2006 Est: ~{estimatedDeduction2006.toLocaleString()} BDT
+                              </span>
+                            </div>
+                          )
                         ) : (
-                          <div>
-                            <span className="text-sm font-bold text-red-600 mt-0.5 block">
-                              ⚠️ Shortfall: {calculatedNoticePeriod.shortfallDays} Days
-                            </span>
-                            <span className="text-[11px] text-red-500 block mt-0.5">
-                              Act 2006 Est: ~{estimatedDeduction2006.toLocaleString()} BDT
-                            </span>
-                          </div>
-                        )
-                      ) : (
-                        <span className="text-sm font-bold text-gray-400 mt-0.5 block">Pending dates...</span>
-                      )}
-                    </div>
+                          <span className="text-sm font-bold text-gray-400 mt-0.5 block">Pending dates...</span>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Summary estimated pay & status */}
                   <div className="pt-2 flex flex-wrap items-center justify-between text-xs text-gray-600 border-t border-gray-200">
                     <div>
                       <span>Estimated Service Benefit: <strong>{estimatedServiceBenefit.toLocaleString()} BDT</strong></span>
-                      <span className="mx-2">&bull;</span>
-                      <span>Notice Shortfall Deduction: <strong className="text-red-600">-{estimatedDeduction2006.toLocaleString()} BDT</strong></span>
+                      {panelSettlementType === 'TERMINATION' ? (
+                        <>
+                          <span className="mx-2">&bull;</span>
+                          <span>Termination Benefit: <strong className="text-purple-700">+{estimatedTerminationBenefit.toLocaleString()} BDT</strong></span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="mx-2">&bull;</span>
+                          <span>Notice Shortfall Deduction: <strong className="text-red-600">-{estimatedDeduction2006.toLocaleString()} BDT</strong></span>
+                        </>
+                      )}
                     </div>
                     <div className="flex items-center gap-1.5 font-bold">
                       <span>Initial Status:</span>
@@ -665,17 +735,21 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
                 <button
                   type="submit"
                   disabled={isSubmittingResign}
-                  className={`min-h-[44px] px-6 py-2.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition shadow-sm flex items-center justify-center gap-2 ${
+                  className={`min-h-[44px] px-6 py-2.5 text-sm font-bold text-white rounded-xl transition shadow-sm flex items-center justify-center gap-2 ${
+                    panelSettlementType === 'TERMINATION'
+                      ? 'bg-purple-600 hover:bg-purple-700'
+                      : 'bg-indigo-600 hover:bg-indigo-700'
+                  } ${
                     isSubmittingResign ? 'opacity-60 cursor-not-allowed' : ''
                   }`}
                 >
                   {isSubmittingResign ? (
                     <>
-                      <RefreshCw size={16} className="animate-spin" /> Saving Resignation...
+                      <RefreshCw size={16} className="animate-spin" /> Saving {panelSettlementType === 'TERMINATION' ? 'Termination' : 'Resignation'}...
                     </>
                   ) : (
                     <>
-                      <UserCheck size={16} /> Save Resignation & Mark Pending
+                      <UserCheck size={16} /> Save {panelSettlementType === 'TERMINATION' ? 'Termination' : 'Resignation'} &amp; Mark Pending
                     </>
                   )}
                 </button>
@@ -777,7 +851,7 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
             <thead className="bg-slate-50/80 backdrop-blur-md border-b border-slate-200/70">
               <tr>
                 <th className="p-4 font-bold text-xs text-slate-600 uppercase tracking-wider">Employee</th>
-                <th className="p-4 font-bold text-xs text-gray-500 uppercase tracking-wider">Resignation Dates</th>
+                <th className="p-4 font-bold text-xs text-gray-500 uppercase tracking-wider">Type / Dates</th>
                 <th className="p-4 font-bold text-xs text-gray-500 uppercase tracking-wider">Salary Month</th>
                 <th className="p-4 font-bold text-xs text-gray-500 uppercase tracking-wider">Total Amount</th>
                 <th className="p-4 font-bold text-xs text-gray-500 uppercase tracking-wider">Status</th>
@@ -800,6 +874,15 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
                     <td className="p-4">
                       <div className="font-bold text-gray-900 group-hover:text-blue-600 transition flex items-center gap-1.5 flex-wrap">
                         {settlement.worker.name}
+                        {settlement.settlementType === 'TERMINATION' ? (
+                          <span className="text-[10px] bg-purple-50 text-purple-700 border border-purple-200 px-1.5 py-0.5 rounded font-bold">
+                            Termination
+                          </span>
+                        ) : (
+                          <span className="text-[10px] bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.5 rounded font-semibold">
+                            Resignation
+                          </span>
+                        )}
                         {isPending && (
                           <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded font-bold">
                             Action Needed
@@ -823,13 +906,15 @@ export default function SettlementManagerClient({ initialSettlements }: Settleme
                       </div>
                     </td>
 
-                    {/* Resignation Dates */}
+                    {/* Resignation / Termination Dates */}
                     <td className="p-4">
                       {settlement.resignApplyDate || settlement.lastWorkingDay ? (
                         <div className="text-xs space-y-0.5">
                           {settlement.resignApplyDate && (
                             <div className="text-gray-600">
-                              <span className="text-gray-400 font-medium">Resign:</span> {formatDate(settlement.resignApplyDate)}
+                              <span className="text-gray-400 font-medium">
+                                {settlement.settlementType === 'TERMINATION' ? 'Notice:' : 'Resign:'}
+                              </span> {formatDate(settlement.resignApplyDate)}
                             </div>
                           )}
                           {settlement.lastWorkingDay && (

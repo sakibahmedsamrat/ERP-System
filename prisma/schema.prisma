@@ -194,6 +194,7 @@ model Settlement {
   worker    Worker   @relation(fields: [workerId], references: [id], onDelete: Cascade)
   
   // Dates & Info
+  settlementType  String?  @default("RESIGN") // RESIGN, TERMINATION
   resignApplyDate DateTime?
   lastWorkingDay  DateTime?
   serviceAge      String?
@@ -213,6 +214,7 @@ model Settlement {
 
   // Pay Calculation - Payables
   serviceBenefitAmount   Float? @default(0)
+  terminationBenefit     Float? @default(0)
   currentMonthWorkDayPay Float? @default(0)
   extraDutyOTPay         Float? @default(0)
   earnLeavePay           Float? @default(0)

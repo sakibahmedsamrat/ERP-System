@@ -63,7 +63,9 @@ export default async function SettlementPrintPage({ params }: { params: { id: st
           </div>
           <div className="w-1/2 text-center">
             <h1 className="text-2xl print:text-xl font-bold uppercase">{w.company?.name || 'MOHAMMADI ELECTRIC WIRES & MULTI PRODUCTS (MEP) LTD.'}</h1>
-            <h2 className="text-lg print:text-base font-bold underline mt-2 inline-block">Resign Benefits</h2>
+            <h2 className="text-lg print:text-base font-bold underline mt-2 inline-block">
+              {settlement.settlementType === 'TERMINATION' ? 'Termination Benefits' : 'Resign Benefits'}
+            </h2>
           </div>
           <div className="w-1/4 text-right">
             <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
@@ -95,7 +97,12 @@ export default async function SettlementPrintPage({ params }: { params: { id: st
           <div className="flex"><strong className="w-44 print:w-36">Sub-Section :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{w.subSection?.name || ''}</span></div>
           
           {/* Row 5 */}
-          <div className="flex"><strong className="w-44 print:w-36">Resign Apply Date :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{formatDate(settlement.resignApplyDate)}</span></div>
+          <div className="flex">
+            <strong className="w-44 print:w-36">
+              {settlement.settlementType === 'TERMINATION' ? 'Notice / Termination Date :' : 'Resign Apply Date :'}
+            </strong> 
+            <span className="border-b border-dashed border-gray-400 flex-1">{formatDate(settlement.resignApplyDate)}</span>
+          </div>
           <div className="flex"><strong className="w-44 print:w-36">Basic Salary :</strong> <span className="border-b border-dashed border-gray-400 flex-1">{settlement.basicSalary || 0}</span></div>
           
           {/* Row 6 */}
@@ -133,7 +140,7 @@ export default async function SettlementPrintPage({ params }: { params: { id: st
           <div className="flex"><strong className="w-64 print:w-48">Current month working days {payrollCycle ? `(${payrollCycle.monthName})` : ''} :</strong> <span className="border-b border-dashed border-gray-400 flex-1 text-center">{settlement.currentMonthWorkingDays || 0}</span> <span className="ml-2 w-16">Days</span></div>
           <div className="flex"><strong className="w-64 print:w-48">Absent Days :</strong> <span className="border-b border-dashed border-gray-400 flex-1 text-center">{settlement.absentDays || 0}</span> <span className="ml-2 w-16"></span></div>
 
-          {(() => {
+          {settlement.settlementType !== 'TERMINATION' && (() => {
             let noticePeriodDue = 0;
             if (settlement.resignApplyDate && settlement.lastWorkingDay) {
               const rDate = new Date(settlement.resignApplyDate);
@@ -154,7 +161,17 @@ export default async function SettlementPrintPage({ params }: { params: { id: st
         <h3 className="font-bold border-b border-black mb-3 print:mb-2 pb-1">Pay calculation info</h3>
         <div className="grid grid-cols-2 gap-x-12 gap-y-3 mb-4 print:mb-2 text-[15px] print:text-[13px]">
           <div className="flex"><strong className="w-64 print:w-48 text-left">Service benefit amount :</strong> <span className="border-b border-dashed border-gray-400 flex-1 text-center">{settlement.serviceBenefitAmount || 0}</span> <span className="ml-2 w-12">Taka</span></div>
-          <div className="flex"><strong className="w-64 print:w-48 text-left">Deduct Money (Act of 2006, sec 27) :</strong> <span className="border-b border-dashed border-gray-400 flex-1 text-center">{settlement.deductMoneyAct2006 || 0}</span> <span className="ml-2 w-12">Taka</span></div>
+          {settlement.settlementType === 'TERMINATION' ? (
+            <div className="flex">
+              <strong className="w-64 print:w-48 text-left">Termination Benefit :</strong> 
+              <span className="border-b border-dashed border-gray-400 flex-1 text-center">
+                {settlement.terminationBenefit != null ? settlement.terminationBenefit : Math.round(4 * (settlement.basicSalary || 0))}
+              </span> 
+              <span className="ml-2 w-12">Taka</span>
+            </div>
+          ) : (
+            <div className="flex"><strong className="w-64 print:w-48 text-left">Deduct Money (Act of 2006, sec 27) :</strong> <span className="border-b border-dashed border-gray-400 flex-1 text-center">{settlement.deductMoneyAct2006 || 0}</span> <span className="ml-2 w-12">Taka</span></div>
+          )}
           
           <div className="flex"><strong className="w-64 print:w-48 text-left">Current month work day pay {payrollCycle ? `(${payrollCycle.monthName})` : ''} :</strong> <span className="border-b border-dashed border-gray-400 flex-1 text-center">{settlement.currentMonthWorkDayPay || 0}</span> <span className="ml-2 w-12">Taka</span></div>
           <div className="flex"><strong className="w-64 print:w-48 text-left">Absent Deduction :</strong> <span className="border-b border-dashed border-gray-400 flex-1 text-center">{settlement.absentDeduction || 0}</span> <span className="ml-2 w-12">Taka</span></div>
