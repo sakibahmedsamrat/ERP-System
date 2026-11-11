@@ -1,4 +1,4 @@
-import prisma from '@/lib/prisma';
+import prisma, { withDbTimeout } from '@/lib/prisma';
 import { formatDateTime } from '@/lib/formatDate';
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
@@ -8,6 +8,8 @@ export const metadata = {
   title: 'Activity Logs | HR ERP',
 };
 
+export const dynamic = 'force-dynamic';
+
 export default async function ActivityLogsPage() {
   const session = await getSession();
   if (!session || !session.user) redirect('/login');
@@ -15,10 +17,20 @@ export default async function ActivityLogsPage() {
     redirect('/');
   }
 
-  const logs = await prisma.auditLog.findMany({
-    orderBy: { createdAt: 'desc' },
-    take: 200
-  });
+  let logs: any[] = [];
+  try {
+    logs = await withDbTimeout(
+      prisma.auditLog.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 200
+      }),
+      5000,
+      []
+    );
+  } catch (error) {
+    console.error('Failed to load activity logs:', error);
+    logs = [];
+  }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
