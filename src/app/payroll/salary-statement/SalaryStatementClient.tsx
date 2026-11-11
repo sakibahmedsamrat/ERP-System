@@ -26,6 +26,7 @@ import {
   Trash2,
   Edit3,
   Plus,
+  Minus,
   X,
   AlertCircle,
   Check,
@@ -41,6 +42,13 @@ import {
   getSalaryStatementById,
   deleteSalaryStatement,
 } from './actions';
+
+export interface StatementCustomRow {
+  id: string;
+  labels: [string, string, string];
+  types: [('deduction' | 'addition'), ('deduction' | 'addition'), ('deduction' | 'addition')];
+  amounts: [number, number, number];
+}
 
 interface MonthBreakdown {
   monthName: string;
@@ -81,6 +89,7 @@ interface StatementData {
   joiningDate: string;
   purpose: string;
   months: [MonthBreakdown, MonthBreakdown, MonthBreakdown];
+  customRows?: StatementCustomRow[];
   // Page 2 specific
   structureBasicLabel?: string;
   structureBasic: number;
@@ -148,8 +157,59 @@ function getRowMultiplier(
   return defaultType === 'addition' ? 1 : -1;
 }
 
-function calculateMonthNetPayable(month: MonthBreakdown): number {
+export function createDefaultCustomRows(): StatementCustomRow[] {
+  return [
+    {
+      id: 'pf',
+      labels: ['(Less) PF', '(Less) PF', '(Less) PF'],
+      types: ['deduction', 'deduction', 'deduction'],
+      amounts: [1848, 1848, 1848],
+    },
+    {
+      id: 'overtime',
+      labels: ['Over Time', 'Over Time', 'Over Time'],
+      types: ['addition', 'addition', 'addition'],
+      amounts: [2933, 14986, 4400],
+    },
+    {
+      id: 'incomeTax',
+      labels: ['Income Tax', 'Income Tax', 'Income Tax'],
+      types: ['deduction', 'deduction', 'deduction'],
+      amounts: [1000, 1000, 417],
+    },
+  ];
+}
+
+export function computeNetPayable(
+  gross: number,
+  mIdx: 0 | 1 | 2,
+  customRows?: StatementCustomRow[]
+): number {
+  if (customRows && customRows.length > 0) {
+    let net = Number(gross) || 0;
+    for (const r of customRows) {
+      const amt = Number(r.amounts[mIdx]) || 0;
+      const type = r.types[mIdx] || 'deduction';
+      if (type === 'addition') {
+        net += amt;
+      } else {
+        net -= amt;
+      }
+    }
+    return Math.max(0, net);
+  }
+  return Math.max(0, Number(gross) || 0);
+}
+
+function calculateMonthNetPayable(
+  month: MonthBreakdown,
+  mIdx?: 0 | 1 | 2,
+  customRows?: StatementCustomRow[]
+): number {
   const gross = Number(month.grossSalary) || 0;
+  if (customRows && customRows.length > 0 && mIdx !== undefined) {
+    return computeNetPayable(gross, mIdx, customRows);
+  }
   const pf = Number(month.pfDeduction) || 0;
   const overtime = Number(month.overtime) || 0;
   const incomeTax = Number(month.incomeTax) || 0;
@@ -919,10 +979,11 @@ export default function SalaryStatementClient({
     disclaimer:
       'This certificate is issued at the request of the mentioned employee with no responsibility borne either on the signatory or the company for any kind of financial transactions.',
     // Signatory
-    signatoryName: 'Md Touhiduzzaman',
-    signatoryTitle: 'Assistant Manager',
+    signatoryName: 'Sajjad Hosen',
+    signatoryTitle: 'Senior Deputy Manager',
     signatoryDepartment: 'HR & Admin',
     signatoryOrg: 'MEP Group.',
+    customRows: createDefaultCustomRows(),
   });
 
   const [formData, setFormData] = useState<StatementData>(structuredClone(initialDefaultsRef.current));
@@ -1071,6 +1132,26 @@ export default function SalaryStatementClient({
           netPayable: Math.max(0, totalStructure - pfDeduct),
         },
       ],
+      customRows: [
+        {
+          id: 'pf',
+          labels: ['(Less) PF', '(Less) PF', '(Less) PF'],
+          types: ['deduction', 'deduction', 'deduction'],
+          amounts: [pfDeduct, pfDeduct, pfDeduct],
+        },
+        {
+          id: 'overtime',
+          labels: ['Over Time', 'Over Time', 'Over Time'],
+          types: ['addition', 'addition', 'addition'],
+          amounts: [0, 0, 0],
+        },
+        {
+          id: 'incomeTax',
+          labels: ['Income Tax', 'Income Tax', 'Income Tax'],
+          types: ['deduction', 'deduction', 'deduction'],
+          amounts: [0, 0, 0],
+        },
+      ],
     };
 
     initialDefaultsRef.current = structuredClone(newWorkerData);
@@ -1181,10 +1262,11 @@ export default function SalaryStatementClient({
       pfDeductionPage2: 417,
       disclaimer:
         'This certificate is issued at the request of the mentioned employee with no responsibility borne either on the signatory or the company for any kind of financial transactions.',
-      signatoryName: 'Md Touhiduzzaman',
-      signatoryTitle: 'Assistant Manager',
+      signatoryName: 'Sajjad Hosen',
+      signatoryTitle: 'Senior Deputy Manager',
       signatoryDepartment: 'HR & Admin',
       signatoryOrg: 'MEP Group.',
+      customRows: createDefaultCustomRows(),
     };
     initialDefaultsRef.current = structuredClone(standardDefault);
     setFormData(standardDefault);
@@ -1268,6 +1350,33 @@ export default function SalaryStatementClient({
         return;
       }
 
+      let loadedCustomRows: StatementCustomRow[] = [];
+      if (Array.isArray(parsedFormData.customRows) && parsedFormData.customRows.length > 0) {
+        loadedCustomRows = parsedFormData.customRows;
+      } else if (Array.isArray(parsedFormData.months) && parsedFormData.months.length === 3) {
+        const m = parsedFormData.months;
+        loadedCustomRows = [
+          {
+            id: 'pf',
+            labels: [m[0].pfLabel || '(Less) PF', m[1].pfLabel || '(Less) PF', m[2].pfLabel || '(Less) PF'],
+            types: [m[0].pfType || 'deduction', m[1].pfType || 'deduction', m[2].pfType || 'deduction'],
+            amounts: [Number(m[0].pfDeduction) || 0, Number(m[1].pfDeduction) || 0, Number(m[2].pfDeduction) || 0],
+          },
+          {
+            id: 'overtime',
+            labels: [m[0].overtimeLabel || 'Over Time', m[1].overtimeLabel || 'Over Time', m[2].overtimeLabel || 'Over Time'],
+            types: [m[0].overtimeType || 'addition', m[1].overtimeType || 'addition', m[2].overtimeType || 'addition'],
+            amounts: [Number(m[0].overtime) || 0, Number(m[1].overtime) || 0, Number(m[2].overtime) || 0],
+          },
+          {
+            id: 'incomeTax',
+            labels: [m[0].incomeTaxLabel || 'Income Tax', m[1].incomeTaxLabel || 'Income Tax', m[2].incomeTaxLabel || 'Income Tax'],
+            types: [m[0].incomeTaxType || 'deduction', m[1].incomeTaxType || 'deduction', m[2].incomeTaxType || 'deduction'],
+            amounts: [Number(m[0].incomeTax) || 0, Number(m[1].incomeTax) || 0, Number(m[2].incomeTax) || 0],
+          },
+        ];
+      }
+
       setFormData((prev) => {
         const nextMonths =
           Array.isArray(parsedFormData.months) && parsedFormData.months.length === 3
@@ -1277,6 +1386,7 @@ export default function SalaryStatementClient({
           ...prev,
           ...parsedFormData,
           months: nextMonths,
+          customRows: loadedCustomRows.length > 0 ? loadedCustomRows : (prev.customRows || createDefaultCustomRows()),
         };
         initialDefaultsRef.current = structuredClone(merged);
         return merged;
@@ -1437,15 +1547,166 @@ export default function SalaryStatementClient({
       }
 
       if (field !== 'netPayable' && field !== 'monthName' && field !== 'netPayableLabel') {
-        currentMonth.netPayable = calculateMonthNetPayable(currentMonth);
+        currentMonth.netPayable = computeNetPayable(currentMonth.grossSalary, index, prev.customRows);
       }
 
       updatedMonths[index] = currentMonth;
-      return { ...prev, months: updatedMonths };
+      const latestNet = updatedMonths[2].netPayable;
+      return {
+        ...prev,
+        months: updatedMonths,
+        monthlyPayableAmount: latestNet,
+        monthlyPayableInWords: formatWordsOnly(latestNet),
+      };
     });
   };
 
-  // Toggle custom row type between addition and deduction
+  // Add a new custom row
+  const handleAddCustomRow = () => {
+    setFormData((prev) => {
+      const existingRows = prev.customRows || [];
+      const newId = 'custom_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+      const newRow: StatementCustomRow = {
+        id: newId,
+        labels: ['Other Deduction', 'Other Deduction', 'Other Deduction'],
+        types: ['deduction', 'deduction', 'deduction'],
+        amounts: [0, 0, 0],
+      };
+      const updatedRows = [...existingRows, newRow];
+      const updatedMonths = prev.months.map((m, idx) => ({
+        ...m,
+        netPayable: computeNetPayable(m.grossSalary, idx as 0 | 1 | 2, updatedRows),
+      })) as [MonthBreakdown, MonthBreakdown, MonthBreakdown];
+
+      const latestNet = updatedMonths[2].netPayable;
+      return {
+        ...prev,
+        customRows: updatedRows,
+        months: updatedMonths,
+        monthlyPayableAmount: latestNet,
+        monthlyPayableInWords: formatWordsOnly(latestNet),
+      };
+    });
+  };
+
+  // Remove a custom row
+  const handleRemoveCustomRow = (rowId: string) => {
+    setFormData((prev) => {
+      const existingRows = prev.customRows || [];
+      const updatedRows = existingRows.filter((r) => r.id !== rowId);
+      const updatedMonths = prev.months.map((m, idx) => ({
+        ...m,
+        netPayable: computeNetPayable(m.grossSalary, idx as 0 | 1 | 2, updatedRows),
+      })) as [MonthBreakdown, MonthBreakdown, MonthBreakdown];
+
+      const latestNet = updatedMonths[2].netPayable;
+      return {
+        ...prev,
+        customRows: updatedRows,
+        months: updatedMonths,
+        monthlyPayableAmount: latestNet,
+        monthlyPayableInWords: formatWordsOnly(latestNet),
+      };
+    });
+  };
+
+  // Toggle or set row sign (+ or -)
+  const handleToggleCustomRowType = (
+    rowId: string,
+    monthIdx: 0 | 1 | 2,
+    targetType?: 'addition' | 'deduction'
+  ) => {
+    setFormData((prev) => {
+      const existingRows = prev.customRows || [];
+      const updatedRows = existingRows.map((r) => {
+        if (r.id !== rowId) return r;
+        const currentType = r.types[monthIdx] || 'deduction';
+        const newType = targetType || (currentType === 'deduction' ? 'addition' : 'deduction');
+        const newTypes = [...r.types] as [('deduction' | 'addition'), ('deduction' | 'addition'), ('deduction' | 'addition')];
+        newTypes[monthIdx] = newType;
+        return { ...r, types: newTypes };
+      });
+
+      const updatedMonths = prev.months.map((m, idx) => ({
+        ...m,
+        netPayable: computeNetPayable(m.grossSalary, idx as 0 | 1 | 2, updatedRows),
+      })) as [MonthBreakdown, MonthBreakdown, MonthBreakdown];
+
+      const latestNet = updatedMonths[2].netPayable;
+      return {
+        ...prev,
+        customRows: updatedRows,
+        months: updatedMonths,
+        monthlyPayableAmount: latestNet,
+        monthlyPayableInWords: formatWordsOnly(latestNet),
+      };
+    });
+  };
+
+  // Update custom row label
+  const handleCustomRowLabelChange = (rowId: string, monthIdx: 0 | 1 | 2, val: string) => {
+    setFormData((prev) => {
+      const existingRows = prev.customRows || [];
+      const updatedRows = existingRows.map((r) => {
+        if (r.id !== rowId) return r;
+        const newLabels = [...r.labels] as [string, string, string];
+        newLabels[monthIdx] = val;
+        return { ...r, labels: newLabels };
+      });
+      return { ...prev, customRows: updatedRows };
+    });
+  };
+
+  // Update custom row amount
+  const handleCustomRowAmountChange = (rowId: string, monthIdx: 0 | 1 | 2, val: number) => {
+    setFormData((prev) => {
+      const existingRows = prev.customRows || [];
+      const updatedRows = existingRows.map((r) => {
+        if (r.id !== rowId) return r;
+        const newAmounts = [...r.amounts] as [number, number, number];
+        newAmounts[monthIdx] = val;
+        return { ...r, amounts: newAmounts };
+      });
+
+      const updatedMonths = prev.months.map((m, idx) => ({
+        ...m,
+        netPayable: computeNetPayable(m.grossSalary, idx as 0 | 1 | 2, updatedRows),
+      })) as [MonthBreakdown, MonthBreakdown, MonthBreakdown];
+
+      const latestNet = updatedMonths[2].netPayable;
+      return {
+        ...prev,
+        customRows: updatedRows,
+        months: updatedMonths,
+        monthlyPayableAmount: latestNet,
+        monthlyPayableInWords: formatWordsOnly(latestNet),
+      };
+    });
+  };
+
+  // Reset custom row label
+  const handleResetCustomRowLabel = (rowId: string, monthIdx: 0 | 1 | 2) => {
+    const initRow = initialDefaultsRef.current.customRows?.find((r) => r.id === rowId);
+    const fallback =
+      rowId === 'pf'
+        ? '(Less) PF'
+        : rowId === 'overtime'
+        ? 'Over Time'
+        : rowId === 'incomeTax'
+        ? 'Income Tax'
+        : 'Other Deduction';
+    const defaultLabel = initRow?.labels[monthIdx] || fallback;
+    handleCustomRowLabelChange(rowId, monthIdx, defaultLabel);
+  };
+
+  // Reset custom row amount
+  const handleResetCustomRowAmount = (rowId: string, monthIdx: 0 | 1 | 2) => {
+    const initRow = initialDefaultsRef.current.customRows?.find((r) => r.id === rowId);
+    const defaultAmount = initRow?.amounts[monthIdx] ?? 0;
+    handleCustomRowAmountChange(rowId, monthIdx, defaultAmount);
+  };
+
+  // Legacy toggle custom row type between addition and deduction
   const handleToggleRowType = (
     monthIdx: 0 | 1 | 2,
     typeField: 'pfType' | 'overtimeType' | 'incomeTaxType',
@@ -1457,9 +1718,15 @@ export default function SalaryStatementClient({
       const currentType = currentMonth[typeField] || defaultType;
       const nextType = currentType === 'deduction' ? 'addition' : 'deduction';
       currentMonth[typeField] = nextType;
-      currentMonth.netPayable = calculateMonthNetPayable(currentMonth);
+      currentMonth.netPayable = computeNetPayable(currentMonth.grossSalary, monthIdx, prev.customRows);
       updatedMonths[monthIdx] = currentMonth;
-      return { ...prev, months: updatedMonths };
+      const latestNet = updatedMonths[2].netPayable;
+      return {
+        ...prev,
+        months: updatedMonths,
+        monthlyPayableAmount: latestNet,
+        monthlyPayableInWords: formatWordsOnly(latestNet),
+      };
     });
   };
 
@@ -1468,10 +1735,16 @@ export default function SalaryStatementClient({
     setFormData((prev) => {
       const updatedMonths = [...prev.months] as [MonthBreakdown, MonthBreakdown, MonthBreakdown];
       const currentMonth = { ...updatedMonths[monthIdx] };
-      currentMonth.netPayable = calculateMonthNetPayable(currentMonth);
+      currentMonth.netPayable = computeNetPayable(currentMonth.grossSalary, monthIdx, prev.customRows);
       currentMonth.netPayableLabel = 'Net Payable=';
       updatedMonths[monthIdx] = currentMonth;
-      return { ...prev, months: updatedMonths };
+      const latestNet = updatedMonths[2].netPayable;
+      return {
+        ...prev,
+        months: updatedMonths,
+        monthlyPayableAmount: latestNet,
+        monthlyPayableInWords: formatWordsOnly(latestNet),
+      };
     });
   };
 
@@ -1523,56 +1796,55 @@ export default function SalaryStatementClient({
     });
   };
 
-  // Reset all 3 custom row labels ((Less) PF, Over Time, Income Tax)
+  // Reset all custom row labels and amounts to default
   const handleResetAllCustomLabels = () => {
-    setFormData((prev) => ({
-      ...prev,
-      months: prev.months.map((m) => ({
-        ...m,
-        pfLabel: '(Less) PF',
-        pfType: 'deduction',
-        overtimeLabel: 'Over Time',
-        overtimeType: 'addition',
-        incomeTaxLabel: 'Income Tax',
-        incomeTaxType: 'deduction',
-        netPayable: calculateMonthNetPayable({
-          ...m,
-          pfLabel: '(Less) PF',
-          pfType: 'deduction',
-          overtimeLabel: 'Over Time',
-          overtimeType: 'addition',
-          incomeTaxLabel: 'Income Tax',
-          incomeTaxType: 'deduction',
-        }),
-      })) as [MonthBreakdown, MonthBreakdown, MonthBreakdown],
-    }));
-  };
-
-  // Sync custom labels from Month 1 to Months 2 and 3
-  const handleSyncCustomLabels = (fromIndex: 0 | 1 | 2 = 0) => {
     setFormData((prev) => {
-      const src = prev.months[fromIndex];
-      const pfLabel = src.pfLabel || '(Less) PF';
-      const pfType = src.pfType || 'deduction';
-      const overtimeLabel = src.overtimeLabel || 'Over Time';
-      const overtimeType = src.overtimeType || 'addition';
-      const incomeTaxLabel = src.incomeTaxLabel || 'Income Tax';
-      const incomeTaxType = src.incomeTaxType || 'deduction';
+      const defaultRows = initialDefaultsRef.current?.customRows
+        ? structuredClone(initialDefaultsRef.current.customRows)
+        : createDefaultCustomRows();
+      const updatedMonths = prev.months.map((m, idx) => ({
+        ...m,
+        netPayable: computeNetPayable(m.grossSalary, idx as 0 | 1 | 2, defaultRows),
+      })) as [MonthBreakdown, MonthBreakdown, MonthBreakdown];
+      const latestNet = updatedMonths[2].netPayable;
       return {
         ...prev,
-        months: prev.months.map((m) => {
-          const updated = {
-            ...m,
-            pfLabel,
-            pfType,
-            overtimeLabel,
-            overtimeType,
-            incomeTaxLabel,
-            incomeTaxType,
-          };
-          updated.netPayable = calculateMonthNetPayable(updated);
-          return updated;
-        }) as [MonthBreakdown, MonthBreakdown, MonthBreakdown],
+        customRows: defaultRows,
+        months: updatedMonths,
+        monthlyPayableAmount: latestNet,
+        monthlyPayableInWords: formatWordsOnly(latestNet),
+      };
+    });
+  };
+
+  // Sync custom labels and types from Month 1 to Months 2 and 3
+  const handleSyncCustomLabels = (fromIndex: 0 | 1 | 2 = 0) => {
+    setFormData((prev) => {
+      const existingRows = prev.customRows || [];
+      const updatedRows = existingRows.map((r) => {
+        const srcLabel = r.labels[fromIndex];
+        const srcType = r.types[fromIndex];
+        return {
+          ...r,
+          labels: [srcLabel, srcLabel, srcLabel] as [string, string, string],
+          types: [srcType, srcType, srcType] as [
+            'deduction' | 'addition',
+            'deduction' | 'addition',
+            'deduction' | 'addition'
+          ],
+        };
+      });
+      const updatedMonths = prev.months.map((m, idx) => ({
+        ...m,
+        netPayable: computeNetPayable(m.grossSalary, idx as 0 | 1 | 2, updatedRows),
+      })) as [MonthBreakdown, MonthBreakdown, MonthBreakdown];
+      const latestNet = updatedMonths[2].netPayable;
+      return {
+        ...prev,
+        customRows: updatedRows,
+        months: updatedMonths,
+        monthlyPayableAmount: latestNet,
+        monthlyPayableInWords: formatWordsOnly(latestNet),
       };
     });
   };
@@ -1616,11 +1888,42 @@ export default function SalaryStatementClient({
   // Reset an entire single month (labels and amounts)
   const handleResetMonth = (monthIdx: 0 | 1 | 2) => {
     const initial = initialDefaultsRef.current?.months[monthIdx];
+    const initialCustom = initialDefaultsRef.current?.customRows;
     if (initial) {
       setFormData((prev) => {
-        const next = [...prev.months] as [MonthBreakdown, MonthBreakdown, MonthBreakdown];
-        next[monthIdx] = { ...initial };
-        return { ...prev, months: next };
+        const nextMonths = [...prev.months] as [MonthBreakdown, MonthBreakdown, MonthBreakdown];
+        nextMonths[monthIdx] = { ...initial };
+        let updatedRows = prev.customRows || [];
+        if (initialCustom) {
+          updatedRows = updatedRows.map((r) => {
+            const initRow = initialCustom.find((ir) => ir.id === r.id);
+            if (!initRow) return r;
+            const newAmounts = [...r.amounts] as [number, number, number];
+            const newLabels = [...r.labels] as [string, string, string];
+            const newTypes = [...r.types] as [
+              'deduction' | 'addition',
+              'deduction' | 'addition',
+              'deduction' | 'addition'
+            ];
+            newAmounts[monthIdx] = initRow.amounts[monthIdx];
+            newLabels[monthIdx] = initRow.labels[monthIdx];
+            newTypes[monthIdx] = initRow.types[monthIdx];
+            return { ...r, amounts: newAmounts, labels: newLabels, types: newTypes };
+          });
+        }
+        nextMonths[monthIdx].netPayable = computeNetPayable(
+          nextMonths[monthIdx].grossSalary,
+          monthIdx,
+          updatedRows
+        );
+        const latestNet = nextMonths[2].netPayable;
+        return {
+          ...prev,
+          months: nextMonths,
+          customRows: updatedRows,
+          monthlyPayableAmount: latestNet,
+          monthlyPayableInWords: formatWordsOnly(latestNet),
+        };
       });
     }
   };
@@ -1631,6 +1934,11 @@ export default function SalaryStatementClient({
       setFormData((prev) => ({
         ...prev,
         months: structuredClone(initialDefaultsRef.current.months),
+        customRows: structuredClone(
+          initialDefaultsRef.current.customRows || createDefaultCustomRows()
+        ),
+        monthlyPayableAmount: initialDefaultsRef.current.monthlyPayableAmount,
+        monthlyPayableInWords: initialDefaultsRef.current.monthlyPayableInWords,
       }));
     }
   };
@@ -3135,138 +3443,87 @@ export default function SalaryStatementClient({
                             </div>
                           </div>
 
-                          {/* Red-Marked Particulars Labels Editor */}
+                          {/* Dynamic Particulars & Custom Rows Editor */}
                           <div className="bg-rose-50/70 border border-rose-200/80 rounded-lg p-2.5 space-y-2">
                             <div className="flex items-center justify-between">
                               <span className="text-[11px] font-bold uppercase tracking-wider text-rose-800 flex items-center gap-1">
                                 <span className="w-2 h-2 rounded-full bg-rose-500" />
-                                Customizable Particulars Labels (Red-Marked in Sheet)
+                                Variable Rows ({formData.customRows?.length || 0} active)
                               </span>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  handleResetRowLabel(mIdx, 'pfLabel');
-                                  handleResetRowLabel(mIdx, 'overtimeLabel');
-                                  handleResetRowLabel(mIdx, 'incomeTaxLabel');
-                                }}
-                                className="text-[10px] text-rose-700 hover:text-rose-900 font-semibold underline flex items-center gap-0.5"
-                                title="Reset Month {idx + 1} custom labels"
-                              >
-                                <RotateCcw size={10} /> Reset Labels
-                              </button>
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={handleAddCustomRow}
+                                  className="text-[10px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2 py-0.5 rounded shadow-2xs flex items-center gap-1 transition"
+                                  title="Add new row"
+                                >
+                                  <Plus size={10} strokeWidth={2.5} /> Add Row
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={handleResetAllCustomLabels}
+                                  className="text-[10px] text-rose-700 hover:text-rose-900 font-semibold underline flex items-center gap-0.5"
+                                  title="Reset custom rows"
+                                >
+                                  <RotateCcw size={10} /> Reset
+                                </button>
+                              </div>
                             </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-                              <div>
-                                <div className="flex items-center justify-between mb-0.5">
-                                  <label className="text-[11px] font-medium text-rose-900">
-                                    Row 6 (Red Box 1)
-                                  </label>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleToggleRowType(mIdx, 'pfType', 'deduction')}
-                                    className={`text-[9px] px-1.5 py-0.5 rounded font-bold border transition ${
-                                      (m.pfType || 'deduction') === 'addition'
-                                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                                        : 'bg-rose-100 text-rose-800 border-rose-300'
-                                    }`}
-                                    title="Click to toggle between Deduction (-) and Addition (+)"
-                                  >
-                                    {(m.pfType || 'deduction') === 'addition' ? '+ Addition' : '- Deduction'}
-                                  </button>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs">
+                              {(formData.customRows || []).map((row) => (
+                                <div
+                                  key={row.id}
+                                  className="p-2 bg-white/90 rounded border border-rose-200/70 space-y-1.5 shadow-2xs"
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[11px] font-bold text-slate-700 truncate max-w-[90px]">
+                                      {row.labels[mIdx] || 'Custom Item'}
+                                    </span>
+                                    <div className="flex items-center gap-1">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleToggleCustomRowType(row.id, mIdx)}
+                                        className={`text-[9px] px-1.5 py-0.5 rounded font-bold border transition ${
+                                          row.types[mIdx] === 'addition'
+                                            ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                            : 'bg-rose-100 text-rose-800 border-rose-300'
+                                        }`}
+                                        title="Toggle addition (+) or deduction (-)"
+                                      >
+                                        {row.types[mIdx] === 'addition' ? '+ Addition' : '- Deduction'}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRemoveCustomRow(row.id)}
+                                        className="p-0.5 text-rose-500 hover:text-white hover:bg-rose-600 rounded transition"
+                                        title="Delete row"
+                                      >
+                                        <Trash2 size={11} />
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <input
+                                      type="text"
+                                      value={row.labels[mIdx]}
+                                      onChange={(e) =>
+                                        handleCustomRowLabelChange(row.id, mIdx, e.target.value)
+                                      }
+                                      placeholder="Row Label"
+                                      className="w-full px-2 py-1 border border-rose-300 rounded bg-white font-medium text-xs text-rose-950 focus:ring-1 focus:ring-rose-500"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => handleResetCustomRowLabel(row.id, mIdx)}
+                                      className="p-1 text-rose-500 hover:text-rose-800 rounded transition shrink-0"
+                                      title="Reset Label"
+                                    >
+                                      <RotateCcw size={10} />
+                                    </button>
+                                  </div>
                                 </div>
-                                <div className="flex items-center gap-1">
-                                  <input
-                                    type="text"
-                                    value={m.pfLabel || '(Less) PF'}
-                                    onChange={(e) => handleMonthChange(mIdx, 'pfLabel', e.target.value)}
-                                    placeholder="(Less) PF"
-                                    className="w-full px-2 py-1 border border-rose-300 rounded bg-white font-medium text-xs text-rose-950 focus:ring-1 focus:ring-rose-500"
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => handleResetRowLabel(mIdx, 'pfLabel')}
-                                    className="p-1 text-rose-500 hover:text-rose-800 rounded transition shrink-0"
-                                    title="Reset to (Less) PF"
-                                  >
-                                    <RotateCcw size={10} />
-                                  </button>
-                                </div>
-                              </div>
-
-                              <div>
-                                <div className="flex items-center justify-between mb-0.5">
-                                  <label className="text-[11px] font-medium text-rose-900">
-                                    Row 7 (Red Box 2)
-                                  </label>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleToggleRowType(mIdx, 'overtimeType', 'addition')}
-                                    className={`text-[9px] px-1.5 py-0.5 rounded font-bold border transition ${
-                                      (m.overtimeType || 'addition') === 'deduction'
-                                        ? 'bg-rose-100 text-rose-800 border-rose-300'
-                                        : 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                                    }`}
-                                    title="Click to toggle between Addition (+) and Deduction (-)"
-                                  >
-                                    {(m.overtimeType || 'addition') === 'deduction' ? '- Deduction' : '+ Addition'}
-                                  </button>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <input
-                                    type="text"
-                                    value={m.overtimeLabel || 'Over Time'}
-                                    onChange={(e) => handleMonthChange(mIdx, 'overtimeLabel', e.target.value)}
-                                    placeholder="Over Time"
-                                    className="w-full px-2 py-1 border border-rose-300 rounded bg-white font-medium text-xs text-rose-950 focus:ring-1 focus:ring-rose-500"
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => handleResetRowLabel(mIdx, 'overtimeLabel')}
-                                    className="p-1 text-rose-500 hover:text-rose-800 rounded transition shrink-0"
-                                    title="Reset to Over Time"
-                                  >
-                                    <RotateCcw size={10} />
-                                  </button>
-                                </div>
-                              </div>
-
-                              <div>
-                                <div className="flex items-center justify-between mb-0.5">
-                                  <label className="text-[11px] font-medium text-rose-900">
-                                    Row 8 (Red Box 3)
-                                  </label>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleToggleRowType(mIdx, 'incomeTaxType', 'deduction')}
-                                    className={`text-[9px] px-1.5 py-0.5 rounded font-bold border transition ${
-                                      (m.incomeTaxType || 'deduction') === 'addition'
-                                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                                        : 'bg-rose-100 text-rose-800 border-rose-300'
-                                    }`}
-                                    title="Click to toggle between Deduction (-) and Addition (+)"
-                                  >
-                                    {(m.incomeTaxType || 'deduction') === 'addition' ? '+ Addition' : '- Deduction'}
-                                  </button>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <input
-                                    type="text"
-                                    value={m.incomeTaxLabel || 'Income Tax'}
-                                    onChange={(e) => handleMonthChange(mIdx, 'incomeTaxLabel', e.target.value)}
-                                    placeholder="Income Tax"
-                                    className="w-full px-2 py-1 border border-rose-300 rounded bg-white font-medium text-xs text-rose-950 focus:ring-1 focus:ring-rose-500"
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => handleResetRowLabel(mIdx, 'incomeTaxLabel')}
-                                    className="p-1 text-rose-500 hover:text-rose-800 rounded transition shrink-0"
-                                    title="Reset to Income Tax"
-                                  >
-                                    <RotateCcw size={10} />
-                                  </button>
-                                </div>
-                              </div>
+                              ))}
                             </div>
                           </div>
 
@@ -3372,65 +3629,43 @@ export default function SalaryStatementClient({
                               />
                             </div>
 
-                            <div>
-                              <div className="flex items-center justify-between mb-0.5">
-                                <label className="text-gray-500">{m.pfLabel || '(Less) PF'}</label>
-                                <button
-                                  type="button"
-                                  onClick={() => handleResetMonthAmount(mIdx, 'pfDeduction')}
-                                  className="text-slate-400 hover:text-blue-600 p-0.5 rounded"
-                                  title="Reset deduction amount"
-                                >
-                                  <RotateCcw size={9} />
-                                </button>
+                            {/* Dynamic Custom Row Amounts */}
+                            {(formData.customRows || []).map((row) => (
+                              <div key={row.id}>
+                                <div className="flex items-center justify-between mb-0.5">
+                                  <div className="flex items-center gap-1 min-w-0">
+                                    <span
+                                      className={`text-[9px] px-1 py-0.2 rounded font-bold ${
+                                        row.types[mIdx] === 'addition'
+                                          ? 'bg-emerald-100 text-emerald-700'
+                                          : 'bg-rose-100 text-rose-700'
+                                      }`}
+                                    >
+                                      {row.types[mIdx] === 'addition' ? '+' : '-'}
+                                    </span>
+                                    <label className="text-gray-500 truncate max-w-[80px]">
+                                      {row.labels[mIdx] || 'Custom Item'}
+                                    </label>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleResetCustomRowAmount(row.id, mIdx)}
+                                    className="text-slate-400 hover:text-blue-600 p-0.5 rounded shrink-0"
+                                    title="Reset amount"
+                                  >
+                                    <RotateCcw size={9} />
+                                  </button>
+                                </div>
+                                <input
+                                  type="number"
+                                  value={row.amounts[mIdx]}
+                                  onChange={(e) =>
+                                    handleCustomRowAmountChange(row.id, mIdx, Number(e.target.value))
+                                  }
+                                  className="w-full px-2 py-1 border border-gray-300 rounded bg-white font-medium"
+                                />
                               </div>
-                              <input
-                                type="number"
-                                value={m.pfDeduction}
-                                onChange={(e) => handleMonthChange(mIdx, 'pfDeduction', Number(e.target.value))}
-                                className="w-full px-2 py-1 border border-gray-300 rounded bg-white font-medium"
-                              />
-                            </div>
-
-                            <div>
-                              <div className="flex items-center justify-between mb-0.5">
-                                <label className="text-gray-500">{m.overtimeLabel || 'Over Time'}</label>
-                                <button
-                                  type="button"
-                                  onClick={() => handleResetMonthAmount(mIdx, 'overtime')}
-                                  className="text-slate-400 hover:text-blue-600 p-0.5 rounded"
-                                  title="Reset addition amount"
-                                >
-                                  <RotateCcw size={9} />
-                                </button>
-                              </div>
-                              <input
-                                type="number"
-                                value={m.overtime}
-                                onChange={(e) => handleMonthChange(mIdx, 'overtime', Number(e.target.value))}
-                                className="w-full px-2 py-1 border border-gray-300 rounded bg-white font-medium"
-                              />
-                            </div>
-
-                            <div>
-                              <div className="flex items-center justify-between mb-0.5">
-                                <label className="text-gray-500">{m.incomeTaxLabel || 'Income Tax'}</label>
-                                <button
-                                  type="button"
-                                  onClick={() => handleResetMonthAmount(mIdx, 'incomeTax')}
-                                  className="text-slate-400 hover:text-blue-600 p-0.5 rounded"
-                                  title="Reset deduction amount"
-                                >
-                                  <RotateCcw size={9} />
-                                </button>
-                              </div>
-                              <input
-                                type="number"
-                                value={m.incomeTax}
-                                onChange={(e) => handleMonthChange(mIdx, 'incomeTax', Number(e.target.value))}
-                                className="w-full px-2 py-1 border border-gray-300 rounded bg-white font-medium"
-                              />
-                            </div>
+                            ))}
                           </div>
 
                           <div className="flex items-center justify-between pt-1 border-t border-gray-200">
@@ -3796,7 +4031,7 @@ export default function SalaryStatementClient({
                       type="text"
                       value={formData.signatoryName}
                       onChange={(e) => setFormData({ ...formData, signatoryName: e.target.value })}
-                      placeholder="e.g. Md Touhiduzzaman"
+                      placeholder="e.g. Sajjad Hosen"
                       className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-semibold"
                     />
                   </div>
@@ -3817,7 +4052,7 @@ export default function SalaryStatementClient({
                       type="text"
                       value={formData.signatoryTitle}
                       onChange={(e) => setFormData({ ...formData, signatoryTitle: e.target.value })}
-                      placeholder="e.g. Assistant Manager"
+                      placeholder="e.g. Senior Deputy Manager"
                       className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
                     />
                   </div>
@@ -4481,7 +4716,7 @@ export default function SalaryStatementClient({
                             isBold={true}
                           />
                         </th>
-                        <th colSpan={2} className="border border-black py-1.5 px-2.5 text-center font-bold text-[13.5px] w-1/3 align-middle leading-normal">
+                        <th colSpan={2} className="relative border border-black py-1.5 px-2.5 text-center font-bold text-[13.5px] w-1/3 align-middle leading-normal">
                           <EditableInlineText
                             value={formData.months[2].monthName}
                             defaultValue={initialDefaultsRef.current.months[2].monthName}
@@ -4489,6 +4724,18 @@ export default function SalaryStatementClient({
                             onReset={() => handleResetMonthAmount(2, 'monthName')}
                             isBold={true}
                           />
+                          {/* Corner + button to add new custom row */}
+                          <div className="print:hidden absolute right-1.5 top-1/2 -translate-y-1/2">
+                            <button
+                              type="button"
+                              onClick={handleAddCustomRow}
+                              className="inline-flex items-center gap-0.5 px-2 py-0.5 text-[11px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded shadow-xs transition cursor-pointer"
+                              title="Add New Row (+)"
+                            >
+                              <Plus size={12} strokeWidth={2.5} />
+                              <span>Add</span>
+                            </button>
+                          </div>
                         </th>
                       </tr>
                     </thead>
@@ -4738,168 +4985,209 @@ export default function SalaryStatementClient({
                         </td>
                       </tr>
 
-                      {/* Row 6: [RED-MARKED] Deduction 1 (Default: (Less) PF) */}
-                      <tr>
-                        <td className="border border-black py-1.5 px-2 align-middle leading-normal">
-                          <EditableLabelCell
-                            value={formData.months[0].pfLabel || '(Less) PF'}
-                            defaultValue="(Less) PF"
-                            onChange={(val) => handleMonthChange(0, 'pfLabel', val)}
-                            onReset={() => handleResetRowLabel(0, 'pfLabel')}
-                            highlight={true}
-                          />
-                        </td>
-                        <td className="border border-black py-1.5 px-2 align-middle leading-normal text-right">
-                          <EditableAmountCell
-                            value={formData.months[0].pfDeduction}
-                            onChange={(val) => handleMonthChange(0, 'pfDeduction', val)}
-                            onReset={() => handleResetMonthAmount(0, 'pfDeduction')}
-                            defaultValue={initialDefaultsRef.current.months[0].pfDeduction}
-                          />
-                        </td>
-                        <td className="border border-black py-1.5 px-2 align-middle leading-normal">
-                          <EditableLabelCell
-                            value={formData.months[1].pfLabel || '(Less) PF'}
-                            defaultValue="(Less) PF"
-                            onChange={(val) => handleMonthChange(1, 'pfLabel', val)}
-                            onReset={() => handleResetRowLabel(1, 'pfLabel')}
-                            highlight={true}
-                          />
-                        </td>
-                        <td className="border border-black py-1.5 px-2 align-middle leading-normal text-right">
-                          <EditableAmountCell
-                            value={formData.months[1].pfDeduction}
-                            onChange={(val) => handleMonthChange(1, 'pfDeduction', val)}
-                            onReset={() => handleResetMonthAmount(1, 'pfDeduction')}
-                            defaultValue={initialDefaultsRef.current.months[1].pfDeduction}
-                          />
-                        </td>
-                        <td className="border border-black py-1.5 px-2 align-middle leading-normal">
-                          <EditableLabelCell
-                            value={formData.months[2].pfLabel || '(Less) PF'}
-                            defaultValue="(Less) PF"
-                            onChange={(val) => handleMonthChange(2, 'pfLabel', val)}
-                            onReset={() => handleResetRowLabel(2, 'pfLabel')}
-                            highlight={true}
-                          />
-                        </td>
-                        <td className="border border-black py-1.5 px-2 align-middle leading-normal text-right">
-                          <EditableAmountCell
-                            value={formData.months[2].pfDeduction}
-                            onChange={(val) => handleMonthChange(2, 'pfDeduction', val)}
-                            onReset={() => handleResetMonthAmount(2, 'pfDeduction')}
-                            defaultValue={initialDefaultsRef.current.months[2].pfDeduction}
-                          />
-                        </td>
-                      </tr>
+                      {/* Dynamic Variable Rows (PF, Over Time, Income Tax, Custom Rows) */}
+                      {(formData.customRows || []).map((row) => {
+                        const initRow = initialDefaultsRef.current.customRows?.find((r) => r.id === row.id);
+                        return (
+                          <tr key={row.id} className="relative group/custom-row">
+                            {/* Month 0 (Aug-26) */}
+                            <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                              <div className="flex items-center justify-between gap-1 w-full min-h-[22px]">
+                                {/* Sign Selector (+ / -) */}
+                                <div
+                                  className="print:hidden flex items-center shrink-0 border border-slate-300 rounded overflow-hidden shadow-2xs text-[10px] font-bold bg-white"
+                                  title={`Month 1: ${row.types[0] === 'addition' ? 'Addition (+)' : 'Deduction (-)'}. Click to switch.`}
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleCustomRowType(row.id, 0, 'addition')}
+                                    className={`px-1.5 py-0.5 transition cursor-pointer ${
+                                      row.types[0] === 'addition'
+                                        ? 'bg-emerald-600 text-white font-extrabold shadow-inner'
+                                        : 'text-slate-400 hover:text-emerald-700 hover:bg-emerald-50'
+                                    }`}
+                                    title="Add to Net Payable (+)"
+                                  >
+                                    +
+                                  </button>
+                                  <div className="w-[1px] h-3.5 bg-slate-200" />
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleCustomRowType(row.id, 0, 'deduction')}
+                                    className={`px-1.5 py-0.5 transition cursor-pointer ${
+                                      row.types[0] === 'deduction'
+                                        ? 'bg-rose-600 text-white font-extrabold shadow-inner'
+                                        : 'text-slate-400 hover:text-rose-700 hover:bg-rose-50'
+                                    }`}
+                                    title="Deduct from Net Payable (-)"
+                                  >
+                                    -
+                                  </button>
+                                </div>
 
-                      {/* Row 7: [RED-MARKED] Addition (Default: Over Time) */}
-                      <tr>
-                        <td className="border border-black py-1.5 px-2 align-middle leading-normal">
-                          <EditableLabelCell
-                            value={formData.months[0].overtimeLabel || 'Over Time'}
-                            defaultValue="Over Time"
-                            onChange={(val) => handleMonthChange(0, 'overtimeLabel', val)}
-                            onReset={() => handleResetRowLabel(0, 'overtimeLabel')}
-                            highlight={true}
-                          />
-                        </td>
-                        <td className="border border-black py-1.5 px-2 align-middle leading-normal text-right">
-                          <EditableAmountCell
-                            value={formData.months[0].overtime}
-                            onChange={(val) => handleMonthChange(0, 'overtime', val)}
-                            onReset={() => handleResetMonthAmount(0, 'overtime')}
-                            defaultValue={initialDefaultsRef.current.months[0].overtime}
-                          />
-                        </td>
-                        <td className="border border-black py-1.5 px-2 align-middle leading-normal">
-                          <EditableLabelCell
-                            value={formData.months[1].overtimeLabel || 'Over Time'}
-                            defaultValue="Over Time"
-                            onChange={(val) => handleMonthChange(1, 'overtimeLabel', val)}
-                            onReset={() => handleResetRowLabel(1, 'overtimeLabel')}
-                            highlight={true}
-                          />
-                        </td>
-                        <td className="border border-black py-1.5 px-2 align-middle leading-normal text-right">
-                          <EditableAmountCell
-                            value={formData.months[1].overtime}
-                            onChange={(val) => handleMonthChange(1, 'overtime', val)}
-                            onReset={() => handleResetMonthAmount(1, 'overtime')}
-                            defaultValue={initialDefaultsRef.current.months[1].overtime}
-                          />
-                        </td>
-                        <td className="border border-black py-1.5 px-2 align-middle leading-normal">
-                          <EditableLabelCell
-                            value={formData.months[2].overtimeLabel || 'Over Time'}
-                            defaultValue="Over Time"
-                            onChange={(val) => handleMonthChange(2, 'overtimeLabel', val)}
-                            onReset={() => handleResetRowLabel(2, 'overtimeLabel')}
-                            highlight={true}
-                          />
-                        </td>
-                        <td className="border border-black py-1.5 px-2 align-middle leading-normal text-right">
-                          <EditableAmountCell
-                            value={formData.months[2].overtime}
-                            onChange={(val) => handleMonthChange(2, 'overtime', val)}
-                            onReset={() => handleResetMonthAmount(2, 'overtime')}
-                            defaultValue={initialDefaultsRef.current.months[2].overtime}
-                          />
-                        </td>
-                      </tr>
+                                <div className="flex-1 min-w-0">
+                                  <EditableLabelCell
+                                    value={row.labels[0]}
+                                    defaultValue={initRow?.labels[0] || row.labels[0]}
+                                    onChange={(val) => handleCustomRowLabelChange(row.id, 0, val)}
+                                    onReset={() => handleResetCustomRowLabel(row.id, 0)}
+                                    highlight={true}
+                                  />
+                                </div>
+                              </div>
+                            </td>
+                            <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                              <EditableAmountCell
+                                value={row.amounts[0]}
+                                onChange={(val) => handleCustomRowAmountChange(row.id, 0, val)}
+                                onReset={() => handleResetCustomRowAmount(row.id, 0)}
+                                defaultValue={initRow?.amounts[0] ?? 0}
+                              />
+                            </td>
 
-                      {/* Row 8: [RED-MARKED] Deduction 2 (Default: Income Tax) */}
-                      <tr>
-                        <td className="border border-black py-1.5 px-2 align-middle leading-normal">
-                          <EditableLabelCell
-                            value={formData.months[0].incomeTaxLabel || 'Income Tax'}
-                            defaultValue="Income Tax"
-                            onChange={(val) => handleMonthChange(0, 'incomeTaxLabel', val)}
-                            onReset={() => handleResetRowLabel(0, 'incomeTaxLabel')}
-                            highlight={true}
-                          />
-                        </td>
-                        <td className="border border-black py-1.5 px-2 align-middle leading-normal text-right">
-                          <EditableAmountCell
-                            value={formData.months[0].incomeTax}
-                            onChange={(val) => handleMonthChange(0, 'incomeTax', val)}
-                            onReset={() => handleResetMonthAmount(0, 'incomeTax')}
-                            defaultValue={initialDefaultsRef.current.months[0].incomeTax}
-                          />
-                        </td>
-                        <td className="border border-black py-1.5 px-2 align-middle leading-normal">
-                          <EditableLabelCell
-                            value={formData.months[1].incomeTaxLabel || 'Income Tax'}
-                            defaultValue="Income Tax"
-                            onChange={(val) => handleMonthChange(1, 'incomeTaxLabel', val)}
-                            onReset={() => handleResetRowLabel(1, 'incomeTaxLabel')}
-                            highlight={true}
-                          />
-                        </td>
-                        <td className="border border-black py-1.5 px-2 align-middle leading-normal text-right">
-                          <EditableAmountCell
-                            value={formData.months[1].incomeTax}
-                            onChange={(val) => handleMonthChange(1, 'incomeTax', val)}
-                            onReset={() => handleResetMonthAmount(1, 'incomeTax')}
-                            defaultValue={initialDefaultsRef.current.months[1].incomeTax}
-                          />
-                        </td>
-                        <td className="border border-black py-1.5 px-2 align-middle leading-normal">
-                          <EditableLabelCell
-                            value={formData.months[2].incomeTaxLabel || 'Income Tax'}
-                            defaultValue="Income Tax"
-                            onChange={(val) => handleMonthChange(2, 'incomeTaxLabel', val)}
-                            onReset={() => handleResetRowLabel(2, 'incomeTaxLabel')}
-                            highlight={true}
-                          />
-                        </td>
-                        <td className="border border-black py-1.5 px-2 align-middle leading-normal text-right">
-                          <EditableAmountCell
-                            value={formData.months[2].incomeTax}
-                            onChange={(val) => handleMonthChange(2, 'incomeTax', val)}
-                            onReset={() => handleResetMonthAmount(2, 'incomeTax')}
-                            defaultValue={initialDefaultsRef.current.months[2].incomeTax}
-                          />
+                            {/* Month 1 (Sep-26) */}
+                            <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                              <div className="flex items-center justify-between gap-1 w-full min-h-[22px]">
+                                {/* Sign Selector (+ / -) */}
+                                <div
+                                  className="print:hidden flex items-center shrink-0 border border-slate-300 rounded overflow-hidden shadow-2xs text-[10px] font-bold bg-white"
+                                  title={`Month 2: ${row.types[1] === 'addition' ? 'Addition (+)' : 'Deduction (-)'}. Click to switch.`}
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleCustomRowType(row.id, 1, 'addition')}
+                                    className={`px-1.5 py-0.5 transition cursor-pointer ${
+                                      row.types[1] === 'addition'
+                                        ? 'bg-emerald-600 text-white font-extrabold shadow-inner'
+                                        : 'text-slate-400 hover:text-emerald-700 hover:bg-emerald-50'
+                                    }`}
+                                    title="Add to Net Payable (+)"
+                                  >
+                                    +
+                                  </button>
+                                  <div className="w-[1px] h-3.5 bg-slate-200" />
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleCustomRowType(row.id, 1, 'deduction')}
+                                    className={`px-1.5 py-0.5 transition cursor-pointer ${
+                                      row.types[1] === 'deduction'
+                                        ? 'bg-rose-600 text-white font-extrabold shadow-inner'
+                                        : 'text-slate-400 hover:text-rose-700 hover:bg-rose-50'
+                                    }`}
+                                    title="Deduct from Net Payable (-)"
+                                  >
+                                    -
+                                  </button>
+                                </div>
+
+                                <div className="flex-1 min-w-0">
+                                  <EditableLabelCell
+                                    value={row.labels[1]}
+                                    defaultValue={initRow?.labels[1] || row.labels[1]}
+                                    onChange={(val) => handleCustomRowLabelChange(row.id, 1, val)}
+                                    onReset={() => handleResetCustomRowLabel(row.id, 1)}
+                                    highlight={true}
+                                  />
+                                </div>
+                              </div>
+                            </td>
+                            <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                              <EditableAmountCell
+                                value={row.amounts[1]}
+                                onChange={(val) => handleCustomRowAmountChange(row.id, 1, val)}
+                                onReset={() => handleResetCustomRowAmount(row.id, 1)}
+                                defaultValue={initRow?.amounts[1] ?? 0}
+                              />
+                            </td>
+
+                            {/* Month 2 (Oct-26) */}
+                            <td className="border border-black py-1 px-1.5 align-middle leading-normal">
+                              <div className="flex items-center justify-between gap-1 w-full min-h-[22px]">
+                                {/* Sign Selector (+ / -) */}
+                                <div
+                                  className="print:hidden flex items-center shrink-0 border border-slate-300 rounded overflow-hidden shadow-2xs text-[10px] font-bold bg-white"
+                                  title={`Month 3: ${row.types[2] === 'addition' ? 'Addition (+)' : 'Deduction (-)'}. Click to switch.`}
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleCustomRowType(row.id, 2, 'addition')}
+                                    className={`px-1.5 py-0.5 transition cursor-pointer ${
+                                      row.types[2] === 'addition'
+                                        ? 'bg-emerald-600 text-white font-extrabold shadow-inner'
+                                        : 'text-slate-400 hover:text-emerald-700 hover:bg-emerald-50'
+                                    }`}
+                                    title="Add to Net Payable (+)"
+                                  >
+                                    +
+                                  </button>
+                                  <div className="w-[1px] h-3.5 bg-slate-200" />
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleCustomRowType(row.id, 2, 'deduction')}
+                                    className={`px-1.5 py-0.5 transition cursor-pointer ${
+                                      row.types[2] === 'deduction'
+                                        ? 'bg-rose-600 text-white font-extrabold shadow-inner'
+                                        : 'text-slate-400 hover:text-rose-700 hover:bg-rose-50'
+                                    }`}
+                                    title="Deduct from Net Payable (-)"
+                                  >
+                                    -
+                                  </button>
+                                </div>
+
+                                <div className="flex-1 min-w-0">
+                                  <EditableLabelCell
+                                    value={row.labels[2]}
+                                    defaultValue={initRow?.labels[2] || row.labels[2]}
+                                    onChange={(val) => handleCustomRowLabelChange(row.id, 2, val)}
+                                    onReset={() => handleResetCustomRowLabel(row.id, 2)}
+                                    highlight={true}
+                                  />
+                                </div>
+                              </div>
+                            </td>
+                            <td className="border border-black py-1 px-1.5 align-middle leading-normal text-right">
+                              <div className="flex items-center justify-end gap-1 w-full">
+                                <div className="flex-1 text-right">
+                                  <EditableAmountCell
+                                    value={row.amounts[2]}
+                                    onChange={(val) => handleCustomRowAmountChange(row.id, 2, val)}
+                                    onReset={() => handleResetCustomRowAmount(row.id, 2)}
+                                    defaultValue={initRow?.amounts[2] ?? 0}
+                                  />
+                                </div>
+                                {/* Minus button to remove this row */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveCustomRow(row.id)}
+                                  className="print:hidden shrink-0 w-4 h-4 rounded-full bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-300 flex items-center justify-center transition shadow-2xs cursor-pointer"
+                                  title="Delete this row (-)"
+                                >
+                                  <Minus size={10} strokeWidth={2.5} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+
+                      {/* Add Row Corner / Control Bar right below dynamic rows (print:hidden) */}
+                      <tr className="print:hidden bg-slate-50/90 hover:bg-slate-100 transition border-y border-dashed border-slate-300">
+                        <td colSpan={6} className="py-1 px-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] text-slate-500 font-medium">
+                              Variable Rows ({formData.customRows?.length || 0} active) • Use (+, -) to switch addition or deduction
+                            </span>
+                            <button
+                              type="button"
+                              onClick={handleAddCustomRow}
+                              className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-md shadow-xs transition cursor-pointer"
+                              title="Add New Row (+)"
+                            >
+                              <Plus size={13} strokeWidth={2.5} />
+                              Add Row (+)
+                            </button>
+                          </div>
                         </td>
                       </tr>
 
