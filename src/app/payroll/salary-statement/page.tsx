@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { getSession } from '@/lib/auth';
 import { redirect } from 'next/navigation';
+import prisma, { withDbTimeout } from '@/lib/prisma';
 import SalaryStatementClient from './SalaryStatementClient';
 import ModuleLoading from '@/components/ModuleLoading';
 
@@ -13,7 +14,7 @@ export const dynamic = 'force-dynamic';
 export default async function SalaryStatementPage({
   searchParams,
 }: {
-  searchParams?: { id?: string | string[] };
+  searchParams?: { id?: string | string[]; new?: string };
 }) {
   let session = null;
   try {
@@ -41,10 +42,36 @@ export default async function SalaryStatementPage({
 
   const rawId = searchParams?.id;
   const initialStatementId = Array.isArray(rawId) ? rawId[0] : rawId;
+  const isExplicitNew = searchParams?.new === 'true' || searchParams?.new === '1';
+
+  const initialStatements = await withDbTimeout(
+    prisma.salaryStatement.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      include: {
+        worker: {
+          select: {
+            id: true,
+            name: true,
+            workerId: true,
+            designation: true,
+            department: { select: { name: true } },
+            company: { select: { name: true } },
+          },
+        },
+      },
+    }),
+    5000,
+    []
+  );
 
   return (
     <Suspense fallback={<ModuleLoading title="Salary Statement Generator" />}>
-      <SalaryStatementClient initialStatementId={initialStatementId} />
+      <SalaryStatementClient
+        initialStatementId={initialStatementId}
+        initialStatements={initialStatements as any}
+        isExplicitNew={isExplicitNew}
+      />
     </Suspense>
   );
 }

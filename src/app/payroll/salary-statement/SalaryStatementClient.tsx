@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import {
   Search,
@@ -35,12 +35,13 @@ import {
   RefreshCw,
   Eye,
 } from 'lucide-react';
-import { numberToWords, parseFlexibleDate } from '@/lib/formatDate';
+import { numberToWords, parseFlexibleDate, formatDate } from '@/lib/formatDate';
 import {
   saveSalaryStatement,
   getSavedSalaryStatements,
   getSalaryStatementById,
   deleteSalaryStatement,
+  updateSalaryStatementStatus,
 } from './actions';
 
 export interface StatementCustomRow {
@@ -714,7 +715,7 @@ function EditableInlineText({
             setIsEditing(true);
           }}
           className={`cursor-pointer ${isBold ? 'font-bold' : ''} ${
-            isUnderline ? 'underline underline-offset-[5px] decoration-1 inline-block' : ''
+            isUnderline ? 'salary-doc-title-underline inline-block' : ''
           } ${isMono ? 'font-mono' : ''}`}
           title="Click to edit directly on sheet"
         >
@@ -815,8 +816,12 @@ function renderOrdinalDateText(text: string): React.ReactNode {
 
 export default function SalaryStatementClient({
   initialStatementId,
+  initialStatements = [],
+  isExplicitNew = false,
 }: {
   initialStatementId?: string;
+  initialStatements?: any[];
+  isExplicitNew?: boolean;
 } = {}) {
   const [defaultMonths] = useState<[string, string, string]>(getDefault3Months());
 
@@ -828,18 +833,123 @@ export default function SalaryStatementClient({
   const [selectedWorker, setSelectedWorker] = useState<any | null>(null);
 
   // Saved Statements & Active Statement state
-  const [activeStatementId, setActiveStatementId] = useState<string | null>(null);
+  const [activeStatementId, setActiveStatementId] = useState<string | null>(initialStatementId || null);
   const [activeStatementRefNo, setActiveStatementRefNo] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
-  const [savedStatements, setSavedStatements] = useState<any[]>([]);
-  const [savedStatementsTotal, setSavedStatementsTotal] = useState<number>(0);
+  const [savedStatements, setSavedStatements] = useState<any[]>(initialStatements || []);
+  const [savedStatementsTotal, setSavedStatementsTotal] = useState<number>(initialStatements?.length || 0);
   const [isLoadingSaved, setIsLoadingSaved] = useState<boolean>(false);
   const [loadingStatementId, setLoadingStatementId] = useState<string | null>(null);
   const [savedSearchQuery, setSavedSearchQuery] = useState<string>('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+
+  // Main View: 'list' (Settlements-style list) or 'generator' (2-Page Editor & Preview)
+  const [mainView, setMainView] = useState<'list' | 'generator'>(() => {
+    if (initialStatementId) return 'generator';
+    if (isExplicitNew) return 'generator';
+    if (initialStatements && initialStatements.length > 0) return 'list';
+    return 'list';
+  });
+
+  // Save Success Notification State (matching Settlements success banner)
+  const [saveSuccess, setSaveSuccess] = useState<{
+    message: string;
+    statementId: string;
+    workerName: string;
+    refNo: string;
+  } | null>(null);
+
+  // Settlements Table Filter States
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'ISSUED'>('ALL');
+  const [tableSearchQuery, setTableSearchQuery] = useState<string>('');
+
+  // Helper to safely parse and normalize JSON data whether it is stored as object or string
+  const normalizeStatementData = useCallback((data: any): any => {
+    if (!data) return {};
+    if (typeof data === 'string') {
+      try {
+        const parsed = JSON.parse(data);
+        return typeof parsed === 'object' && parsed !== null ? parsed : {};
+      } catch {
+        return {};
+      }
+    }
+    return typeof data === 'object' && data !== null ? data : {};
+  }, []);
+
+  useEffect(() => {
+    if (initialStatements && initialStatements.length > 0) {
+      setSavedStatements(initialStatements);
+      setSavedStatementsTotal(initialStatements.length);
+    }
+  }, [initialStatements]);
+
+  // Counts for Settlements-style tabs
+  const counts = useMemo(() => {
+    const list = savedStatements.filter(Boolean);
+    return {
+      all: list.length,
+      pending: list.filter((s) => {
+        const raw = normalizeStatementData(s.data);
+        const fd = (raw && typeof raw === 'object' && raw.formData) ? raw.formData : (raw || {});
+        const st = (raw?.status || fd.status || '').toUpperCase();
+        return st === 'PENDING';
+      }).length,
+      approved: list.filter((s) => {
+        const raw = normalizeStatementData(s.data);
+        const fd = (raw && typeof raw === 'object' && raw.formData) ? raw.formData : (raw || {});
+        const st = (raw?.status || fd.status || 'APPROVED').toUpperCase();
+        return st === 'APPROVED';
+      }).length,
+      issued: list.filter((s) => {
+        const raw = normalizeStatementData(s.data);
+        const fd = (raw && typeof raw === 'object' && raw.formData) ? raw.formData : (raw || {});
+        const st = (raw?.status || fd.status || '').toUpperCase();
+        return st === 'ISSUED' || st === 'PAID';
+      }).length,
+    };
+  }, [savedStatements, normalizeStatementData]);
+
+  // Filtered statements for Settlements-style table
+  const filteredStatements = useMemo(() => {
+    return savedStatements.filter((s) => {
+      if (!s) return false;
+      const raw = normalizeStatementData(s.data);
+      const fd = (typeof raw === 'object' && raw.formData) ? raw.formData : raw;
+      const currentStatus = (raw?.status || fd.status || 'APPROVED').toUpperCase();
+
+      // Status filter
+      if (statusFilter !== 'ALL') {
+        if (statusFilter === 'ISSUED') {
+          if (currentStatus !== 'ISSUED' && currentStatus !== 'PAID') return false;
+        } else if (currentStatus !== statusFilter) {
+          return false;
+        }
+      }
+      // Table search query
+      if (tableSearchQuery.trim()) {
+        const q = tableSearchQuery.trim().toLowerCase();
+        const workerName = (s.name || s.worker?.name || fd.name || '').toLowerCase();
+        const workerId = (s.workerId || s.worker?.workerId || fd.workerId || '').toLowerCase();
+        const refNo = (s.refNo || fd.refNo || '').toLowerCase();
+        const dept = (s.department || s.worker?.department?.name || fd.department || '').toLowerCase();
+        const designation = (s.designation || s.worker?.designation || fd.designation || '').toLowerCase();
+        const purpose = (fd.purpose || raw?.purpose || '').toLowerCase();
+        return (
+          workerName.includes(q) ||
+          workerId.includes(q) ||
+          refNo.includes(q) ||
+          dept.includes(q) ||
+          designation.includes(q) ||
+          purpose.includes(q)
+        );
+      }
+      return true;
+    });
+  }, [savedStatements, statusFilter, tableSearchQuery, normalizeStatementData]);
 
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToast({ message, type });
@@ -1319,34 +1429,37 @@ export default function SalaryStatementClient({
   const handleLoadStatement = useCallback(async (statement: any, autoPrint = false) => {
     try {
       setLoadingStatementId(statement.id);
-      let rawData = statement.data;
+      let rawData = normalizeStatementData(statement.data);
 
       // If statement summary from list does not include raw data, fetch full document by id
-      if (!rawData) {
+      if (!rawData || Object.keys(rawData).length === 0) {
         const fetchRes = await getSalaryStatementById(statement.id);
         if (!fetchRes.success || !fetchRes.statement) {
           showToast(fetchRes.error || 'Failed to retrieve statement details', 'error');
+          setLoadingStatementId(null);
           return;
         }
-        rawData = fetchRes.statement.data;
+        rawData = normalizeStatementData(fetchRes.statement.data);
       }
 
-      if (!rawData) {
+      if (!rawData || Object.keys(rawData).length === 0) {
         showToast('No saved document data found in statement', 'error');
+        setLoadingStatementId(null);
         return;
       }
 
       let parsedFormData: any;
       let loadedPadSettings: any = null;
 
-      if (rawData.formData && rawData.formData.months) {
+      if (rawData.formData && typeof rawData.formData === 'object') {
         parsedFormData = rawData.formData;
         loadedPadSettings = rawData.padSettings;
-      } else if (rawData.months) {
+      } else if (typeof rawData === 'object') {
         parsedFormData = rawData;
         loadedPadSettings = rawData.padSettings;
       } else {
         showToast('Unrecognized statement data format', 'error');
+        setLoadingStatementId(null);
         return;
       }
 
@@ -1409,16 +1522,21 @@ export default function SalaryStatementClient({
 
       if (autoPrint) {
         setTimeout(() => {
-          handlePrintRef.current();
-        }, 300);
+          try {
+            handlePrintRef.current();
+          } finally {
+            setLoadingStatementId(null);
+          }
+        }, 350);
+      } else {
+        setLoadingStatementId(null);
       }
     } catch (err: any) {
       console.error('Failed to load statement:', err);
       showToast('Failed to load salary statement data', 'error');
-    } finally {
       setLoadingStatementId(null);
     }
-  }, [showToast]);
+  }, [showToast, normalizeStatementData]);
 
   // Auto-load statement if initialStatementId was provided via route/query param
   useEffect(() => {
@@ -1451,6 +1569,11 @@ export default function SalaryStatementClient({
     setIsSaving(true);
     try {
       const targetId = asNewCopy ? undefined : activeStatementId || undefined;
+      const existingRecord = targetId ? savedStatements.find((s) => s.id === targetId) : null;
+      const existingStatus =
+        (existingRecord?.data?.status || existingRecord?.data?.formData?.status || 'APPROVED').toUpperCase();
+      const statusToSave = asNewCopy ? 'APPROVED' : existingStatus;
+
       const payload = {
         id: targetId,
         refNo: formData.refNo.trim(),
@@ -1460,7 +1583,11 @@ export default function SalaryStatementClient({
         department: formData.department?.trim() || undefined,
         statementDate: formData.date?.trim() || undefined,
         data: {
-          formData: formData,
+          status: statusToSave,
+          formData: {
+            ...formData,
+            status: statusToSave,
+          },
           padSettings: {
             padTopMargin,
             padBottomMargin,
@@ -1474,17 +1601,41 @@ export default function SalaryStatementClient({
 
       const res = await saveSalaryStatement(payload);
       if (res.success && res.statement) {
-        setActiveStatementId(res.statement.id);
-        setActiveStatementRefNo(res.statement.refNo);
+        const savedStmt = res.statement;
+        setActiveStatementId(savedStmt.id);
+        setActiveStatementRefNo(savedStmt.refNo);
+
+        // Update local savedStatements array immediately
+        setSavedStatements((prev) => {
+          const withoutCurrent = prev.filter((s) => s.id !== savedStmt.id);
+          return [savedStmt, ...withoutCurrent];
+        });
+        setSavedStatementsTotal((prev) => (asNewCopy ? prev + 1 : Math.max(prev, 1)));
+
+        // Show prominent Settlements-style success banner
+        setSaveSuccess({
+          message: asNewCopy
+            ? `Salary statement copy saved successfully!`
+            : targetId
+            ? `Salary statement updated successfully!`
+            : `Salary statement saved successfully!`,
+          statementId: savedStmt.id,
+          workerName: formData.name,
+          refNo: savedStmt.refNo,
+        });
+
+        // Switch to the Settlements-style list view
+        setMainView('list');
+
         showToast(
           asNewCopy
-            ? `Statement saved as a new copy: ${res.statement.refNo}`
+            ? `Statement saved as a new copy: ${savedStmt.refNo}`
             : targetId
-            ? `Statement updated successfully: ${res.statement.refNo}`
-            : `Statement saved successfully: ${res.statement.refNo}`,
+            ? `Statement updated successfully: ${savedStmt.refNo}`
+            : `Statement saved successfully: ${savedStmt.refNo}`,
           'success'
         );
-        fetchSavedStatements(savedSearchQuery);
+        fetchSavedStatements(tableSearchQuery);
       } else {
         showToast(res.error || 'Failed to save salary statement', 'error');
       }
@@ -1508,8 +1659,13 @@ export default function SalaryStatementClient({
           setActiveStatementId(null);
           setActiveStatementRefNo(null);
         }
+        if (saveSuccess?.statementId === id) {
+          setSaveSuccess(null);
+        }
         setDeleteConfirmId(null);
-        fetchSavedStatements(savedSearchQuery);
+        setSavedStatements((prev) => prev.filter((s) => s.id !== id));
+        setSavedStatementsTotal((prev) => Math.max(0, prev - 1));
+        fetchSavedStatements(tableSearchQuery);
       } else {
         showToast(res.error || 'Failed to delete salary statement', 'error');
       }
@@ -1523,9 +1679,84 @@ export default function SalaryStatementClient({
 
   // Start fresh / new statement session
   const handleStartNewStatement = () => {
+    handleClearSelectedWorker();
     setActiveStatementId(null);
     setActiveStatementRefNo(null);
-    showToast('Switched to new unsaved statement session.', 'info');
+    setSaveSuccess(null);
+    setMainView('generator');
+    showToast('Started new salary statement session.', 'info');
+  };
+
+  // Edit statement from Settlements-style table
+  const handleEditFromTable = async (statementId: string) => {
+    const target = savedStatements.find((s) => s.id === statementId);
+    if (target) {
+      await handleLoadStatement(target, false);
+    } else {
+      const res = await getSalaryStatementById(statementId);
+      if (res.success && res.statement) {
+        await handleLoadStatement(res.statement, false);
+      }
+    }
+    setMainView('generator');
+  };
+
+  // Print statement from Settlements-style table
+  const handlePrintFromTable = async (statementId: string) => {
+    if (loadingStatementId) return; // Prevent double-triggering
+    try {
+      setLoadingStatementId(statementId);
+      const target = savedStatements.find((s) => s.id === statementId);
+      if (target && target.data) {
+        await handleLoadStatement(target, true);
+      } else {
+        const res = await getSalaryStatementById(statementId);
+        if (res.success && res.statement) {
+          await handleLoadStatement(res.statement, true);
+        } else {
+          showToast(res.error || 'Failed to retrieve statement details', 'error');
+          setLoadingStatementId(null);
+        }
+      }
+    } catch (err: any) {
+      console.error('Failed to print statement:', err);
+      showToast('Failed to load statement for print', 'error');
+      setLoadingStatementId(null);
+    }
+  };
+
+  // Quick status update from Settlements-style table
+  const handleStatusChange = async (statementId: string, newStatus: string) => {
+    try {
+      const res = await updateSalaryStatementStatus(statementId, newStatus);
+      if (res.success) {
+        setSavedStatements((prev) =>
+          prev.map((s) => {
+            if (s.id !== statementId) return s;
+            const currentData = normalizeStatementData(s.data);
+            const currentFormData =
+              typeof currentData.formData === 'object' && currentData.formData !== null
+                ? currentData.formData
+                : {};
+            const updatedData = {
+              ...currentData,
+              status: newStatus,
+              formData: {
+                ...currentFormData,
+                status: newStatus,
+              },
+            };
+            return { ...s, data: updatedData };
+          })
+        );
+        showToast(`Status updated to ${newStatus}`, 'success');
+      } else {
+        showToast(res.error || 'Failed to update status', 'error');
+      }
+    } catch (err: any) {
+      console.error('Failed to update status:', err);
+      showToast(err?.message || 'Failed to update status', 'error');
+    }
   };
 
   // Recalculate Month row values
@@ -2142,15 +2373,17 @@ export default function SalaryStatementClient({
 
         // Fix underline rendering in html2canvas so descenders (y, g, p, q) are never sliced through
         const underlinedElements = clonedDoc.querySelectorAll(
-          '.salary-doc-page .underline, .salary-doc-page [class*="underline"]'
+          '.salary-doc-page u, .salary-doc-page .underline, .salary-doc-title-underline, .salary-doc-page [class*="underline"]'
         );
         underlinedElements.forEach((el: any) => {
           el.style.textDecoration = 'none';
           el.style.textDecorationLine = 'none';
-          el.style.borderBottom = '1px solid #000000';
-          el.style.paddingBottom = '3px';
+          el.style.webkitTextDecorationLine = 'none';
+          el.style.borderBottom = '1.5px solid #000000';
+          el.style.paddingBottom = '2px';
           el.style.display = 'inline-block';
-          el.style.lineHeight = 'normal';
+          el.style.lineHeight = '1.15';
+          el.style.verticalAlign = 'baseline';
         });
 
         const grid = clonedDoc.querySelector('.salary-statement-grid');
@@ -2309,6 +2542,9 @@ export default function SalaryStatementClient({
   // Automatically reset horizontal scroll on preview wrappers before any print event (including Ctrl+P)
   useEffect(() => {
     const handleBeforePrint = () => {
+      if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
       if (page1Ref.current?.parentElement) {
         page1Ref.current.parentElement.scrollLeft = 0;
       }
@@ -2328,6 +2564,9 @@ export default function SalaryStatementClient({
   }, []);
 
   const handlePrint = useCallback(() => {
+    if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
     // Reset horizontal scroll on page wrappers before opening print dialog
     if (page1Ref.current?.parentElement) {
       page1Ref.current.parentElement.scrollLeft = 0;
@@ -2367,10 +2606,19 @@ export default function SalaryStatementClient({
           box-sizing: border-box !important;
           overflow: visible !important;
         }
+        /* Document Title Underlines: Use pure CSS bottom border, eliminating browser print strikethrough/baseline bugs and descender collision */
+        .salary-doc-title-underline,
+        .salary-doc-page u,
         .salary-doc-page .underline,
         .salary-doc-page [class*="underline"] {
-          text-underline-offset: 5px !important;
-          text-decoration-thickness: 1px !important;
+          text-decoration: none !important;
+          text-decoration-line: none !important;
+          -webkit-text-decoration-line: none !important;
+          border-bottom: 1.5px solid #000000 !important;
+          padding-bottom: 2px !important;
+          display: inline-block !important;
+          line-height: 1.15 !important;
+          vertical-align: baseline !important;
         }
         .salary-doc-page-2 table td {
           padding-left: 10px !important;
@@ -2436,6 +2684,12 @@ export default function SalaryStatementClient({
           }
           .salary-statement-container {
             max-width: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 210mm !important;
+          }
+          .salary-statement-generator-wrapper {
+            display: block !important;
             margin: 0 !important;
             padding: 0 !important;
             width: 210mm !important;
@@ -2537,10 +2791,31 @@ export default function SalaryStatementClient({
             box-sizing: border-box !important;
             overflow: visible !important;
           }
+          .salary-doc-title-underline,
+          .salary-doc-page u,
           .salary-doc-page .underline,
           .salary-doc-page [class*="underline"] {
-            text-underline-offset: 5px !important;
-            text-decoration-thickness: 1px !important;
+            text-decoration: none !important;
+            text-decoration-line: none !important;
+            -webkit-text-decoration-line: none !important;
+            border-bottom: 1.5px solid #000000 !important;
+            padding-bottom: 2px !important;
+            display: inline-block !important;
+            line-height: 1.15 !important;
+            vertical-align: baseline !important;
+          }
+          .salary-doc-page input,
+          .salary-doc-page textarea {
+            border: none !important;
+            outline: none !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+          }
+          .salary-doc-page .custom-row-highlight {
+            border: none !important;
+            border-left: none !important;
+            background: transparent !important;
           }
           .salary-doc-page-2 table td {
             padding-left: 10px !important;
@@ -2602,133 +2877,193 @@ export default function SalaryStatementClient({
                 <span className="text-slate-300">•</span>
                 <span className="text-xs font-semibold text-slate-500">2-Page Statement & Certificate</span>
               </div>
-              <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">Salary Statement Generator</h1>
+              <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">Salary Statements</h1>
             </div>
           </div>
 
           {/* Action buttons */}
           <div className="flex flex-wrap items-center gap-2.5">
-            {/* View Mode Toggle */}
-            <div className="hidden lg:flex items-center bg-slate-100/80 backdrop-blur-sm p-1 rounded-xl border border-slate-200/70 text-xs font-bold">
-              <button
-                onClick={() => setViewMode('split')}
-                className={`px-3 py-1.5 rounded-lg transition ${
-                  viewMode === 'split' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                Split View
-              </button>
-              <button
-                onClick={() => setViewMode('form')}
-                className={`px-3 py-1.5 rounded-lg transition ${
-                  viewMode === 'form' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                Form Only
-              </button>
-              <button
-                onClick={() => setViewMode('preview')}
-                className={`px-3 py-1.5 rounded-lg transition ${
-                  viewMode === 'preview' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                Preview Only
-              </button>
-            </div>
-
-            {/* Letterhead Pad Mode Status Badge */}
-            <div className="hidden xl:flex items-center gap-2 bg-amber-50/90 text-amber-800 border border-amber-200/80 px-3 py-1.5 rounded-xl text-xs font-semibold">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-              <span>
-                Office Pad: <strong className="font-bold">{padTopMargin}mm Top</strong> / <strong className="font-bold">{padBottomMargin}mm Btm</strong> / <strong className="font-bold">{padLeftMargin}mm L</strong> / <strong className="font-bold">{padRightMargin}mm R</strong> ({headerMode === 'blank_header' ? 'Pre-printed Header' : 'Company Info Header'})
-              </span>
-            </div>
-
-            {/* Saved Statements Drawer Button */}
-            <button
-              type="button"
-              onClick={() => {
-                setIsDrawerOpen(true);
-                fetchSavedStatements(savedSearchQuery);
-              }}
-              className="inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-800 border border-slate-200/90 px-3.5 py-2 min-h-[44px] rounded-xl text-xs font-bold shadow-xs transition hover:border-blue-400 group"
-              title="Open saved salary statements list"
-            >
-              <Bookmark size={15} className="text-blue-600 transition group-hover:scale-110" />
-              <span>Saved Statements</span>
-              {savedStatementsTotal > 0 && (
-                <span className="bg-blue-100 text-blue-700 font-extrabold px-1.5 py-0.5 rounded-full text-[10px]">
-                  {savedStatementsTotal}
-                </span>
-              )}
-            </button>
-
-            {/* Save / Update Button */}
-            {activeStatementId ? (
-              <div className="inline-flex items-center rounded-xl bg-emerald-600 p-0.5 shadow-sm min-h-[44px]">
-                <button
-                  type="button"
-                  onClick={() => handleSave(false)}
-                  disabled={isSaving}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 min-h-[40px] rounded-lg text-xs font-bold text-white hover:bg-emerald-700 transition disabled:opacity-50"
-                  title="Update currently loaded statement in database"
-                >
-                  {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                  <span>Update Statement</span>
-                </button>
-                <div className="w-px h-5 bg-emerald-500/80 mx-0.5" />
-                <button
-                  type="button"
-                  onClick={() => handleSave(true)}
-                  disabled={isSaving}
-                  className="inline-flex items-center gap-1 px-2.5 py-2 min-h-[40px] rounded-lg text-xs font-semibold text-emerald-100 hover:text-white hover:bg-emerald-700 transition disabled:opacity-50"
-                  title="Save current state as a new copy without overwriting"
-                >
-                  <Copy size={13} />
-                  <span className="hidden sm:inline">Save as New Copy</span>
-                </button>
-              </div>
-            ) : (
+            {/* View Mode Toggle: Statements List vs Generator */}
+            <div className="flex items-center bg-slate-100/90 p-1 rounded-2xl border border-slate-200/80 text-xs font-bold shadow-2xs">
               <button
                 type="button"
-                onClick={() => handleSave(false)}
-                disabled={isSaving}
-                className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 min-h-[44px] rounded-xl text-xs font-bold shadow-xs shadow-emerald-600/20 transition disabled:opacity-50"
-                title="Save current statement to database"
+                onClick={() => setMainView('list')}
+                className={`whitespace-nowrap shrink-0 min-h-[40px] px-3.5 py-1.5 rounded-xl transition flex items-center gap-1.5 ${
+                  mainView === 'list'
+                    ? 'bg-white text-slate-900 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
               >
-                {isSaving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
-                <span>Save Statement</span>
+                <FileText size={15} className="text-blue-600" />
+                <span>All Statements</span>
+                <span className="bg-slate-200 text-slate-700 text-[10px] px-1.5 py-0.2 rounded-full font-bold">
+                  {counts.all}
+                </span>
               </button>
+              <button
+                type="button"
+                onClick={() => setMainView('generator')}
+                className={`whitespace-nowrap shrink-0 min-h-[40px] px-3.5 py-1.5 rounded-xl transition flex items-center gap-1.5 ${
+                  mainView === 'generator'
+                    ? 'bg-white text-blue-700 shadow-xs'
+                    : 'text-slate-600 hover:text-blue-700'
+                }`}
+              >
+                <Sparkles size={15} className="text-indigo-600" />
+                <span>Statement Generator</span>
+              </button>
+            </div>
+
+            {/* New Statement Button */}
+            <button
+              type="button"
+              onClick={handleStartNewStatement}
+              className="min-h-[44px] bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 font-bold text-xs sm:text-sm transition shadow-md shadow-blue-600/20"
+            >
+              <Plus size={17} /> New Statement
+            </button>
+
+            {mainView === 'generator' && (
+              <>
+                {/* View Mode Toggle (Split / Form / Preview) */}
+                <div className="hidden lg:flex items-center bg-slate-100/80 backdrop-blur-sm p-1 rounded-xl border border-slate-200/70 text-xs font-bold">
+                  <button
+                    onClick={() => setViewMode('split')}
+                    className={`px-3 py-1.5 rounded-lg transition ${
+                      viewMode === 'split' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Split View
+                  </button>
+                  <button
+                    onClick={() => setViewMode('form')}
+                    className={`px-3 py-1.5 rounded-lg transition ${
+                      viewMode === 'form' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Form Only
+                  </button>
+                  <button
+                    onClick={() => setViewMode('preview')}
+                    className={`px-3 py-1.5 rounded-lg transition ${
+                      viewMode === 'preview' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Preview Only
+                  </button>
+                </div>
+
+                {/* Save / Update Button */}
+                {activeStatementId ? (
+                  <div className="inline-flex items-center rounded-xl bg-emerald-600 p-0.5 shadow-sm min-h-[44px]">
+                    <button
+                      type="button"
+                      onClick={() => handleSave(false)}
+                      disabled={isSaving}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 min-h-[40px] rounded-lg text-xs font-bold text-white hover:bg-emerald-700 transition disabled:opacity-50"
+                      title="Update currently loaded statement in database"
+                    >
+                      {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                      <span>Update Statement</span>
+                    </button>
+                    <div className="w-px h-5 bg-emerald-500/80 mx-0.5" />
+                    <button
+                      type="button"
+                      onClick={() => handleSave(true)}
+                      disabled={isSaving}
+                      className="inline-flex items-center gap-1 px-2.5 py-2 min-h-[40px] rounded-lg text-xs font-semibold text-emerald-100 hover:text-white hover:bg-emerald-700 transition disabled:opacity-50"
+                      title="Save current state as a new copy without overwriting"
+                    >
+                      <Copy size={13} />
+                      <span className="hidden sm:inline">Save Copy</span>
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleSave(false)}
+                    disabled={isSaving}
+                    className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 min-h-[44px] rounded-xl text-xs font-bold shadow-xs shadow-emerald-600/20 transition disabled:opacity-50"
+                    title="Save current statement to database"
+                  >
+                    {isSaving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+                    <span>Save Statement</span>
+                  </button>
+                )}
+
+                <button
+                  onClick={handlePrint}
+                  className="inline-flex items-center gap-2 bg-white/80 hover:bg-white text-slate-800 border border-slate-200/80 px-3.5 py-2 min-h-[44px] rounded-xl text-xs font-bold shadow-xs transition hover:border-slate-300"
+                >
+                  <Printer size={15} /> Print / Save PDF
+                </button>
+
+                <button
+                  onClick={handleDownloadPdf}
+                  disabled={isGeneratingPdf}
+                  className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2 min-h-[44px] rounded-xl text-xs font-bold shadow-md shadow-blue-600/20 transition-all disabled:opacity-50"
+                >
+                  {isGeneratingPdf ? (
+                    <>
+                      <Loader2 size={15} className="animate-spin" /> Compiling PDF...
+                    </>
+                  ) : (
+                    <>
+                      <Download size={15} /> Download PDF
+                    </>
+                  )}
+                </button>
+              </>
             )}
-
-            <button
-              onClick={handlePrint}
-              className="inline-flex items-center gap-2 bg-white/80 hover:bg-white text-slate-800 border border-slate-200/80 px-3.5 py-2 min-h-[44px] rounded-xl text-xs font-bold shadow-xs transition hover:border-slate-300"
-            >
-              <Printer size={15} /> Print / Save PDF
-            </button>
-
-            <button
-              onClick={handleDownloadPdf}
-              disabled={isGeneratingPdf}
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2 min-h-[44px] rounded-xl text-xs font-bold shadow-md shadow-blue-600/20 transition-all disabled:opacity-50"
-            >
-              {isGeneratingPdf ? (
-                <>
-                  <Loader2 size={15} className="animate-spin" /> Compiling 2-Page PDF...
-                </>
-              ) : (
-                <>
-                  <Download size={15} /> Download 2-Page PDF
-                </>
-              )}
-            </button>
           </div>
         </div>
       </div>
 
+      {/* Settlements-style Success Banner (when statement is saved/updated) */}
+      {saveSuccess && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 print:hidden">
+          <div className="glass-card rounded-2xl p-5 shadow-sm border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-emerald-50/80">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="text-emerald-600 mt-0.5 flex-shrink-0" size={22} />
+              <div>
+                <h4 className="text-sm font-bold text-emerald-950">
+                  Statement Saved for {saveSuccess.workerName}
+                </h4>
+                <p className="text-xs text-emerald-700 mt-0.5">
+                  {saveSuccess.message} Reference No: <span className="font-mono font-bold">{saveSuccess.refNo}</span>.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleEditFromTable(saveSuccess.statementId)}
+                className="bg-white hover:bg-emerald-100 text-emerald-900 border border-emerald-300 px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-2xs transition"
+              >
+                <Edit3 size={14} /> Edit Statement
+              </button>
+              <button
+                type="button"
+                onClick={() => handlePrintFromTable(saveSuccess.statementId)}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-sm transition"
+              >
+                <Printer size={14} /> Print Certificate
+              </button>
+              <button
+                type="button"
+                onClick={() => setSaveSuccess(null)}
+                className="text-emerald-700 hover:text-emerald-900 p-1.5 rounded-lg hover:bg-emerald-100 transition"
+                title="Dismiss"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Active Edit Session Indicator Banner */}
-      {activeStatementId && (
+      {activeStatementId && mainView === 'generator' && (
         <div className="bg-gradient-to-r from-emerald-500/10 via-blue-500/10 to-indigo-500/10 border-b border-emerald-200/60 py-2 px-4 print:hidden">
           <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2 text-slate-800">
@@ -2760,6 +3095,13 @@ export default function SalaryStatementClient({
               </button>
               <button
                 type="button"
+                onClick={() => setMainView('list')}
+                className="inline-flex items-center gap-1 text-slate-600 hover:text-slate-900 font-semibold bg-white/80 px-2.5 py-1 rounded-lg border border-slate-200 shadow-xs hover:bg-white transition"
+              >
+                <FileText size={13} /> View in List
+              </button>
+              <button
+                type="button"
                 onClick={handleStartNewStatement}
                 className="inline-flex items-center gap-1 text-slate-600 hover:text-slate-900 font-semibold bg-white/80 px-2.5 py-1 rounded-lg border border-slate-200 shadow-xs hover:bg-white transition"
                 title="Start a fresh unsaved document without modifying this record"
@@ -2772,119 +3114,466 @@ export default function SalaryStatementClient({
       )}
 
       {/* Main Container */}
-      <div className="salary-statement-container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 print:p-0 print:m-0 print:max-w-none print:w-full">
-        {/* Worker Quick Search Bar */}
-        <div className="glass-card p-4 rounded-3xl shadow-sm border border-white/70 mb-6 print:hidden relative">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex-1 relative">
-              <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
-                Auto-Fill From Employee Record
-              </label>
-              <div className="relative">
-                <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search by Employee ID, Name, or Phone (e.g. 4917 or Sakib)..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onFocus={() => {
-                    if (searchResults.length > 0) setShowSearchDropdown(true);
-                  }}
-                  className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                />
-                {isSearching && (
-                  <Loader2 size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-blue-500 animate-spin" />
+      <div className="salary-statement-container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 print:p-0 print:m-0 print:max-w-none print:w-full space-y-6">
+        {/* Settlements-style Table Section */}
+        {mainView === 'list' && (
+          <div className="space-y-6 print:hidden">
+            <div className="glass-table-container rounded-3xl shadow-sm border border-white/70 overflow-hidden">
+              {/* Controls: Filter Tabs & Search */}
+              <div className="p-5 border-b border-slate-200/60 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/40">
+                {/* Status Tabs */}
+                <div className="flex items-center gap-1.5 bg-slate-100/70 backdrop-blur-sm p-1 rounded-2xl border border-slate-200/60 overflow-x-auto no-scrollbar touch-scroll max-w-full">
+                  <button
+                    type="button"
+                    onClick={() => setStatusFilter('ALL')}
+                    className={`whitespace-nowrap shrink-0 min-h-[44px] px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                      statusFilter === 'ALL'
+                        ? 'bg-white text-slate-900 shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    All Statements
+                    <span className="bg-slate-200 text-slate-700 text-[10px] px-1.5 py-0.2 rounded-full font-bold">
+                      {counts.all}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStatusFilter('PENDING')}
+                    className={`whitespace-nowrap shrink-0 min-h-[44px] px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                      statusFilter === 'PENDING'
+                        ? 'bg-white text-amber-800 shadow-xs'
+                        : 'text-slate-600 hover:text-amber-700'
+                    }`}
+                  >
+                    Pending
+                    <span className="bg-amber-100 text-amber-800 text-[10px] px-1.5 py-0.2 rounded-full font-bold">
+                      {counts.pending}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStatusFilter('APPROVED')}
+                    className={`whitespace-nowrap shrink-0 min-h-[44px] px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                      statusFilter === 'APPROVED'
+                        ? 'bg-white text-emerald-800 shadow-xs'
+                        : 'text-slate-600 hover:text-emerald-700'
+                    }`}
+                  >
+                    Approved
+                    <span className="bg-emerald-100 text-emerald-800 text-[10px] px-1.5 py-0.2 rounded-full font-bold">
+                      {counts.approved}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStatusFilter('ISSUED')}
+                    className={`whitespace-nowrap shrink-0 min-h-[44px] px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                      statusFilter === 'ISSUED'
+                        ? 'bg-white text-blue-800 shadow-xs'
+                        : 'text-slate-600 hover:text-blue-700'
+                    }`}
+                  >
+                    Issued
+                    <span className="bg-blue-100 text-blue-800 text-[10px] px-1.5 py-0.2 rounded-full font-bold">
+                      {counts.issued}
+                    </span>
+                  </button>
+                </div>
+
+                {/* Search within table */}
+                <div className="relative w-full md:w-72">
+                  <input
+                    type="text"
+                    placeholder="Filter by name, ID, ref no, or dept..."
+                    value={tableSearchQuery}
+                    onChange={(e) => setTableSearchQuery(e.target.value)}
+                    className="w-full bg-white/70 backdrop-blur-sm border border-slate-200/80 rounded-xl pl-9 pr-8 py-2 text-xs outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15 shadow-xs"
+                  />
+                  <Search className="absolute left-3 top-2.5 text-slate-400" size={14} />
+                  {tableSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setTableSearchQuery('')}
+                      className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Table */}
+              <div className="overflow-x-auto custom-scrollbar touch-scroll">
+                <table className="w-full text-left border-collapse text-xs min-w-[720px]">
+                  <thead className="bg-slate-50/80 backdrop-blur-md border-b border-slate-200/70">
+                    <tr>
+                      <th className="p-4 font-bold text-xs text-slate-600 uppercase tracking-wider">Employee</th>
+                      <th className="p-4 font-bold text-xs text-gray-500 uppercase tracking-wider">Type / Dates</th>
+                      <th className="p-4 font-bold text-xs text-gray-500 uppercase tracking-wider">Salary Month</th>
+                      <th className="p-4 font-bold text-xs text-gray-500 uppercase tracking-wider">Total Amount</th>
+                      <th className="p-4 font-bold text-xs text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="p-4 font-bold text-xs text-gray-500 uppercase tracking-wider">Date</th>
+                      <th className="p-4 font-bold text-xs text-gray-500 uppercase tracking-wider text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {filteredStatements.map((stmt: any) => {
+                      const data = normalizeStatementData(stmt.data);
+                      const fd = typeof data === 'object' && data.formData ? data.formData : data;
+                      const workerName = stmt.name || stmt.worker?.name || fd.name || 'Unknown Employee';
+                      const workerId = stmt.workerId || stmt.worker?.workerId || fd.workerId || 'N/A';
+                      const designationName =
+                        stmt.designation || stmt.worker?.designation || fd.designation || '';
+                      const deptName =
+                        stmt.department || stmt.worker?.department?.name || fd.department || 'Administration';
+                      const refNo = stmt.refNo || fd.refNo || 'N/A';
+                      const formattedDate = stmt.statementDate ? stmt.statementDate : formatDate(stmt.createdAt);
+
+                      // Total amount calculation
+                      const totalAmount =
+                        typeof fd.monthlyPayableAmount === 'number' && fd.monthlyPayableAmount > 0
+                          ? fd.monthlyPayableAmount
+                          : typeof fd.structureTotal === 'number' && fd.structureTotal > 0
+                          ? fd.structureTotal
+                          : Array.isArray(fd.months) && fd.months[2]?.netPayable
+                          ? Number(fd.months[2].netPayable) || 0
+                          : 0;
+
+                      // Salary month calculation
+                      const monthsArr = Array.isArray(fd.months) ? fd.months : [];
+                      let monthText = 'Past 3 Months';
+                      if (monthsArr.length === 3 && monthsArr[0]?.monthName && monthsArr[2]?.monthName) {
+                        const m0 = (monthsArr[0].monthName || '').split(' ')[0] || monthsArr[0].monthName;
+                        const m2 = (monthsArr[2].monthName || '').split(' ')[0] || monthsArr[2].monthName;
+                        monthText = `${m0} - ${m2}`;
+                      } else if (monthsArr[2]?.monthName) {
+                        monthText = (monthsArr[2].monthName || '').split(' ')[0] || monthsArr[2].monthName;
+                      }
+
+                      const currentStatus = (stmt.data?.status || fd.status || 'APPROVED').toUpperCase();
+
+                      return (
+                        <tr
+                          key={stmt.id}
+                          onClick={() => handleEditFromTable(stmt.id)}
+                          className="hover:bg-blue-50/40 cursor-pointer transition group"
+                        >
+                          {/* Employee Info */}
+                          <td className="p-4">
+                            <div className="font-bold text-gray-900 group-hover:text-blue-600 transition flex items-center gap-1.5 flex-wrap">
+                              {workerName}
+                              <span className="text-[10px] bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.5 rounded font-semibold">
+                                Statement
+                              </span>
+                              {currentStatus === 'PENDING' && (
+                                <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded font-bold">
+                                  Draft
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-xs text-gray-500 font-mono mt-0.5">
+                              ID: {workerId}
+                              {designationName && (
+                                <span className="font-sans text-gray-500"> &bull; {designationName}</span>
+                              )}
+                              {deptName && (
+                                <span className="font-sans text-gray-400"> &bull; {deptName}</span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Type / Dates */}
+                          <td className="p-4">
+                            <div className="text-xs space-y-0.5">
+                              <div className="text-gray-800 font-mono font-medium">
+                                Ref: {refNo}
+                              </div>
+                              <div className="text-gray-500">
+                                <span className="text-gray-400">Date:</span> {formattedDate}
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Salary Month */}
+                          <td className="p-4">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 border border-indigo-200 text-indigo-800">
+                              <Calendar size={13} className="text-indigo-600 shrink-0" />
+                              <span>{monthText}</span>
+                            </span>
+                          </td>
+
+                          {/* Total Amount (2-line layout matching Settlements) */}
+                          <td className="p-4">
+                            <div className="font-bold text-gray-900 text-sm leading-tight">
+                              {totalAmount.toFixed(2)}
+                            </div>
+                            <div className="text-xs font-bold text-gray-900 leading-tight">
+                              BDT
+                            </div>
+                          </td>
+
+                          {/* Status Badge */}
+                          <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                            <select
+                              value={currentStatus}
+                              onChange={(e) => handleStatusChange(stmt.id, e.target.value)}
+                              className={`text-xs font-bold px-2.5 py-1 rounded-full border outline-none cursor-pointer ${
+                                currentStatus === 'APPROVED'
+                                  ? 'bg-green-100 text-green-800 border-green-300'
+                                  : currentStatus === 'ISSUED' || currentStatus === 'PAID'
+                                  ? 'bg-blue-100 text-blue-800 border-blue-300'
+                                  : 'bg-yellow-100 text-yellow-800 border-yellow-300'
+                              }`}
+                            >
+                              <option value="APPROVED">APPROVED</option>
+                              <option value="PENDING">PENDING</option>
+                              <option value="ISSUED">ISSUED</option>
+                              <option value="PAID">PAID</option>
+                            </select>
+                          </td>
+
+                          {/* Date Created */}
+                          <td className="p-4 text-xs text-gray-500 font-medium">
+                            {formatDate(stmt.createdAt)}
+                          </td>
+
+                          {/* Actions */}
+                          <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center justify-end gap-2.5">
+                              <button
+                                type="button"
+                                onClick={() => handleEditFromTable(stmt.id)}
+                                className="text-xs font-bold text-gray-700 hover:text-blue-600 bg-gray-100 hover:bg-gray-200 px-2.5 py-1.5 rounded-lg transition flex items-center gap-1"
+                              >
+                                <Edit3 size={13} /> Edit
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handlePrintFromTable(stmt.id)}
+                                disabled={loadingStatementId === stmt.id}
+                                className="text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1.5 rounded-lg transition flex items-center gap-1 disabled:opacity-50"
+                                title="Print statement certificate"
+                              >
+                                {loadingStatementId === stmt.id ? (
+                                  <Loader2 size={13} className="animate-spin" />
+                                ) : (
+                                  <Printer size={13} />
+                                )}
+                                <span>Print</span>
+                              </button>
+
+                              {deleteConfirmId === stmt.id ? (
+                                <div className="inline-flex items-center gap-1 bg-rose-50 border border-rose-200 rounded-lg p-0.5">
+                                  <span className="text-[11px] text-rose-700 font-bold px-1">Delete?</span>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => handleDeleteStatement(stmt.id, e)}
+                                    disabled={deletingId === stmt.id}
+                                    className="bg-rose-600 hover:bg-rose-700 text-white px-2 py-1 rounded text-[11px] font-bold transition disabled:opacity-50"
+                                  >
+                                    {deletingId === stmt.id ? '...' : 'Yes'}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setDeleteConfirmId(null)}
+                                    className="bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-1 rounded text-[11px] font-medium transition"
+                                  >
+                                    No
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => setDeleteConfirmId(stmt.id)}
+                                  className="text-xs font-bold text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 px-2.5 py-1.5 rounded-lg transition flex items-center gap-1"
+                                  title="Delete statement"
+                                >
+                                  <Trash2 size={13} /> Delete
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+
+                    {filteredStatements.length === 0 && (
+                      <tr>
+                        <td colSpan={7} className="p-12 text-center text-gray-500">
+                          <div className="flex flex-col items-center justify-center space-y-3">
+                            <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
+                              <FileText size={24} />
+                            </div>
+                            <p className="text-sm font-semibold text-gray-700">No salary statements found.</p>
+                            <p className="text-xs text-gray-400">
+                              {tableSearchQuery
+                                ? 'Try adjusting your search query.'
+                                : 'Use "New Statement" above or start the generator to create your first statement.'}
+                            </p>
+                            <button
+                              type="button"
+                              onClick={handleStartNewStatement}
+                              className="text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 border border-indigo-200 px-3.5 py-2 rounded-xl transition mt-2 flex items-center gap-1.5"
+                            >
+                              <Plus size={15} /> Create New Statement
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Generator Workspace (Form + Preview) */}
+        <div
+          className={
+            mainView === 'list'
+              ? 'salary-statement-generator-wrapper print:block'
+              : 'salary-statement-generator-wrapper block space-y-6'
+          }
+        >
+          {/* Generator Controls & Header (visible only in generator mode) */}
+          {mainView === 'generator' && (
+            <>
+              {/* Header row in generator: Back to statements list button */}
+              <div className="flex items-center justify-between print:hidden">
+                <button
+                  type="button"
+                  onClick={() => setMainView('list')}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-blue-600 bg-white hover:bg-slate-50 border border-slate-200/90 px-3.5 py-2 rounded-xl transition shadow-xs"
+                >
+                  <ArrowLeft size={14} />
+                  <span>Back to Statements List ({counts.all})</span>
+                </button>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-500 font-medium">Interactive 2-Page Document Editor</span>
+                </div>
+              </div>
+
+              {/* Worker Quick Search Bar */}
+              <div className="glass-card p-4 rounded-3xl shadow-sm border border-white/70 mb-6 print:hidden relative">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex-1 relative">
+                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
+                    Auto-Fill From Employee Record
+                  </label>
+                  <div className="relative">
+                    <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search by Employee ID, Name, or Phone (e.g. 4917 or Sakib)..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onFocus={() => {
+                        if (searchResults.length > 0) setShowSearchDropdown(true);
+                      }}
+                      className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                    />
+                    {isSearching && (
+                      <Loader2 size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-blue-500 animate-spin" />
+                    )}
+                  </div>
+
+                  {/* Autocomplete Dropdown */}
+                  {showSearchDropdown && searchResults.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-72 overflow-y-auto divide-y divide-gray-100">
+                      {searchResults.map((worker) => (
+                        <button
+                          key={worker.id}
+                          onClick={() => handleSelectWorker(worker)}
+                          className="w-full px-4 py-3 text-left hover:bg-blue-50/70 transition flex items-center justify-between group"
+                        >
+                          <div>
+                            <div className="font-semibold text-gray-900 group-hover:text-blue-700 text-sm">
+                              {worker.name}{' '}
+                              <span className="font-mono text-xs font-bold bg-gray-100 px-2 py-0.5 rounded text-gray-700 ml-1">
+                                {worker.workerId}
+                              </span>
+                            </div>
+                            <div className="text-xs text-gray-500 mt-0.5">
+                              {worker.designation || 'Staff'} • {worker.department?.name || 'Department'} •{' '}
+                              {worker.company?.name || 'Company'}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-xs font-bold text-emerald-600 block">
+                              Gross: {(worker.grossSalary || 0).toLocaleString()} BDT
+                            </span>
+                            <span className="text-[11px] text-gray-400">Click to Select</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {selectedWorker && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-2 flex items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-2 text-blue-900">
+                      <CheckCircle2 size={16} className="text-blue-600 shrink-0" />
+                      <span>
+                        Loaded <strong>{selectedWorker.name}</strong> ({selectedWorker.workerId})
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setSelectedWorker(null)}
+                      className="text-blue-700 hover:text-blue-900 underline font-semibold ml-2"
+                    >
+                      Clear
+                    </button>
+                  </div>
                 )}
               </div>
-
-              {/* Autocomplete Dropdown */}
-              {showSearchDropdown && searchResults.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-72 overflow-y-auto divide-y divide-gray-100">
-                  {searchResults.map((worker) => (
-                    <button
-                      key={worker.id}
-                      onClick={() => handleSelectWorker(worker)}
-                      className="w-full px-4 py-3 text-left hover:bg-blue-50/70 transition flex items-center justify-between group"
-                    >
-                      <div>
-                        <div className="font-semibold text-gray-900 group-hover:text-blue-700 text-sm">
-                          {worker.name}{' '}
-                          <span className="font-mono text-xs font-bold bg-gray-100 px-2 py-0.5 rounded text-gray-700 ml-1">
-                            {worker.workerId}
-                          </span>
-                        </div>
-                        <div className="text-xs text-gray-500 mt-0.5">
-                          {worker.designation || 'Staff'} • {worker.department?.name || 'Department'} •{' '}
-                          {worker.company?.name || 'Company'}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-xs font-bold text-emerald-600 block">
-                          Gross: {(worker.grossSalary || 0).toLocaleString()} BDT
-                        </span>
-                        <span className="text-[11px] text-gray-400">Click to Select</span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
 
-            {selectedWorker && (
-              <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-2 flex items-center justify-between gap-3 text-xs">
-                <div className="flex items-center gap-2 text-blue-900">
-                  <CheckCircle2 size={16} className="text-blue-600 shrink-0" />
-                  <span>
-                    Loaded <strong>{selectedWorker.name}</strong> ({selectedWorker.workerId})
-                  </span>
-                </div>
-                <button
-                  onClick={() => setSelectedWorker(null)}
-                  className="text-blue-700 hover:text-blue-900 underline font-semibold ml-2"
-                >
-                  Clear
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Mobile View Mode Switcher (<1024px) */}
-        <div className="flex lg:hidden items-center bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200/90 text-xs font-bold w-full gap-2 shadow-xs mb-6 print:hidden">
-          <button
-            type="button"
-            onClick={() => setViewMode('form')}
-            className={`flex-1 py-2.5 px-3 rounded-xl min-h-[44px] flex items-center justify-center gap-2 transition ${
-              viewMode === 'form' || viewMode === 'split'
-                ? 'bg-blue-600 text-white shadow-sm font-extrabold'
-                : 'text-slate-600 hover:text-slate-900 bg-transparent'
-            }`}
-          >
-            <FileText size={16} />
-            <span>Form Editor</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode('preview')}
-            className={`flex-1 py-2.5 px-3 rounded-xl min-h-[44px] flex items-center justify-center gap-2 transition ${
-              viewMode === 'preview'
-                ? 'bg-blue-600 text-white shadow-sm font-extrabold'
-                : 'text-slate-600 hover:text-slate-900 bg-transparent'
-            }`}
-          >
-            <Eye size={16} />
-            <span>Document Preview</span>
-          </button>
-        </div>
+            {/* Mobile View Mode Switcher (<1024px) */}
+            <div className="flex lg:hidden items-center bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200/90 text-xs font-bold w-full gap-2 shadow-xs mb-6 print:hidden">
+              <button
+                type="button"
+                onClick={() => setViewMode('form')}
+                className={`flex-1 py-2.5 px-3 rounded-xl min-h-[44px] flex items-center justify-center gap-2 transition ${
+                  viewMode === 'form' || viewMode === 'split'
+                    ? 'bg-blue-600 text-white shadow-sm font-extrabold'
+                    : 'text-slate-600 hover:text-slate-900 bg-transparent'
+                }`}
+              >
+                <FileText size={16} />
+                <span>Form Editor</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('preview')}
+                className={`flex-1 py-2.5 px-3 rounded-xl min-h-[44px] flex items-center justify-center gap-2 transition ${
+                  viewMode === 'preview'
+                    ? 'bg-blue-600 text-white shadow-sm font-extrabold'
+                    : 'text-slate-600 hover:text-slate-900 bg-transparent'
+                }`}
+              >
+                <Eye size={16} />
+                <span>Document Preview</span>
+              </button>
+            </div>
+          </>
+        )}
 
         {/* Workspace Layout */}
         <div
-          className={`salary-statement-grid grid gap-8 print:block print:m-0 print:p-0 print:gap-0 ${
-            viewMode === 'split' ? 'grid-cols-1 lg:grid-cols-12' : 'grid-cols-1'
+          className={`salary-statement-grid ${
+            mainView === 'list'
+              ? 'print:block print:m-0 print:p-0'
+              : `grid gap-8 print:block print:m-0 print:p-0 print:gap-0 ${
+                  viewMode === 'split' ? 'grid-cols-1 lg:grid-cols-12' : 'grid-cols-1'
+                }`
           }`}
         >
-          {/* Left Column: Form Editor (Visible in 'split' or 'form') */}
-          {(viewMode === 'split' || viewMode === 'form') && (
+          {/* Left Column: Form Editor (Visible in 'split' or 'form' when in generator mode) */}
+          {mainView === 'generator' && (viewMode === 'split' || viewMode === 'form') && (
             <div className={viewMode === 'split' ? 'lg:col-span-5 space-y-6 print:hidden' : 'max-w-4xl mx-auto space-y-6 print:hidden w-full'}>
               {/* Form Navigation Tabs */}
               <div className="glass-panel rounded-2xl p-1.5 border border-white/70 shadow-xs flex items-center gap-1 text-xs font-bold overflow-x-auto no-scrollbar touch-scroll">
@@ -4199,15 +4888,19 @@ export default function SalaryStatementClient({
           <div
             id="printable-pages-container"
             className={
-              viewMode === 'form'
-                ? 'fixed -left-[99999px] top-0 pointer-events-none print:static print:opacity-100 print:left-auto print:w-full print:m-0 print:p-0 space-y-6 print:space-y-0'
+              mainView === 'list'
+                ? 'fixed -left-[99999px] top-0 pointer-events-none opacity-0 print:static print:opacity-100 print:left-auto print:w-full print:m-0 print:p-0 space-y-6 print:space-y-0'
+                : viewMode === 'form'
+                ? 'fixed -left-[99999px] top-0 pointer-events-none opacity-0 print:static print:opacity-100 print:left-auto print:w-full print:m-0 print:p-0 space-y-6 print:space-y-0'
                 : viewMode === 'preview'
                 ? 'max-w-4xl mx-auto space-y-6 w-full print:m-0 print:p-0 print:max-w-none print:w-full print:space-y-0'
                 : 'hidden lg:block lg:col-span-7 space-y-6 print:w-full print:m-0 print:p-0 print:space-y-0'
             }
           >
-            {/* Official Letterhead Pad Print Settings Control Panel */}
-            <div className="print:hidden bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-4 shadow-sm space-y-3.5">
+            {/* Official Letterhead Pad Print Settings Control Panel (rendered only in generator mode) */}
+            {mainView === 'generator' && (
+              <>
+                <div className="print:hidden bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-4 shadow-sm space-y-3.5">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 shrink-0">
@@ -4508,6 +5201,8 @@ export default function SalaryStatementClient({
                 </button>
               </div>
             </div>
+            </>
+            )}
 
             {/* PAGE 1 CONTAINER */}
             <div className="salary-page-wrapper salary-page-1-wrapper relative group print:m-0 print:p-0">
@@ -5610,7 +6305,7 @@ export default function SalaryStatementClient({
 
                   {/* Monthly salary details heading */}
                   <div className="mt-3 mb-2">
-                    <span className="font-bold underline underline-offset-[5px] decoration-1 text-[14px] inline-block">
+                    <span className="font-bold salary-doc-title-underline text-[14px] inline-block">
                       Monthly salary details:
                     </span>
                   </div>
@@ -5726,6 +6421,7 @@ export default function SalaryStatementClient({
             </div>
           </div>
         </div>
+      </div>
       </div>
 
       {/* Saved Statements Slide-Over Drawer */}

@@ -102,6 +102,18 @@ export async function saveSalaryStatement(input: SaveSalaryStatementInput) {
             data: input.data,
             updatedAt: new Date(),
           },
+          include: {
+            worker: {
+              select: {
+                id: true,
+                name: true,
+                workerId: true,
+                designation: true,
+                department: { select: { name: true } },
+                company: { select: { name: true } },
+              },
+            },
+          },
         }),
         8000
       );
@@ -129,6 +141,18 @@ export async function saveSalaryStatement(input: SaveSalaryStatementInput) {
             statementDate: input.statementDate ? input.statementDate.trim() : null,
             data: input.data,
             createdById: (auth.session?.user as any)?.id || (auth.session?.user as any)?.userId || null,
+          },
+          include: {
+            worker: {
+              select: {
+                id: true,
+                name: true,
+                workerId: true,
+                designation: true,
+                department: { select: { name: true } },
+                company: { select: { name: true } },
+              },
+            },
           },
         }),
         8000
@@ -220,8 +244,19 @@ export async function getSavedSalaryStatements(params?: {
             designation: true,
             department: true,
             statementDate: true,
+            data: true,
             createdAt: true,
             updatedAt: true,
+            worker: {
+              select: {
+                id: true,
+                name: true,
+                workerId: true,
+                designation: true,
+                department: { select: { name: true } },
+                company: { select: { name: true } },
+              },
+            },
           },
         }),
       ]),
@@ -262,6 +297,18 @@ export async function getSalaryStatementById(id: string) {
     const statement = await withDbTimeout(
       prisma.salaryStatement.findUnique({
         where: { id: id.trim() },
+        include: {
+          worker: {
+            select: {
+              id: true,
+              name: true,
+              workerId: true,
+              designation: true,
+              department: { select: { name: true } },
+              company: { select: { name: true } },
+            },
+          },
+        },
       }),
       8000
     );
@@ -327,6 +374,85 @@ export async function deleteSalaryStatement(id: string) {
     return {
       success: false,
       error: err.message || 'Failed to delete salary statement',
+    };
+  }
+}
+
+export async function updateSalaryStatementStatus(id: string, status: string) {
+  try {
+    const auth = await checkAuth();
+    if (!auth.authorized) {
+      return { success: false, error: auth.error };
+    }
+
+    if (!id || typeof id !== 'string' || !id.trim()) {
+      return { success: false, error: 'Valid statement ID is required' };
+    }
+
+    const cleanId = id.trim();
+    const existing = await withDbTimeout(
+      prisma.salaryStatement.findUnique({
+        where: { id: cleanId },
+        select: { id: true, data: true, refNo: true, name: true },
+      }),
+      8000
+    );
+
+    if (!existing) {
+      return { success: false, error: 'Salary statement not found.' };
+    }
+
+    let currentData: any = {};
+    if (typeof existing.data === 'string') {
+      try {
+        currentData = JSON.parse(existing.data);
+      } catch {
+        currentData = {};
+      }
+    } else if (typeof existing.data === 'object' && existing.data !== null) {
+      currentData = { ...existing.data };
+    }
+
+    const currentFormData =
+      typeof currentData.formData === 'object' && currentData.formData !== null
+        ? { ...currentData.formData }
+        : {};
+
+    const updatedData = {
+      ...currentData,
+      status,
+      formData: {
+        ...currentFormData,
+        status,
+      },
+    };
+
+    const updated = await withDbTimeout(
+      prisma.salaryStatement.update({
+        where: { id: cleanId },
+        data: {
+          data: updatedData,
+          updatedAt: new Date(),
+        },
+      }),
+      8000
+    );
+
+    await logAction(
+      'PAYROLL',
+      'UPDATE_SALARY_STATEMENT_STATUS',
+      `Updated status to ${status} for statement Ref: ${existing.refNo} (${existing.name})`
+    );
+
+    revalidatePath('/payroll/salary-statement');
+    revalidatePath('/salary-statement');
+
+    return { success: true, statement: updated };
+  } catch (err: any) {
+    console.error('Failed to update salary statement status:', err);
+    return {
+      success: false,
+      error: err.message || 'Failed to update salary statement status',
     };
   }
 }
