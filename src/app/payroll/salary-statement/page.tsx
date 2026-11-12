@@ -44,26 +44,43 @@ export default async function SalaryStatementPage({
   const initialStatementId = Array.isArray(rawId) ? rawId[0] : rawId;
   const isExplicitNew = searchParams?.new === 'true' || searchParams?.new === '1';
 
-  const initialStatements = await withDbTimeout(
-    prisma.salaryStatement.findMany({
-      orderBy: { createdAt: 'desc' },
-      take: 50,
-      include: {
-        worker: {
-          select: {
-            id: true,
-            name: true,
-            workerId: true,
-            designation: true,
-            department: { select: { name: true } },
-            company: { select: { name: true } },
+  let initialStatements: any[] = [];
+  try {
+    initialStatements = await withDbTimeout(
+      prisma.salaryStatement.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 30,
+        select: {
+          id: true,
+          refNo: true,
+          workerId: true,
+          workerDbId: true,
+          name: true,
+          designation: true,
+          department: true,
+          statementDate: true,
+          createdAt: true,
+          updatedAt: true,
+          data: true,
+          worker: {
+            select: {
+              id: true,
+              name: true,
+              workerId: true,
+              designation: true,
+              department: { select: { name: true } },
+              company: { select: { name: true } },
+            },
           },
         },
-      },
-    }),
-    5000,
-    []
-  );
+      }),
+      3000,
+      []
+    );
+  } catch (error) {
+    console.error('Error fetching initial salary statements:', error);
+    initialStatements = [];
+  }
 
   return (
     <Suspense fallback={<ModuleLoading title="Salary Statement Generator" />}>

@@ -68,7 +68,7 @@ export async function saveSalaryStatement(input: SaveSalaryStatementInput) {
           },
           select: { id: true },
         }),
-        8000
+        5000
       );
       if (worker) {
         workerDbId = worker.id;
@@ -81,7 +81,7 @@ export async function saveSalaryStatement(input: SaveSalaryStatementInput) {
         prisma.salaryStatement.findUnique({
           where: { id: input.id },
         }),
-        8000
+        5000
       );
 
       if (!existing) {
@@ -115,7 +115,7 @@ export async function saveSalaryStatement(input: SaveSalaryStatementInput) {
             },
           },
         }),
-        8000
+        5000
       );
 
       await logAction(
@@ -155,7 +155,7 @@ export async function saveSalaryStatement(input: SaveSalaryStatementInput) {
             },
           },
         }),
-        8000
+        5000
       );
 
       await logAction(
@@ -260,7 +260,7 @@ export async function getSavedSalaryStatements(params?: {
           },
         }),
       ]),
-      8000
+      5000
     );
 
     return {
@@ -310,7 +310,7 @@ export async function getSalaryStatementById(id: string) {
           },
         },
       }),
-      8000
+      5000
     );
 
     if (!statement) {
@@ -345,7 +345,7 @@ export async function deleteSalaryStatement(id: string) {
         where: { id: cleanId },
         select: { id: true, refNo: true, name: true },
       }),
-      8000
+      5000
     );
 
     if (!existing) {
@@ -356,7 +356,7 @@ export async function deleteSalaryStatement(id: string) {
       prisma.salaryStatement.delete({
         where: { id: cleanId },
       }),
-      8000
+      5000
     );
 
     await logAction(
@@ -395,7 +395,7 @@ export async function updateSalaryStatementStatus(id: string, status: string) {
         where: { id: cleanId },
         select: { id: true, data: true, refNo: true, name: true },
       }),
-      8000
+      5000
     );
 
     if (!existing) {
@@ -435,7 +435,7 @@ export async function updateSalaryStatementStatus(id: string, status: string) {
           updatedAt: new Date(),
         },
       }),
-      8000
+      5000
     );
 
     await logAction(
