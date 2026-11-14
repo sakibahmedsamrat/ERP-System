@@ -12,6 +12,9 @@ const nextConfig = {
     minimumCacheTTL: 86400,
   },
   experimental: {
+    serverActions: {
+      bodySizeLimit: '4mb',
+    },
     optimizePackageImports: ['lucide-react', 'qrcode', 'jsbarcode', 'papaparse'],
     staleTimes: {
       dynamic: 30,

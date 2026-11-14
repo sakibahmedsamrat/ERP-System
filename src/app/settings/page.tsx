@@ -1,4 +1,4 @@
-import prisma from '@/lib/prisma';
+import prisma, { withDbTimeout } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
 import { Settings, Lock, UserCircle, Sparkles } from 'lucide-react';
 import PasswordChangeForm from './PasswordChangeForm';
@@ -7,10 +7,47 @@ import ProfileImageUpload from './ProfileImageUpload';
 export default async function SettingsPage() {
   const session = await getSession();
   
-  let profileImage = null;
-  if (session?.user?.id) {
-    const dbUser = await prisma.user.findUnique({ where: { id: session.user.id } });
-    if (dbUser) profileImage = dbUser.profileImage;
+  let profileImage: string | null = null;
+  const userIdentifier = session?.user?.id;
+  const loginUserId = session?.user?.userId;
+
+  if (userIdentifier) {
+    const dbUser = await withDbTimeout(
+      prisma.user.findFirst({
+        where: {
+          OR: [
+            { id: userIdentifier },
+            ...(loginUserId ? [{ userId: loginUserId }] : []),
+            { userId: userIdentifier }
+          ]
+        },
+        select: { profileImage: true }
+      }),
+      4000,
+      null
+    );
+
+    if (dbUser) {
+      profileImage = dbUser.profileImage || null;
+    } else {
+      const dbWorker = await withDbTimeout(
+        prisma.worker.findFirst({
+          where: {
+            OR: [
+              { id: userIdentifier },
+              ...(loginUserId ? [{ workerId: loginUserId }] : []),
+              { workerId: userIdentifier }
+            ]
+          },
+          select: { photoUrl: true }
+        }),
+        3000,
+        null
+      );
+      if (dbWorker) {
+        profileImage = dbWorker.photoUrl || null;
+      }
+    }
   }
 
   return (
@@ -29,7 +66,7 @@ export default async function SettingsPage() {
       </div>
 
       <div className="glass-card rounded-3xl p-6 sm:p-7 border border-white/70 shadow-sm">
-        <ProfileImageUpload currentImage={profileImage} />
+        <ProfileImageUpload currentImage={profileImage} userId={session?.user?.id} />
         
         <h2 className="text-lg font-bold text-slate-900 mb-4 border-b border-slate-200/60 pb-2.5 flex items-center gap-2">
           <UserCircle size={20} className="text-blue-600" />

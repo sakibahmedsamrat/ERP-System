@@ -10,22 +10,48 @@ import { unstable_cache } from 'next/cache';
 const inter = Inter({ subsets: ["latin"], display: 'swap' });
 
 const getUserProfileImage = unstable_cache(
-  async (userId: string) => {
+  async (userId: string, loginUserId?: string) => {
     try {
-      return await withDbTimeout(
-        prisma.user.findUnique({
-          where: { id: userId },
+      const user = await withDbTimeout(
+        prisma.user.findFirst({
+          where: {
+            OR: [
+              { id: userId },
+              ...(loginUserId ? [{ userId: loginUserId }] : []),
+              { userId: userId }
+            ]
+          },
           select: { profileImage: true },
         }),
-        2500,
+        3500,
         null
       );
+      if (user) {
+        return { profileImage: user.profileImage || null };
+      }
+
+      // Fallback check for KPI worker accounts where id is worker.id
+      const worker = await withDbTimeout(
+        prisma.worker.findFirst({
+          where: {
+            OR: [
+              { id: userId },
+              ...(loginUserId ? [{ workerId: loginUserId }] : []),
+              { workerId: userId }
+            ]
+          },
+          select: { photoUrl: true },
+        }),
+        3000,
+        null
+      );
+      return { profileImage: worker?.photoUrl || null };
     } catch {
-      return null;
+      return { profileImage: null };
     }
   },
   ['user-profile-image'],
-  { revalidate: 300, tags: ['user-profile'] }
+  { revalidate: 60, tags: ['user-profile'] }
 );
 
 export const viewport: Viewport = {
@@ -65,10 +91,8 @@ export default async function RootLayout({
   let fullUser = session?.user;
   if (session?.user?.id) {
     try {
-      const dbUser = await getUserProfileImage(session.user.id);
-      if (dbUser?.profileImage) {
-        fullUser = { ...session.user, profileImage: dbUser.profileImage };
-      }
+      const dbUser = await getUserProfileImage(session.user.id, session.user.userId);
+      fullUser = { ...session.user, profileImage: dbUser?.profileImage || null };
     } catch (err) {
       console.warn('Layout getUserProfileImage fallback:', err);
     }

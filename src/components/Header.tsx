@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { Search, UserCircle, LogOut, Menu } from 'lucide-react';
 import { logoutAction } from '@/app/logout/actions';
@@ -29,6 +30,83 @@ export default function Header({
   onToggleMobileSidebar?: () => void;
 }) {
   const pathname = usePathname();
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(
+    user?.profileImage || user?.photoUrl || null
+  );
+
+  // Sync state if user prop changes (e.g. server re-render or route change)
+  useEffect(() => {
+    setAvatarUrl(user?.profileImage || user?.photoUrl || null);
+  }, [user?.profileImage, user?.photoUrl]);
+
+  // Handle initial hydration from local cache if server prop hasn't loaded yet
+  useEffect(() => {
+    if (user?.id) {
+      try {
+        const cached = localStorage.getItem(`erp_avatar_${user.id}`);
+        if (cached && !user?.profileImage && !user?.photoUrl) {
+          setAvatarUrl(cached);
+        } else if (user?.profileImage) {
+          localStorage.setItem(`erp_avatar_${user.id}`, user.profileImage);
+        }
+      } catch {}
+    }
+  }, [user?.id, user?.profileImage, user?.photoUrl]);
+
+  // Handle real-time avatar upload events and cross-tab sync
+  const currentUserId = user?.id;
+  const currentLoginId = user?.userId;
+  useEffect(() => {
+    const handleAvatarUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent<{ profileImage?: string | null; userId?: string }>;
+      if (customEvent.detail) {
+        const { profileImage, userId } = customEvent.detail;
+        if (!userId || !currentUserId || userId === currentUserId || userId === currentLoginId) {
+          setAvatarUrl(profileImage || null);
+          if (currentUserId) {
+            try {
+              if (profileImage) {
+                localStorage.setItem(`erp_avatar_${currentUserId}`, profileImage);
+              } else {
+                localStorage.removeItem(`erp_avatar_${currentUserId}`);
+              }
+            } catch {}
+          }
+        }
+      }
+    };
+
+    const handleStorage = (event: StorageEvent) => {
+      if (currentUserId && event.key === `erp_avatar_${currentUserId}`) {
+        setAvatarUrl(event.newValue);
+      }
+    };
+
+    window.addEventListener('erp-avatar-updated', handleAvatarUpdate);
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      window.removeEventListener('erp-avatar-updated', handleAvatarUpdate);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, [currentUserId, currentLoginId]);
+
+  const handleImageError = () => {
+    setAvatarUrl(null);
+    if (user?.id) {
+      try {
+        localStorage.removeItem(`erp_avatar_${user.id}`);
+      } catch {}
+    }
+  };
+
+  const handleLogout = () => {
+    if (user?.id) {
+      try {
+        localStorage.removeItem(`erp_avatar_${user.id}`);
+      } catch {}
+    }
+  };
   
   // Format the current path nicely
   const getPageTitle = () => {
@@ -96,15 +174,20 @@ export default function Header({
                 {formatRoleBadge(user?.role)}
               </span>
             </div>
-            {user?.profileImage ? (
+            {avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={user.profileImage} alt="Profile" className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover shadow-sm ring-2 ring-white border border-slate-200 shrink-0" />
+              <img 
+                src={avatarUrl} 
+                alt={user?.name || "Profile"} 
+                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover shadow-sm ring-2 ring-white border border-slate-200 shrink-0" 
+                onError={handleImageError}
+              />
             ) : (
               <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-blue-700 flex items-center justify-center text-white shadow-md ring-2 ring-white/80 shrink-0">
                 <UserCircle size={20} />
               </div>
             )}
-            <form action={logoutAction} className="ml-0.5 sm:ml-2">
+            <form action={logoutAction} onSubmit={handleLogout} className="ml-0.5 sm:ml-2">
               <button 
                 title="Logout" 
                 type="submit" 

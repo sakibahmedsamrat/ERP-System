@@ -9,6 +9,32 @@ export default function MainLayout({ children, user }: { children: React.ReactNo
   const pathname = usePathname();
   const isLoginPage = pathname.startsWith('/login') || pathname.startsWith('/kpi/login');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState(user);
+
+  // Keep state in sync with server user prop changes
+  useEffect(() => {
+    setCurrentUser(user);
+  }, [user]);
+
+  // Synchronize avatar updates in real time across the entire layout
+  const currentUserId = currentUser?.id;
+  const currentLoginId = currentUser?.userId;
+  useEffect(() => {
+    const handleAvatarUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent<{ profileImage?: string | null; userId?: string }>;
+      if (customEvent.detail) {
+        const { profileImage, userId } = customEvent.detail;
+        if (!userId || !currentUserId || userId === currentUserId || userId === currentLoginId) {
+          setCurrentUser((prev: any) => (prev ? { ...prev, profileImage: profileImage || null } : prev));
+        }
+      }
+    };
+
+    window.addEventListener('erp-avatar-updated', handleAvatarUpdate);
+    return () => {
+      window.removeEventListener('erp-avatar-updated', handleAvatarUpdate);
+    };
+  }, [currentUserId, currentLoginId]);
 
   // Automatically close mobile sidebar on route navigation
   useEffect(() => {
@@ -23,7 +49,7 @@ export default function MainLayout({ children, user }: { children: React.ReactNo
     <div className="ambient-mesh relative flex h-screen h-[100dvh] overflow-hidden print:bg-white print:h-auto print:overflow-visible font-sans text-slate-800 selection:bg-blue-500/20">
       <Suspense fallback={<aside className="w-72 bg-slate-900/95 text-white h-screen h-[100dvh] shrink-0 hidden lg:block" />}>
         <Sidebar 
-          user={user} 
+          user={currentUser} 
           isMobileOpen={isMobileSidebarOpen}
           onClose={() => setIsMobileSidebarOpen(false)}
         />
@@ -31,7 +57,7 @@ export default function MainLayout({ children, user }: { children: React.ReactNo
 
       <div className="flex-1 flex flex-col h-screen h-[100dvh] min-w-0 overflow-hidden print:h-auto print:overflow-visible relative z-10">
         <Header 
-          user={user} 
+          user={currentUser} 
           onToggleMobileSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
         />
         <main className="flex-1 overflow-x-hidden overflow-y-auto print:overflow-visible flex flex-col justify-between">
