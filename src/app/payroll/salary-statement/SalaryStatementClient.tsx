@@ -233,7 +233,22 @@ export default function SalaryStatementClient({
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
   const [selectedWorker, setSelectedWorker] = useState<any | null>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  // Close worker search autocomplete dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setShowSearchDropdown(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Saved Statements & Active Statement state
   const [activeStatementId, setActiveStatementId] = useState<string | null>(initialStatementId || null);
@@ -375,19 +390,23 @@ export default function SalaryStatementClient({
 
   // Search workers via API with debounce
   useEffect(() => {
-    if (!searchQuery.trim() || searchQuery.trim().length < 2) {
+    const trimmed = searchQuery.trim();
+    if (!trimmed) {
       setSearchResults([]);
       setIsSearching(false);
+      setShowSearchDropdown(false);
+      setHighlightedIndex(-1);
       return;
     }
 
     const timer = setTimeout(async () => {
       setIsSearching(true);
       try {
-        const res = await fetch(`/api/workers/search?q=${encodeURIComponent(searchQuery.trim())}`);
+        const res = await fetch(`/api/workers/search?q=${encodeURIComponent(trimmed)}`);
         const data = await res.json();
         setSearchResults(data.workers || []);
         setShowSearchDropdown(true);
+        setHighlightedIndex(-1);
       } catch (err) {
         console.error('Failed to search workers:', err);
       } finally {
@@ -1485,7 +1504,7 @@ export default function SalaryStatementClient({
       />
 
       {/* Top Navbar & Action Bar */}
-      <div className="glass-header sticky top-0 z-30 print:hidden">
+      <div className="glass-header sticky top-0 z-40 print:hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link
@@ -1785,7 +1804,10 @@ export default function SalaryStatementClient({
               </div>
 
               {/* Worker Quick Search Bar */}
-              <div className="glass-card p-4 rounded-3xl shadow-sm border border-white/70 mb-6 print:hidden relative">
+              <div
+                ref={searchContainerRef}
+                className="glass-card p-4 rounded-3xl shadow-sm border border-white/70 mb-6 print:hidden relative z-30"
+              >
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="flex-1 relative">
                     <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
@@ -1797,34 +1819,95 @@ export default function SalaryStatementClient({
                         type="text"
                         placeholder="Search by Employee ID, Name, or Phone (e.g. 4917 or Sakib)..."
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setSearchQuery(val);
+                          if (val.trim().length > 0) {
+                            setShowSearchDropdown(true);
+                          } else {
+                            setShowSearchDropdown(false);
+                            setSearchResults([]);
+                            setHighlightedIndex(-1);
+                          }
+                        }}
                         onFocus={() => {
-                          if (searchResults.length > 0) setShowSearchDropdown(true);
+                          if (searchQuery.trim().length > 0) {
+                            setShowSearchDropdown(true);
+                          }
+                        }}
+                        onClick={() => {
+                          if (searchQuery.trim().length > 0) {
+                            setShowSearchDropdown(true);
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Escape') {
+                            setShowSearchDropdown(false);
+                          } else if (e.key === 'ArrowDown') {
+                            if (!showSearchDropdown && searchResults.length > 0) {
+                              setShowSearchDropdown(true);
+                            } else if (searchResults.length > 0) {
+                              e.preventDefault();
+                              setHighlightedIndex((prev) => (prev < searchResults.length - 1 ? prev + 1 : 0));
+                            }
+                          } else if (e.key === 'ArrowUp') {
+                            if (searchResults.length > 0) {
+                              e.preventDefault();
+                              setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : searchResults.length - 1));
+                            }
+                          } else if (e.key === 'Enter') {
+                            if (showSearchDropdown && searchResults.length > 0) {
+                              e.preventDefault();
+                              const targetWorker =
+                                highlightedIndex >= 0 ? searchResults[highlightedIndex] : searchResults[0];
+                              if (targetWorker) {
+                                handleSelectWorker(targetWorker);
+                              }
+                            }
+                          }
                         }}
                         className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                       />
-                      {isSearching && (
+                      {isSearching ? (
                         <Loader2
                           size={16}
                           className="absolute right-3.5 top-1/2 -translate-y-1/2 text-blue-500 animate-spin"
                         />
-                      )}
+                      ) : searchQuery.length > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSearchQuery('');
+                            setSearchResults([]);
+                            setShowSearchDropdown(false);
+                            setHighlightedIndex(-1);
+                          }}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition"
+                          title="Clear search"
+                        >
+                          <X size={15} />
+                        </button>
+                      ) : null}
                     </div>
 
                     {/* Autocomplete Dropdown */}
                     {showSearchDropdown && searchResults.length > 0 && (
-                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-72 overflow-y-auto divide-y divide-gray-100">
-                        {searchResults.map((worker) => (
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 max-h-72 overflow-y-auto divide-y divide-slate-100">
+                        {searchResults.map((worker, idx) => (
                           <button
+                            type="button"
                             key={worker.id}
                             onClick={() => handleSelectWorker(worker)}
-                            className="w-full px-4 py-3 text-left hover:bg-blue-50/70 transition flex items-center justify-between group"
+                            onMouseEnter={() => setHighlightedIndex(idx)}
+                            className={`w-full px-4 py-3 text-left transition flex items-center justify-between group ${
+                              highlightedIndex === idx ? 'bg-blue-50' : 'hover:bg-blue-50/70'
+                            }`}
                           >
                             <div>
                               <div className="font-semibold text-gray-900 group-hover:text-blue-700 text-sm">
                                 {worker.name}{' '}
-                                <span className="font-mono text-xs font-bold bg-gray-100 px-2 py-0.5 rounded text-gray-700 ml-1">
-                                  {worker.workerId}
+                                <span className="font-mono text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded ml-1">
+                                  ID: {worker.workerId}
                                 </span>
                               </div>
                               <div className="text-xs text-gray-500 mt-0.5">
@@ -1836,10 +1919,25 @@ export default function SalaryStatementClient({
                               <span className="text-xs font-bold text-emerald-600 block">
                                 Gross: {(worker.grossSalary || 0).toLocaleString()} BDT
                               </span>
-                              <span className="text-[11px] text-gray-400">Click to Select</span>
+                              <span className="text-[11px] text-gray-400 group-hover:text-blue-600 font-medium">
+                                Click to Select
+                              </span>
                             </div>
                           </button>
                         ))}
+                      </div>
+                    )}
+
+                    {showSearchDropdown && isSearching && searchResults.length === 0 && (
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-4 text-center text-xs text-slate-500 font-medium flex items-center justify-center gap-2">
+                        <Loader2 size={15} className="text-blue-500 animate-spin" />
+                        <span>Searching employee ID or name...</span>
+                      </div>
+                    )}
+
+                    {showSearchDropdown && !isSearching && searchQuery.trim().length >= 1 && searchResults.length === 0 && (
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-4 text-center text-xs text-slate-500 font-medium">
+                        No employee found matching &quot;{searchQuery}&quot;
                       </div>
                     )}
                   </div>
@@ -1853,7 +1951,8 @@ export default function SalaryStatementClient({
                         </span>
                       </div>
                       <button
-                        onClick={() => setSelectedWorker(null)}
+                        type="button"
+                        onClick={handleClearSelectedWorker}
                         className="text-blue-700 hover:text-blue-900 underline font-semibold ml-2"
                       >
                         Clear

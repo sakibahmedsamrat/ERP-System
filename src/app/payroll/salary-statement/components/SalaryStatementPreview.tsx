@@ -134,8 +134,8 @@ export const SalaryStatementPreview = memo(function SalaryStatementPreview({
       {/* Official Letterhead Pad Print Settings Control Panel (rendered only in generator mode) */}
       {mainView === 'generator' && (
         <>
-          <div className="print:hidden bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-4 shadow-sm space-y-3.5">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+          <div className="print:hidden bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-4 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 shrink-0">
                   <Sliders size={18} />
@@ -166,7 +166,7 @@ export const SalaryStatementPreview = memo(function SalaryStatementPreview({
                     setLogoDisplay('blank_space');
                     setHeaderMode('blank_header');
                   }}
-                  className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition border ${
+                  className={`px-3 py-1.5 text-xs font-bold rounded-xl transition border ${
                     padTopMargin === 38 &&
                     padBottomMargin === 28 &&
                     padLeftMargin === 20 &&
@@ -179,239 +179,6 @@ export const SalaryStatementPreview = memo(function SalaryStatementPreview({
                 >
                   Official Pad (Blank Top Header)
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPadTopMargin(38);
-                    setPadBottomMargin(28);
-                    setPadLeftMargin(20);
-                    setPadRightMargin(20);
-                    setLogoDisplay('blank_space');
-                    setHeaderMode('company_info');
-                  }}
-                  className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition border ${
-                    padTopMargin === 38 &&
-                    padBottomMargin === 28 &&
-                    padLeftMargin === 20 &&
-                    padRightMargin === 20 &&
-                    logoDisplay === 'blank_space' &&
-                    headerMode === 'company_info'
-                      ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
-                  }`}
-                  title="Office pad with pre-printed logo space only (prints company info, leaves logo spot blank)"
-                >
-                  Pad (Blank Logo Spot)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPadTopMargin(16);
-                    setPadBottomMargin(16);
-                    setPadLeftMargin(20);
-                    setPadRightMargin(20);
-                    setLogoDisplay('digital_logo');
-                    setHeaderMode('company_info');
-                  }}
-                  className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition border ${
-                    padTopMargin === 16 &&
-                    padBottomMargin === 16 &&
-                    padLeftMargin === 20 &&
-                    padRightMargin === 20 &&
-                    logoDisplay === 'digital_logo' &&
-                    headerMode === 'company_info'
-                      ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
-                  }`}
-                  title="Switch to plain A4 paper print layout with digital MEP logo"
-                >
-                  Plain Paper Mode
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 text-xs">
-              {/* Header Text Mode */}
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
-                  Header Text Mode
-                </label>
-                <select
-                  value={headerMode}
-                  onChange={(e) => setHeaderMode(e.target.value as any)}
-                  className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs font-semibold bg-white text-slate-800 focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="blank_header">Blank Top Header (Pre-printed Pad)</option>
-                  <option value="company_info">Show Company Info (Plain Paper)</option>
-                </select>
-              </div>
-
-              {/* Logo Display Setting */}
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
-                  Logo / Image Spot
-                </label>
-                <select
-                  value={logoDisplay}
-                  onChange={(e) => setLogoDisplay(e.target.value as any)}
-                  className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs font-semibold bg-white text-slate-800 focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="blank_space">Blank Space (Reserved for Pad Logo)</option>
-                  <option value="collapsed">No Logo (Align Left)</option>
-                  <option value="digital_logo">Show Digital Logo</option>
-                </select>
-              </div>
-
-              {/* Top Margin Clearance */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
-                    Top Blank Space
-                  </label>
-                  <span className="text-[11px] font-bold text-blue-600">{padTopMargin} mm</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <input
-                    type="number"
-                    min={10}
-                    max={70}
-                    value={padTopMargin}
-                    onChange={(e) =>
-                      setPadTopMargin(Math.max(10, Math.min(70, Number(e.target.value) || 0)))
-                    }
-                    className="w-14 px-2 py-1 border border-slate-300 rounded text-xs font-bold text-slate-800 text-center"
-                  />
-                  <div className="flex items-center gap-1 flex-1">
-                    {[30, 38, 45].map((mm) => (
-                      <button
-                        key={mm}
-                        type="button"
-                        onClick={() => setPadTopMargin(mm)}
-                        className={`flex-1 py-1 rounded text-[10px] font-bold transition border ${
-                          padTopMargin === mm
-                            ? 'bg-blue-600 text-white border-blue-600'
-                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                        }`}
-                      >
-                        {mm}mm
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Bottom Margin Clearance */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
-                    Bottom Blank Space
-                  </label>
-                  <span className="text-[11px] font-bold text-blue-600">{padBottomMargin} mm</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <input
-                    type="number"
-                    min={10}
-                    max={60}
-                    value={padBottomMargin}
-                    onChange={(e) =>
-                      setPadBottomMargin(Math.max(10, Math.min(60, Number(e.target.value) || 0)))
-                    }
-                    className="w-14 px-2 py-1 border border-slate-300 rounded text-xs font-bold text-slate-800 text-center"
-                  />
-                  <div className="flex items-center gap-1 flex-1">
-                    {[20, 28, 35].map((mm) => (
-                      <button
-                        key={mm}
-                        type="button"
-                        onClick={() => setPadBottomMargin(mm)}
-                        className={`flex-1 py-1 rounded text-[10px] font-bold transition border ${
-                          padBottomMargin === mm
-                            ? 'bg-blue-600 text-white border-blue-600'
-                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                        }`}
-                      >
-                        {mm}mm
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Left Margin Clearance */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
-                    Left Margin
-                  </label>
-                  <span className="text-[11px] font-bold text-blue-600">{padLeftMargin} mm</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <input
-                    type="number"
-                    min={10}
-                    max={40}
-                    value={padLeftMargin}
-                    onChange={(e) =>
-                      setPadLeftMargin(Math.max(10, Math.min(40, Number(e.target.value) || 0)))
-                    }
-                    className="w-14 px-2 py-1 border border-slate-300 rounded text-xs font-bold text-slate-800 text-center"
-                  />
-                  <div className="flex items-center gap-1 flex-1">
-                    {[15, 20, 25].map((mm) => (
-                      <button
-                        key={mm}
-                        type="button"
-                        onClick={() => setPadLeftMargin(mm)}
-                        className={`flex-1 py-1 rounded text-[10px] font-bold transition border ${
-                          padLeftMargin === mm
-                            ? 'bg-blue-600 text-white border-blue-600'
-                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                        }`}
-                      >
-                        {mm}mm
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Margin Clearance */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
-                    Right Margin
-                  </label>
-                  <span className="text-[11px] font-bold text-blue-600">{padRightMargin} mm</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <input
-                    type="number"
-                    min={10}
-                    max={40}
-                    value={padRightMargin}
-                    onChange={(e) =>
-                      setPadRightMargin(Math.max(10, Math.min(40, Number(e.target.value) || 0)))
-                    }
-                    className="w-14 px-2 py-1 border border-slate-300 rounded text-xs font-bold text-slate-800 text-center"
-                  />
-                  <div className="flex items-center gap-1 flex-1">
-                    {[15, 20, 25].map((mm) => (
-                      <button
-                        key={mm}
-                        type="button"
-                        onClick={() => setPadRightMargin(mm)}
-                        className={`flex-1 py-1 rounded text-[10px] font-bold transition border ${
-                          padRightMargin === mm
-                            ? 'bg-blue-600 text-white border-blue-600'
-                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                        }`}
-                      >
-                        {mm}mm
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -1668,6 +1435,14 @@ export const SalaryStatementPreview = memo(function SalaryStatementPreview({
                   defaultValue={initialDefaults.signatoryDepartment}
                   onChange={(val) => setFormData((prev) => ({ ...prev, signatoryDepartment: val }))}
                   onReset={() => onResetField('signatoryDepartment')}
+                />
+              </div>
+              <div>
+                <EditableInlineText
+                  value={formData.signatoryOrg}
+                  defaultValue={initialDefaults.signatoryOrg}
+                  onChange={(val) => setFormData((prev) => ({ ...prev, signatoryOrg: val }))}
+                  onReset={() => onResetField('signatoryOrg')}
                 />
               </div>
             </div>

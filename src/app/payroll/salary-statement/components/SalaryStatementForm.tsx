@@ -517,7 +517,7 @@ export const SalaryStatementForm = memo(function SalaryStatementForm({
           </div>
 
           {/* Official Letterhead Pad & Clearance Setup */}
-          <div className="glass-card rounded-3xl p-5 border border-amber-200/70 bg-gradient-to-br from-amber-50/40 to-white shadow-sm space-y-4">
+          <div className="glass-card rounded-3xl p-5 border border-amber-200/70 bg-gradient-to-br from-amber-50/40 to-white shadow-sm space-y-3">
             <div className="flex items-center justify-between border-b border-amber-200/60 pb-2">
               <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
                 <Sliders size={16} className="text-amber-600" /> Letterhead Pad & Print Clearance
@@ -528,12 +528,10 @@ export const SalaryStatementForm = memo(function SalaryStatementForm({
             </div>
 
             <p className="text-xs text-slate-600 leading-relaxed">
-              Configure blank top and bottom clearance for printing on pre-printed office letterhead pads.
+              Standard clearance reserved for company letterhead pad (top: 38mm, bottom: 28mm, margins: 20mm).
             </p>
 
-            {/* Quick Presets Bar */}
-            <div className="flex flex-wrap items-center gap-2 pt-1 border-b border-amber-200/50 pb-3">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Presets:</span>
+            <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => {
@@ -542,7 +540,7 @@ export const SalaryStatementForm = memo(function SalaryStatementForm({
                   setLogoDisplay('blank_space');
                   setHeaderMode('blank_header');
                 }}
-                className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition border ${
+                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition border ${
                   padTopMargin === 38 && padBottomMargin === 28 && headerMode === 'blank_header'
                     ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
                     : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
@@ -550,64 +548,6 @@ export const SalaryStatementForm = memo(function SalaryStatementForm({
               >
                 Official Pad (Blank Top Header)
               </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setPadTopMargin(38);
-                  setPadBottomMargin(28);
-                  setLogoDisplay('blank_space');
-                  setHeaderMode('company_info');
-                }}
-                className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition border ${
-                  padTopMargin === 38 && padBottomMargin === 28 && logoDisplay === 'blank_space' && headerMode === 'company_info'
-                    ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                    : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
-                }`}
-              >
-                Pad with Blank Logo Space
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setPadTopMargin(16);
-                  setPadBottomMargin(16);
-                  setLogoDisplay('digital_logo');
-                  setHeaderMode('company_info');
-                }}
-                className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition border ${
-                  padTopMargin === 16 && padBottomMargin === 16 && logoDisplay === 'digital_logo' && headerMode === 'company_info'
-                    ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                    : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
-                }`}
-              >
-                Plain Paper Mode
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Header Display</label>
-                <select
-                  value={headerMode}
-                  onChange={(e) => setHeaderMode(e.target.value as any)}
-                  className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs font-semibold bg-white"
-                >
-                  <option value="blank_header">Blank Top Header (Office Pad)</option>
-                  <option value="company_info">Print Company Header (Plain Paper)</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Logo Space</label>
-                <select
-                  value={logoDisplay}
-                  onChange={(e) => setLogoDisplay(e.target.value as any)}
-                  className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs font-semibold bg-white"
-                >
-                  <option value="blank_space">Reserved Blank Space (Pad Logo)</option>
-                  <option value="collapsed">No Logo (Align Left)</option>
-                  <option value="digital_logo">Print Digital Logo</option>
-                </select>
-              </div>
             </div>
           </div>
 
@@ -1295,7 +1235,7 @@ export const SalaryStatementForm = memo(function SalaryStatementForm({
 
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-xs font-semibold text-gray-600">Organization / Group (Page 1 line 4)</label>
+              <label className="text-xs font-semibold text-gray-600">Organization / Group (Page 1 &amp; 2 line 4)</label>
               <button
                 type="button"
                 onClick={() => onResetField('signatoryOrg')}
