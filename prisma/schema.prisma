@@ -211,6 +211,8 @@ model Settlement {
   totalLateEarlyMinutes   Float? @default(0)
   currentMonthWorkingDays Float? @default(0)
   absentDays              Float? @default(0)
+  otHours                 Float? @default(0)
+  extraDutyDays           Float? @default(0)
 
   // Pay Calculation - Payables
   serviceBenefitAmount   Float? @default(0)

@@ -144,11 +144,84 @@ export default function NewSettlementPage() {
   const handleValChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     const numVal = value === '' ? 0 : parseFloat(value);
-    setManualOverrides(prev => ({ ...prev, [name]: true }));
+    setManualOverrides(prev => {
+      const next = { ...prev };
+
+      // Explicitly mark calculated fields as manual overrides when user types in them directly
+      const calculatedFields = [
+        'serviceBenefitAmount', 'terminationBenefit', 'deductMoneyAct2006', 'currentMonthWorkDayPay',
+        'absentDeduction', 'extraDutyOTPay', 'lateEarlyDeduction', 'earnLeavePay',
+        'payableSubTotal', 'deductionSubTotal', 'totalPayAmount'
+      ];
+      if (calculatedFields.includes(name)) {
+        next[name] = true;
+      }
+
+      // Re-enable automatic flow for derived components and subtotals when driver inputs are changed
+      if (name === 'currentMonthWorkingDays') {
+        delete next.currentMonthWorkDayPay;
+        delete next.payableSubTotal;
+        delete next.totalPayAmount;
+        delete next.amountInWords;
+      }
+      if (name === 'absentDays') {
+        delete next.absentDeduction;
+        delete next.deductionSubTotal;
+        delete next.totalPayAmount;
+        delete next.amountInWords;
+      }
+      if (name === 'totalEarnLeaveDays') {
+        delete next.earnLeavePay;
+        delete next.payableSubTotal;
+        delete next.totalPayAmount;
+        delete next.amountInWords;
+      }
+      if (name === 'totalLateEarlyMinutes') {
+        delete next.lateEarlyDeduction;
+        delete next.deductionSubTotal;
+        delete next.totalPayAmount;
+        delete next.amountInWords;
+      }
+      if (name === 'otHour' || name === 'extraDutyDays') {
+        delete next.extraDutyOTPay;
+        delete next.payableSubTotal;
+        delete next.totalPayAmount;
+        delete next.amountInWords;
+      }
+      if (name === 'basicSalary') {
+        delete next.serviceBenefitAmount;
+        delete next.terminationBenefit;
+        delete next.deductMoneyAct2006;
+        delete next.extraDutyOTPay;
+        delete next.payableSubTotal;
+        delete next.deductionSubTotal;
+        delete next.totalPayAmount;
+        delete next.amountInWords;
+      }
+      if (name === 'grossSalary') {
+        delete next.currentMonthWorkDayPay;
+        delete next.absentDeduction;
+        delete next.lateEarlyDeduction;
+        delete next.earnLeavePay;
+        delete next.payableSubTotal;
+        delete next.deductionSubTotal;
+        delete next.totalPayAmount;
+        delete next.amountInWords;
+      }
+      return next;
+    });
     setFormVals(prev => ({
       ...prev,
       [name]: isNaN(numVal) ? 0 : numVal
     }));
+  };
+
+  const clearOverride = (fieldName: string) => {
+    setManualOverrides(prev => {
+      const next = { ...prev };
+      delete next[fieldName];
+      return next;
+    });
   };
 
   // Re-calculate fields automatically, respecting any manual overrides
@@ -257,12 +330,23 @@ export default function NewSettlementPage() {
 
       // 7. Extra Duty / OT calculation
       if (!manualOverrides.extraDutyOTPay) {
-        if (selectedWorker?.grade === 'S' && prev.otHour >= 0 && prev.basicSalary > 0) {
-          newExtraDutyOTPay = Math.round((prev.basicSalary / 104) * prev.otHour);
-        } else if (selectedWorker?.grade === 'M' && prev.extraDutyDays >= 0) {
-          newExtraDutyOTPay = Math.round(250 * prev.extraDutyDays);
+        const gradeUpper = selectedWorker?.grade?.trim().toUpperCase();
+        if (gradeUpper === 'M') {
+          if (prev.extraDutyDays > 0) {
+            newExtraDutyOTPay = Math.round(250 * prev.extraDutyDays);
+          } else if (prev.otHour > 0 && prev.basicSalary > 0) {
+            newExtraDutyOTPay = Math.round((prev.basicSalary / 104) * prev.otHour);
+          } else {
+            newExtraDutyOTPay = 0;
+          }
         } else {
-          newExtraDutyOTPay = 0;
+          if (prev.otHour > 0 && prev.basicSalary > 0) {
+            newExtraDutyOTPay = Math.round((prev.basicSalary / 104) * prev.otHour);
+          } else if (prev.extraDutyDays > 0) {
+            newExtraDutyOTPay = Math.round(250 * prev.extraDutyDays);
+          } else {
+            newExtraDutyOTPay = 0;
+          }
         }
       }
 
@@ -355,6 +439,8 @@ export default function NewSettlementPage() {
     const formData = new FormData(e.currentTarget);
     formData.set('workerId', selectedWorker.id);
     formData.set('settlementType', settlementType);
+    formData.set('resignApplyDate', resignApplyDate);
+    formData.set('lastWorkingDay', lastWorkingDay);
     formData.set('grossSalary', (formVals.grossSalary || 0).toString());
     formData.set('basicSalary', (formVals.basicSalary || 0).toString());
     formData.set('houseRent', (formVals.houseRent || 0).toString());
@@ -374,6 +460,9 @@ export default function NewSettlementPage() {
     formData.set('amountInWords', amountInWords);
     formData.set('bankAccNo', bankAccNo);
     formData.set('serviceAge', serviceAge);
+    formData.set('otHours', (formVals.otHour || 0).toString());
+    formData.set('otHour', (formVals.otHour || 0).toString());
+    formData.set('extraDutyDays', (formVals.extraDutyDays || 0).toString());
     
     const res = await createSettlement(formData);
     if (res?.error) {
@@ -648,11 +737,11 @@ export default function NewSettlementPage() {
             <div className="flex items-center"><strong className="w-48 text-sm">Total Late/Early (Min) :</strong> <input type="number" name="totalLateEarlyMinutes" value={formVals.totalLateEarlyMinutes || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
             <div className="flex items-center"><strong className="w-48 text-sm">Current month work days {payrollCycle ? `(${payrollCycle.monthName})` : ''} :</strong> <input type="number" name="currentMonthWorkingDays" value={formVals.currentMonthWorkingDays || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /> <span className="text-xs text-gray-500 ml-1">/ {daysInCycle} Days</span></div>
             <div className="flex items-center"><strong className="w-48 text-sm">Absent Days :</strong> <input type="number" name="absentDays" value={formVals.absentDays || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /> <span className="text-xs text-gray-500 ml-1">/ {daysInCycle} Days</span></div>
-            {selectedWorker.grade === 'S' && (
-              <div className="flex items-center"><strong className="w-48 text-sm">OT Hour :</strong> <input type="number" name="otHour" value={formVals.otHour || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
+            {selectedWorker.grade?.trim().toUpperCase() !== 'M' && (
+              <div className="flex items-center"><strong className="w-48 text-sm">OT Hour :</strong> <input type="number" step="any" name="otHour" value={formVals.otHour || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
             )}
-            {selectedWorker.grade === 'M' && (
-              <div className="flex items-center"><strong className="w-48 text-sm">Extra Duty Days :</strong> <input type="number" name="extraDutyDays" value={formVals.extraDutyDays || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
+            {selectedWorker.grade?.trim().toUpperCase() === 'M' && (
+              <div className="flex items-center"><strong className="w-48 text-sm">Extra Duty Days :</strong> <input type="number" step="any" name="extraDutyDays" value={formVals.extraDutyDays || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
             )}
             {settlementType !== 'TERMINATION' && (() => {
               let noticePeriodDue = 0;
@@ -695,7 +784,9 @@ export default function NewSettlementPage() {
             <div className="flex items-center">
               <strong className="w-56 text-sm flex items-center gap-1">
                 Service benefit amount :
-                {manualOverrides.serviceBenefitAmount && <span className="text-[10px] text-amber-600 font-normal">(Manual)</span>}
+                {manualOverrides.serviceBenefitAmount && (
+                  <button type="button" onClick={() => clearOverride('serviceBenefitAmount')} className="text-[10px] text-amber-700 bg-amber-100 hover:bg-amber-200 px-1.5 py-0.5 rounded font-normal" title="Click to restore formula">(Manual - reset)</button>
+                )}
               </strong> 
               <input type="number" name="serviceBenefitAmount" value={formVals.serviceBenefitAmount || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50 font-medium" /> 
               <span className="text-gray-500 ml-2 text-xs">Taka</span>
@@ -706,7 +797,9 @@ export default function NewSettlementPage() {
                 <strong className="w-56 text-sm text-purple-700 flex items-center gap-1">
                   Termination Benefit :
                   <span className="text-[10px] text-purple-600 font-semibold">(4 × Basic)</span>
-                  {manualOverrides.terminationBenefit && <span className="text-[10px] text-amber-600 font-normal">(Manual)</span>}
+                  {manualOverrides.terminationBenefit && (
+                    <button type="button" onClick={() => clearOverride('terminationBenefit')} className="text-[10px] text-amber-700 bg-amber-100 hover:bg-amber-200 px-1.5 py-0.5 rounded font-normal" title="Click to restore formula">(Manual - reset)</button>
+                  )}
                 </strong> 
                 <input 
                   type="number" 
@@ -721,7 +814,9 @@ export default function NewSettlementPage() {
               <div className="flex items-center">
                 <strong className="w-56 text-sm text-red-600 flex items-center gap-1">
                   Deduct Money (Act of 2006) :
-                  {manualOverrides.deductMoneyAct2006 && <span className="text-[10px] text-amber-600 font-normal">(Manual)</span>}
+                  {manualOverrides.deductMoneyAct2006 && (
+                    <button type="button" onClick={() => clearOverride('deductMoneyAct2006')} className="text-[10px] text-amber-700 bg-amber-100 hover:bg-amber-200 px-1.5 py-0.5 rounded font-normal" title="Click to restore formula">(Manual - reset)</button>
+                  )}
                 </strong> 
                 <input type="number" name="deductMoneyAct2006" value={formVals.deductMoneyAct2006 || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 text-red-600 bg-red-50 font-medium" /> 
                 <span className="text-gray-500 ml-2 text-xs">Taka</span>
@@ -731,7 +826,9 @@ export default function NewSettlementPage() {
             <div className="flex items-center">
               <strong className="w-56 text-sm flex items-center gap-1">
                 Current month {payrollCycle ? `(${payrollCycle.monthName})` : ''} work day pay :
-                {manualOverrides.currentMonthWorkDayPay && <span className="text-[10px] text-amber-600 font-normal">(Manual)</span>}
+                {manualOverrides.currentMonthWorkDayPay && (
+                  <button type="button" onClick={() => clearOverride('currentMonthWorkDayPay')} className="text-[10px] text-amber-700 bg-amber-100 hover:bg-amber-200 px-1.5 py-0.5 rounded font-normal" title="Click to restore formula">(Manual - reset)</button>
+                )}
               </strong> 
               <input type="number" name="currentMonthWorkDayPay" value={formVals.currentMonthWorkDayPay || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50 font-medium" /> 
               <span className="text-gray-500 ml-2 text-xs">Taka ({daysInCycle}d)</span>
@@ -740,7 +837,9 @@ export default function NewSettlementPage() {
             <div className="flex items-center">
               <strong className="w-56 text-sm text-red-600 flex items-center gap-1">
                 Absent Deduction :
-                {manualOverrides.absentDeduction && <span className="text-[10px] text-amber-600 font-normal">(Manual)</span>}
+                {manualOverrides.absentDeduction && (
+                  <button type="button" onClick={() => clearOverride('absentDeduction')} className="text-[10px] text-amber-700 bg-amber-100 hover:bg-amber-200 px-1.5 py-0.5 rounded font-normal" title="Click to restore formula">(Manual - reset)</button>
+                )}
               </strong> 
               <input type="number" name="absentDeduction" value={formVals.absentDeduction || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 text-red-600 bg-red-50 font-medium" /> 
               <span className="text-gray-500 ml-2 text-xs">Taka ({daysInCycle}d)</span>
@@ -749,7 +848,9 @@ export default function NewSettlementPage() {
             <div className="flex items-center">
               <strong className="w-56 text-sm flex items-center gap-1">
                 Extra Duty/OT :
-                {manualOverrides.extraDutyOTPay && <span className="text-[10px] text-amber-600 font-normal">(Manual)</span>}
+                {manualOverrides.extraDutyOTPay && (
+                  <button type="button" onClick={() => clearOverride('extraDutyOTPay')} className="text-[10px] text-amber-700 bg-amber-100 hover:bg-amber-200 px-1.5 py-0.5 rounded font-normal" title="Click to restore formula">(Manual - reset)</button>
+                )}
               </strong> 
               <input type="number" name="extraDutyOTPay" value={formVals.extraDutyOTPay || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50 font-medium" /> 
               <span className="text-gray-500 ml-2 text-xs">Taka</span>
@@ -758,7 +859,9 @@ export default function NewSettlementPage() {
             <div className="flex items-center">
               <strong className="w-56 text-sm text-red-600 flex items-center gap-1">
                 Deduct from Late/Early Min :
-                {manualOverrides.lateEarlyDeduction && <span className="text-[10px] text-amber-600 font-normal">(Manual)</span>}
+                {manualOverrides.lateEarlyDeduction && (
+                  <button type="button" onClick={() => clearOverride('lateEarlyDeduction')} className="text-[10px] text-amber-700 bg-amber-100 hover:bg-amber-200 px-1.5 py-0.5 rounded font-normal" title="Click to restore formula">(Manual - reset)</button>
+                )}
               </strong> 
               <input type="number" name="lateEarlyDeduction" value={formVals.lateEarlyDeduction || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 text-red-600 bg-red-50 font-medium" /> 
               <span className="text-gray-500 ml-2 text-xs">Taka</span>
@@ -767,7 +870,9 @@ export default function NewSettlementPage() {
             <div className="flex items-center">
               <strong className="w-56 text-sm flex items-center gap-1">
                 Earn leave pay :
-                {manualOverrides.earnLeavePay && <span className="text-[10px] text-amber-600 font-normal">(Manual)</span>}
+                {manualOverrides.earnLeavePay && (
+                  <button type="button" onClick={() => clearOverride('earnLeavePay')} className="text-[10px] text-amber-700 bg-amber-100 hover:bg-amber-200 px-1.5 py-0.5 rounded font-normal" title="Click to restore formula">(Manual - reset)</button>
+                )}
               </strong> 
               <input type="number" name="earnLeavePay" value={formVals.earnLeavePay || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50 font-medium" /> 
               <span className="text-gray-500 ml-2 text-xs">Taka</span>
@@ -778,7 +883,9 @@ export default function NewSettlementPage() {
             <div className="flex items-center font-bold border-t pt-2 border-gray-300 mt-2">
               <strong className="w-56 flex items-center gap-1">
                 Sub total (Payable) :
-                {manualOverrides.payableSubTotal && <span className="text-[10px] text-amber-600 font-normal">(Manual)</span>}
+                {manualOverrides.payableSubTotal && (
+                  <button type="button" onClick={() => clearOverride('payableSubTotal')} className="text-[10px] text-amber-700 bg-amber-100 hover:bg-amber-200 px-1.5 py-0.5 rounded font-normal" title="Click to restore formula">(Manual - reset)</button>
+                )}
               </strong> 
               <input 
                 type="number" 
@@ -794,7 +901,9 @@ export default function NewSettlementPage() {
             <div className="flex items-center font-bold border-t pt-2 border-gray-300 mt-2 text-red-700">
               <strong className="w-56 flex items-center gap-1">
                 Sub total (Deductions) :
-                {manualOverrides.deductionSubTotal && <span className="text-[10px] text-amber-600 font-normal">(Manual)</span>}
+                {manualOverrides.deductionSubTotal && (
+                  <button type="button" onClick={() => clearOverride('deductionSubTotal')} className="text-[10px] text-amber-700 bg-amber-100 hover:bg-amber-200 px-1.5 py-0.5 rounded font-normal" title="Click to restore formula">(Manual - reset)</button>
+                )}
               </strong> 
               <input 
                 type="number" 

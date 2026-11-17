@@ -138,9 +138,15 @@ export default async function SettlementPrintPage({ params }: { params: { id: st
           <div className="flex"><strong className="w-64 print:w-48">Total Late/ & Early Time :</strong> <span className="border-b border-dashed border-gray-400 flex-1 text-center">{settlement.totalLateEarlyMinutes || 0}</span> <span className="ml-2 w-16">Minutes</span></div>
           
           <div className="flex"><strong className="w-64 print:w-48">Current month working days {payrollCycle ? `(${payrollCycle.monthName})` : ''} :</strong> <span className="border-b border-dashed border-gray-400 flex-1 text-center">{settlement.currentMonthWorkingDays || 0}</span> <span className="ml-2 w-16">Days</span></div>
-          <div className="flex"><strong className="w-64 print:w-48">Absent Days :</strong> <span className="border-b border-dashed border-gray-400 flex-1 text-center">{settlement.absentDays || 0}</span> <span className="ml-2 w-16"></span></div>
+          <div className="flex"><strong className="w-64 print:w-48">Absent Days :</strong> <span className="border-b border-dashed border-gray-400 flex-1 text-center">{settlement.absentDays || 0}</span> <span className="ml-2 w-16">Days</span></div>
 
-          {settlement.settlementType !== 'TERMINATION' && (() => {
+          {((settlement.extraDutyDays && settlement.extraDutyDays > 0) || (w?.grade?.trim().toUpperCase() === 'M' && !(settlement.otHours && settlement.otHours > 0))) ? (
+            <div className="flex"><strong className="w-64 print:w-48">Extra Duty Days :</strong> <span className="border-b border-dashed border-gray-400 flex-1 text-center">{settlement.extraDutyDays || 0}</span> <span className="ml-2 w-16">{(settlement.extraDutyDays || 0) === 1 ? 'Day' : 'Days'}</span></div>
+          ) : (
+            <div className="flex"><strong className="w-64 print:w-48">OT Hour :</strong> <span className="border-b border-dashed border-gray-400 flex-1 text-center">{settlement.otHours || 0}</span> <span className="ml-2 w-16">{(settlement.otHours || 0) === 1 ? 'Hour' : 'Hours'}</span></div>
+          )}
+
+          {settlement.settlementType !== 'TERMINATION' ? (() => {
             let noticePeriodDue = 0;
             if (settlement.resignApplyDate && settlement.lastWorkingDay) {
               const rDate = new Date(settlement.resignApplyDate);
@@ -154,7 +160,7 @@ export default async function SettlementPrintPage({ params }: { params: { id: st
             return (
               <div className="flex"><strong className="w-64 print:w-48">Notice Period Due :</strong> <span className="border-b border-dashed border-gray-400 flex-1 text-center">{noticePeriodDue > 0 ? noticePeriodDue : ''}</span> <span className="ml-2 w-16">{noticePeriodDue > 0 ? 'Days' : ''}</span></div>
             );
-          })()}
+          })() : <div className="flex"></div>}
         </div>
 
         {/* Pay calculation info */}
@@ -176,7 +182,17 @@ export default async function SettlementPrintPage({ params }: { params: { id: st
           <div className="flex"><strong className="w-64 print:w-48 text-left">Current month work day pay {payrollCycle ? `(${payrollCycle.monthName})` : ''} :</strong> <span className="border-b border-dashed border-gray-400 flex-1 text-center">{settlement.currentMonthWorkDayPay || 0}</span> <span className="ml-2 w-12">Taka</span></div>
           <div className="flex"><strong className="w-64 print:w-48 text-left">Absent Deduction :</strong> <span className="border-b border-dashed border-gray-400 flex-1 text-center">{settlement.absentDeduction || 0}</span> <span className="ml-2 w-12">Taka</span></div>
           
-          <div className="flex"><strong className="w-64 print:w-48 text-left">Extra Duty/OT :</strong> <span className="border-b border-dashed border-gray-400 flex-1 text-center">{settlement.extraDutyOTPay || 0}</span> <span className="ml-2 w-12">Taka</span></div>
+          <div className="flex">
+            <strong className="w-64 print:w-48 text-left">
+              {settlement.otHours && settlement.otHours > 0
+                ? `Extra Duty / OT (${settlement.otHours} ${settlement.otHours === 1 ? 'Hour' : 'Hours'}) :`
+                : settlement.extraDutyDays && settlement.extraDutyDays > 0
+                ? `Extra Duty / OT (${settlement.extraDutyDays} ${settlement.extraDutyDays === 1 ? 'Day' : 'Days'}) :`
+                : 'Extra Duty/OT :'}
+            </strong> 
+            <span className="border-b border-dashed border-gray-400 flex-1 text-center">{settlement.extraDutyOTPay || 0}</span> 
+            <span className="ml-2 w-12">Taka</span>
+          </div>
           <div className="flex"><strong className="w-64 print:w-48 text-left">Deduct from Late/ & Early Minutes :</strong> <span className="border-b border-dashed border-gray-400 flex-1 text-center">{settlement.lateEarlyDeduction || 0}</span> <span className="ml-2 w-12">Taka</span></div>
           
           <div className="flex"><strong className="w-64 print:w-48 text-left">Earn leave pay :</strong> <span className="border-b border-dashed border-gray-400 flex-1 text-center">{settlement.earnLeavePay || 0}</span> <span className="ml-2 w-12">Taka</span></div>

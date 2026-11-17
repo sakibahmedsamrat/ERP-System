@@ -86,9 +86,20 @@ export async function createSettlement(formData: FormData): Promise<{ error?: st
   const workerId = formData.get('workerId') as string;
   if (!workerId) return { error: 'Worker is required' };
 
-  const getFloat = (name: string) => {
+  const getFloat = (name: string, fallbackName?: string) => {
     const val = formData.get(name) as string;
-    return val ? parseFloat(val) : 0;
+    if (val !== null && val !== undefined && val.trim() !== '') {
+      const parsed = parseFloat(val);
+      if (!isNaN(parsed)) return parsed;
+    }
+    if (fallbackName) {
+      const fb = formData.get(fallbackName) as string;
+      if (fb !== null && fb !== undefined && fb.trim() !== '') {
+        const parsed = parseFloat(fb);
+        if (!isNaN(parsed)) return parsed;
+      }
+    }
+    return 0;
   };
 
   const getDate = (name: string) => {
@@ -144,6 +155,8 @@ export async function createSettlement(formData: FormData): Promise<{ error?: st
         totalLateEarlyMinutes: getFloat('totalLateEarlyMinutes'),
         currentMonthWorkingDays: getFloat('currentMonthWorkingDays'),
         absentDays: getFloat('absentDays'),
+        otHours: getFloat('otHours', 'otHour'),
+        extraDutyDays: getFloat('extraDutyDays', 'extraDutyDay'),
         
         serviceBenefitAmount: getFloat('serviceBenefitAmount'),
         terminationBenefit,
@@ -234,9 +247,20 @@ export async function deleteSettlement(id: string) {
 }
 
 export async function updateSettlement(id: string, formData: FormData): Promise<{ error?: string } | void> {
-  const getFloat = (name: string) => {
+  const getFloat = (name: string, fallbackName?: string) => {
     const val = formData.get(name) as string;
-    return val ? parseFloat(val) : 0;
+    if (val !== null && val !== undefined && val.trim() !== '') {
+      const parsed = parseFloat(val);
+      if (!isNaN(parsed)) return parsed;
+    }
+    if (fallbackName) {
+      const fb = formData.get(fallbackName) as string;
+      if (fb !== null && fb !== undefined && fb.trim() !== '') {
+        const parsed = parseFloat(fb);
+        if (!isNaN(parsed)) return parsed;
+      }
+    }
+    return 0;
   };
 
   const getDate = (name: string) => {
@@ -297,6 +321,8 @@ export async function updateSettlement(id: string, formData: FormData): Promise<
         totalLateEarlyMinutes: getFloat('totalLateEarlyMinutes'),
         currentMonthWorkingDays: getFloat('currentMonthWorkingDays'),
         absentDays: getFloat('absentDays'),
+        otHours: getFloat('otHours', 'otHour'),
+        extraDutyDays: getFloat('extraDutyDays', 'extraDutyDay'),
         
         serviceBenefitAmount: getFloat('serviceBenefitAmount'),
         terminationBenefit,
@@ -476,6 +502,8 @@ export async function recordEmployeeResignation(data: {
     const totalEarnLeaveDays = existingPending?.totalEarnLeaveDays || 0;
     const totalLateEarlyMinutes = existingPending?.totalLateEarlyMinutes || 0;
     const extraDutyOTPay = existingPending?.extraDutyOTPay || 0;
+    const otHours = existingPending?.otHours || 0;
+    const extraDutyDays = existingPending?.extraDutyDays || 0;
 
     const currentMonthWorkDayPay = (grossSalary > 0 && currentMonthWorkingDays > 0)
       ? Math.round((grossSalary / daysInMonth) * currentMonthWorkingDays)
@@ -525,6 +553,8 @@ export async function recordEmployeeResignation(data: {
           currentMonthWorkDayPay,
           earnLeavePay,
           extraDutyOTPay,
+          otHours,
+          extraDutyDays,
           deductMoneyAct2006,
           absentDeduction,
           lateEarlyDeduction,
@@ -555,6 +585,8 @@ export async function recordEmployeeResignation(data: {
           currentMonthWorkDayPay: 0,
           earnLeavePay: 0,
           extraDutyOTPay: 0,
+          otHours: 0,
+          extraDutyDays: 0,
           deductMoneyAct2006,
           absentDeduction: 0,
           lateEarlyDeduction: 0,

@@ -355,12 +355,23 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
 
       // 7. Extra Duty / OT calculation
       if (!manualOverrides.extraDutyOTPay) {
-        if (selectedWorker?.grade === 'S' && prev.otHour >= 0 && prev.basicSalary > 0) {
-          newExtraDutyOTPay = Math.round((prev.basicSalary / 104) * prev.otHour);
-        } else if (selectedWorker?.grade === 'M' && prev.extraDutyDays >= 0) {
-          newExtraDutyOTPay = Math.round(250 * prev.extraDutyDays);
+        const gradeUpper = selectedWorker?.grade?.trim().toUpperCase();
+        if (gradeUpper === 'M') {
+          if (prev.extraDutyDays > 0) {
+            newExtraDutyOTPay = Math.round(250 * prev.extraDutyDays);
+          } else if (prev.otHour > 0 && prev.basicSalary > 0) {
+            newExtraDutyOTPay = Math.round((prev.basicSalary / 104) * prev.otHour);
+          } else {
+            newExtraDutyOTPay = 0;
+          }
         } else {
-          newExtraDutyOTPay = 0;
+          if (prev.otHour > 0 && prev.basicSalary > 0) {
+            newExtraDutyOTPay = Math.round((prev.basicSalary / 104) * prev.otHour);
+          } else if (prev.extraDutyDays > 0) {
+            newExtraDutyOTPay = Math.round(250 * prev.extraDutyDays);
+          } else {
+            newExtraDutyOTPay = 0;
+          }
         }
       }
 
@@ -515,8 +526,8 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
           payableSubTotal: data.payableSubTotal || 0,
           deductionSubTotal: data.deductionSubTotal || 0,
           totalPayAmount: data.totalPayAmount || 0,
-          otHour: 0,
-          extraDutyDays: 0,
+          otHour: data.otHours ?? 0,
+          extraDutyDays: data.extraDutyDays ?? 0,
         });
 
         if (data.status) setStatus(data.status);
@@ -603,6 +614,29 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
           loadedOverrides.lateEarlyDeduction = true;
         }
 
+        const isGradeM = data.worker?.grade?.trim().toUpperCase() === 'M';
+        const hasExtraDutyDays = (data.extraDutyDays || 0) > 0;
+        const hasOtHours = (data.otHours || 0) > 0;
+
+        let expectedExtraDutyOT = 0;
+        if (isGradeM) {
+          if (hasExtraDutyDays) {
+            expectedExtraDutyOT = Math.round(250 * (data.extraDutyDays || 0));
+          } else if (hasOtHours && bSalary > 0) {
+            expectedExtraDutyOT = Math.round((bSalary / 104) * (data.otHours || 0));
+          }
+        } else {
+          if (hasOtHours && bSalary > 0) {
+            expectedExtraDutyOT = Math.round((bSalary / 104) * (data.otHours || 0));
+          } else if (hasExtraDutyDays) {
+            expectedExtraDutyOT = Math.round(250 * (data.extraDutyDays || 0));
+          }
+        }
+
+        if (data.extraDutyOTPay != null && Math.round(data.extraDutyOTPay) !== expectedExtraDutyOT && data.extraDutyOTPay > 0) {
+          loadedOverrides.extraDutyOTPay = true;
+        }
+
         // Subtotals & totals: only mark as manual if they differ from component aggregates
         if (data.payableSubTotal != null && Math.round(data.payableSubTotal) !== Math.round(loadedPayableSub)) {
           loadedOverrides.payableSubTotal = true;
@@ -665,6 +699,9 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
     formData.set('amountInWords', amountInWords);
     formData.set('bankAccNo', bankAccNo);
     formData.set('serviceAge', serviceAge);
+    formData.set('otHours', (formVals.otHour || 0).toString());
+    formData.set('otHour', (formVals.otHour || 0).toString());
+    formData.set('extraDutyDays', (formVals.extraDutyDays || 0).toString());
     
     const res = await updateSettlement(params.id, formData);
     if (res?.error) {
@@ -936,11 +973,11 @@ export default function EditSettlementPage({ params }: { params: { id: string } 
             <div className="flex items-center"><strong className="w-48 text-sm">Total Late/Early (Min) :</strong> <input type="number" name="totalLateEarlyMinutes" value={formVals.totalLateEarlyMinutes || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
             <div className="flex items-center"><strong className="w-48 text-sm">Current month work days {payrollCycle ? `(${payrollCycle.monthName})` : ''} :</strong> <input type="number" name="currentMonthWorkingDays" value={formVals.currentMonthWorkingDays || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /> <span className="text-xs text-gray-500 ml-1">/ {daysInCycle} Days</span></div>
             <div className="flex items-center"><strong className="w-48 text-sm">Absent Days :</strong> <input type="number" name="absentDays" value={formVals.absentDays || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /> <span className="text-xs text-gray-500 ml-1">/ {daysInCycle} Days</span></div>
-            {selectedWorker.grade === 'S' && (
-              <div className="flex items-center"><strong className="w-48 text-sm">OT Hour :</strong> <input type="number" name="otHour" value={formVals.otHour || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
+            {selectedWorker.grade?.trim().toUpperCase() !== 'M' && (
+              <div className="flex items-center"><strong className="w-48 text-sm">OT Hour :</strong> <input type="number" step="any" name="otHour" value={formVals.otHour || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
             )}
-            {selectedWorker.grade === 'M' && (
-              <div className="flex items-center"><strong className="w-48 text-sm">Extra Duty Days :</strong> <input type="number" name="extraDutyDays" value={formVals.extraDutyDays || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
+            {selectedWorker.grade?.trim().toUpperCase() === 'M' && (
+              <div className="flex items-center"><strong className="w-48 text-sm">Extra Duty Days :</strong> <input type="number" step="any" name="extraDutyDays" value={formVals.extraDutyDays || ''} onChange={handleValChange} className="border-b border-dashed border-gray-400 flex-1 outline-none px-1 bg-gray-50" /></div>
             )}
             {settlementType !== 'TERMINATION' && (() => {
               let noticePeriodDue = 0;
