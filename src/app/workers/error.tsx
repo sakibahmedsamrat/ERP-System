@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect } from 'react';
-import Link from 'next/link';
 import { AlertCircle, RotateCcw, Users } from 'lucide-react';
 
 export default function WorkersErrorBoundary({
@@ -26,17 +25,23 @@ export default function WorkersErrorBoundary({
       </p>
       <div className="flex items-center gap-3">
         <button
-          onClick={() => reset()}
-          className="px-5 py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition flex items-center gap-2 shadow-sm shadow-blue-500/20 active:scale-95"
+          type="button"
+          onClick={() => {
+            window.location.reload();
+          }}
+          className="px-5 py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition flex items-center gap-2 shadow-sm shadow-blue-500/20 active:scale-95 cursor-pointer"
         >
           <RotateCcw size={16} /> Try Again
         </button>
-        <Link
-          href="/workers"
-          className="px-5 py-2.5 bg-white text-gray-700 border border-gray-200 rounded-xl font-medium hover:bg-gray-50 transition flex items-center gap-2 shadow-sm"
+        <button
+          type="button"
+          onClick={() => {
+            window.location.href = '/workers';
+          }}
+          className="px-5 py-2.5 bg-white text-gray-700 border border-gray-200 rounded-xl font-medium hover:bg-gray-50 transition flex items-center gap-2 shadow-sm cursor-pointer active:scale-95"
         >
           <Users size={16} /> Reset Directory
-        </Link>
+        </button>
       </div>
     </div>
   );

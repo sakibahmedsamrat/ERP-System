@@ -1,32 +1,50 @@
-import prisma from '@/lib/prisma';
+import prisma, { withDbTimeout } from '@/lib/prisma';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Plus, User, Building2, Trash2, Search, Download, Upload, Hash, Briefcase, Layers, Network, FolderTree, X, ChevronLeft, ChevronRight, UserCheck, Contact } from 'lucide-react';
+import { 
+  Plus, User, Building2, Trash2, Search, Download, Upload, Hash, 
+  Briefcase, Layers, Network, FolderTree, X, ChevronLeft, ChevronRight, 
+  UserCheck, Contact, AlertCircle, RotateCcw 
+} from 'lucide-react';
 import { deleteWorker } from './actions';
 import { getSession } from '@/lib/auth';
 import DeleteWorkerButton from '@/components/DeleteWorkerButton';
 import BulkDeleteWorkersModal from '@/components/BulkDeleteWorkersModal';
+import ReconnectButton from '@/components/ReconnectButton';
 import { unstable_cache } from 'next/cache';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Employees | HR ERP',
 };
 
+const emptyFilterOptions = {
+  companies: [] as { name: string }[],
+  departments: [] as { name: string }[],
+  sections: [] as { name: string }[],
+  subSections: [] as { name: string }[],
+  designations: [] as { designation: string | null }[],
+};
+
 const getWorkerFilterOptions = unstable_cache(
   async () => {
-    const [companies, departments, sections, subSections, designations] = await Promise.all([
-      prisma.company.findMany({ select: { name: true }, distinct: ['name'], orderBy: { name: 'asc' } }),
-      prisma.department.findMany({ select: { name: true }, distinct: ['name'], orderBy: { name: 'asc' } }),
-      prisma.section.findMany({ select: { name: true }, distinct: ['name'], orderBy: { name: 'asc' } }),
-      prisma.subSection.findMany({ select: { name: true }, distinct: ['name'], orderBy: { name: 'asc' } }),
-      prisma.worker.findMany({
-        where: { isDeleted: false, designation: { not: null } },
-        distinct: ['designation'],
-        select: { designation: true },
-        take: 100,
-        orderBy: { designation: 'asc' }
-      }),
-    ]);
+    const [companies, departments, sections, subSections, designations] = await withDbTimeout(
+      Promise.all([
+        prisma.company.findMany({ select: { name: true }, distinct: ['name'], orderBy: { name: 'asc' } }),
+        prisma.department.findMany({ select: { name: true }, distinct: ['name'], orderBy: { name: 'asc' } }),
+        prisma.section.findMany({ select: { name: true }, distinct: ['name'], orderBy: { name: 'asc' } }),
+        prisma.subSection.findMany({ select: { name: true }, distinct: ['name'], orderBy: { name: 'asc' } }),
+        prisma.worker.findMany({
+          where: { isDeleted: false, designation: { not: null } },
+          distinct: ['designation'],
+          select: { designation: true },
+          take: 100,
+          orderBy: { designation: 'asc' }
+        }),
+      ]),
+      6000
+    );
     return { companies, departments, sections, subSections, designations };
   },
   ['worker-filter-options'],
@@ -36,15 +54,15 @@ const getWorkerFilterOptions = unstable_cache(
 export default async function WorkersPage({ 
   searchParams 
 }: { 
-  searchParams: { 
-    workerId?: string; 
-    name?: string; 
-    designation?: string; 
-    department?: string; 
-    section?: string; 
-    subSection?: string; 
-    company?: string; 
-    page?: string;
+  searchParams?: { 
+    workerId?: string | string[]; 
+    name?: string | string[]; 
+    designation?: string | string[]; 
+    department?: string | string[]; 
+    section?: string | string[]; 
+    subSection?: string | string[]; 
+    company?: string | string[]; 
+    page?: string | string[];
   } 
 }) {
   const session = await getSession();
@@ -75,9 +93,26 @@ export default async function WorkersPage({
     }
   }
 
-  const { workerId, name, designation, department, section, subSection, company } = searchParams;
+  const cleanParam = (val: string | string[] | undefined): string | undefined => {
+    if (Array.isArray(val)) return val[0]?.trim() || undefined;
+    if (typeof val === 'string') {
+      const trimmed = val.trim();
+      return trimmed.length > 0 ? trimmed : undefined;
+    }
+    return undefined;
+  };
 
-  const page = Math.max(1, parseInt(searchParams.page || '1', 10));
+  const params = searchParams || {};
+  const workerId = cleanParam(params.workerId);
+  const name = cleanParam(params.name);
+  const designation = cleanParam(params.designation);
+  const department = cleanParam(params.department);
+  const section = cleanParam(params.section);
+  const subSection = cleanParam(params.subSection);
+  const company = cleanParam(params.company);
+
+  const rawPage = cleanParam(params.page);
+  const page = Math.max(1, parseInt(rawPage || '1', 10) || 1);
   const pageSize = 50;
   const skip = (page - 1) * pageSize;
 
@@ -102,40 +137,95 @@ export default async function WorkersPage({
       department: { select: { id: true, name: true } },
       section: { select: { id: true, name: true } },
       subSection: { select: { id: true, name: true } }
-    }
+    },
+    where: whereClause
   };
-  
-  queryOptions.where = whereClause;
 
-  const [
-    { companies, departments, sections, subSections, designations },
-    totalWorkers,
-    workers,
-    deletedWorkersCount
-  ] = await Promise.all([
-    getWorkerFilterOptions(),
-    prisma.worker.count({ where: queryOptions.where }),
-    prisma.worker.findMany({
-      ...queryOptions,
-      skip,
-      take: pageSize
-    }),
-    role === 'SUPER_ADMIN' ? prisma.worker.count({ where: { isDeleted: true } }) : Promise.resolve(0)
-  ]);
+  let filterOptions = emptyFilterOptions;
+  let workers: any[] = [];
+  let totalWorkers = 0;
+  let deletedWorkersCount = 0;
+  let queryError: string | null = null;
 
-  const totalPages = Math.ceil(totalWorkers / pageSize);
+  try {
+    const [filterDataResult, workersResult, countResult, deletedCountResult] = await Promise.allSettled([
+      getWorkerFilterOptions(),
+      withDbTimeout(
+        prisma.worker.findMany({
+          ...queryOptions,
+          skip,
+          take: pageSize
+        }),
+        10000
+      ),
+      withDbTimeout(
+        prisma.worker.count({ where: queryOptions.where }),
+        10000
+      ),
+      role === 'SUPER_ADMIN'
+        ? withDbTimeout(prisma.worker.count({ where: { isDeleted: true } }), 8000)
+        : Promise.resolve(0)
+    ]);
+
+    // Handle filter options
+    if (filterDataResult.status === 'fulfilled' && filterDataResult.value) {
+      filterOptions = filterDataResult.value;
+    } else {
+      filterOptions = emptyFilterOptions;
+      if (filterDataResult.status === 'rejected') {
+        console.warn('[WorkersPage] Filter options load issue:', filterDataResult.reason?.message || filterDataResult.reason);
+      }
+    }
+
+    // Handle workers list
+    if (workersResult.status === 'fulfilled') {
+      workers = workersResult.value || [];
+    } else {
+      console.error('[WorkersPage] Workers query failed:', workersResult.reason);
+      queryError = workersResult.reason?.message || 'Database query timed out or failed';
+    }
+
+    // Handle worker total count
+    if (countResult.status === 'fulfilled') {
+      totalWorkers = countResult.value || 0;
+    } else {
+      console.warn('[WorkersPage] Worker count query failed:', countResult.reason);
+      if (workers.length > 0) {
+        totalWorkers = skip + workers.length;
+      } else {
+        totalWorkers = 0;
+        if (!queryError) {
+          queryError = countResult.reason?.message || 'Database count timed out or failed';
+        }
+      }
+    }
+
+    // Handle recycle bin deleted count
+    if (deletedCountResult.status === 'fulfilled') {
+      deletedWorkersCount = deletedCountResult.value || 0;
+    } else {
+      deletedWorkersCount = 0;
+    }
+  } catch (error: any) {
+    console.error('[WorkersPage] Unexpected error executing queries:', error);
+    queryError = error?.message || 'Database query error';
+  }
+
+  const { companies, departments, sections, subSections, designations } = filterOptions;
+
+  const totalPages = Math.max(1, Math.ceil(totalWorkers / pageSize));
 
   const createPageURL = (newPage: number) => {
-    const params = new URLSearchParams();
-    if (workerId) params.set('workerId', workerId);
-    if (name) params.set('name', name);
-    if (company) params.set('company', company);
-    if (designation) params.set('designation', designation);
-    if (department) params.set('department', department);
-    if (section) params.set('section', section);
-    if (subSection) params.set('subSection', subSection);
-    params.set('page', newPage.toString());
-    return `/workers?${params.toString()}`;
+    const p = new URLSearchParams();
+    if (workerId) p.set('workerId', workerId);
+    if (name) p.set('name', name);
+    if (company) p.set('company', company);
+    if (designation) p.set('designation', designation);
+    if (department) p.set('department', department);
+    if (section) p.set('section', section);
+    if (subSection) p.set('subSection', subSection);
+    p.set('page', newPage.toString());
+    return `/workers?${p.toString()}`;
   };
 
   return (
@@ -145,9 +235,15 @@ export default async function WorkersPage({
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Employees</h1>
-            <span className="text-xs font-bold bg-blue-500/10 text-blue-700 border border-blue-200/60 px-3 py-1 rounded-full shadow-xs">
-              {totalWorkers} Total Active
-            </span>
+            {queryError ? (
+              <span className="text-xs font-bold bg-amber-500/10 text-amber-700 border border-amber-200/60 px-3 py-1 rounded-full shadow-xs">
+                — Total Active
+              </span>
+            ) : (
+              <span className="text-xs font-bold bg-blue-500/10 text-blue-700 border border-blue-200/60 px-3 py-1 rounded-full shadow-xs">
+                {totalWorkers} Total Active
+              </span>
+            )}
           </div>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
             Central employee registry, department alignments, and profile operations
@@ -220,21 +316,43 @@ export default async function WorkersPage({
         </div>
       </div>
 
+      {/* Temporary disruption banner */}
+      {queryError && (
+        <div className="bg-amber-50 border border-amber-200/80 rounded-2xl p-4 flex items-start gap-3 shadow-xs animate-fade-in text-amber-900">
+          <div className="p-2 rounded-xl bg-amber-100 text-amber-700 shrink-0">
+            <AlertCircle size={18} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <h3 className="font-bold text-sm">Temporary Network or Database Disruption</h3>
+              <ReconnectButton
+                className="text-xs bg-amber-600 hover:bg-amber-700 text-white font-medium px-3 py-1.5 rounded-lg transition inline-flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
+                label="Reconnect"
+                iconSize={13}
+              />
+            </div>
+            <p className="text-xs text-amber-700/90 mt-1 leading-relaxed">
+              We encountered a delay communicating with the database. You can retry reconnecting, or try again shortly.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Autocomplete Data Lists */}
       <datalist id="company-list">
-        {companies.map((c: any) => <option key={c.name} value={c.name} />)}
+        {(companies || []).map((c: any) => <option key={c.name} value={c.name} />)}
       </datalist>
       <datalist id="department-list">
-        {departments.map((d: any) => <option key={d.name} value={d.name} />)}
+        {(departments || []).map((d: any) => <option key={d.name} value={d.name} />)}
       </datalist>
       <datalist id="section-list">
-        {sections.map((s: any) => <option key={s.name} value={s.name} />)}
+        {(sections || []).map((s: any) => <option key={s.name} value={s.name} />)}
       </datalist>
       <datalist id="subsection-list">
-        {subSections.map((s: any) => <option key={s.name} value={s.name} />)}
+        {(subSections || []).map((s: any) => <option key={s.name} value={s.name} />)}
       </datalist>
       <datalist id="designation-list">
-        {designations.map((d: any) => <option key={d.designation} value={d.designation} />)}
+        {(designations || []).filter((d: any) => Boolean(d?.designation)).map((d: any) => <option key={d.designation} value={d.designation} />)}
       </datalist>
 
       {/* Filter Glass Card */}
@@ -420,8 +538,25 @@ export default async function WorkersPage({
               ))}
               {workers.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="p-10 text-center text-slate-500 font-medium">
-                    No employees found matching your criteria.
+                  <td colSpan={8} className="p-10 text-center">
+                    {queryError ? (
+                      <div className="flex flex-col items-center justify-center gap-2 text-slate-500 py-4">
+                        <AlertCircle size={28} className="text-amber-500 mb-1" />
+                        <span className="font-semibold text-slate-700 text-sm">Unable to load employee records</span>
+                        <span className="text-xs text-slate-500 max-w-sm">
+                          Database connection timed out or encountered a network disruption.
+                        </span>
+                        <ReconnectButton
+                          className="mt-3 text-xs bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-medium transition inline-flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
+                          label="Reconnect Now"
+                          iconSize={13}
+                        />
+                      </div>
+                    ) : (
+                      <span className="text-slate-500 font-medium">
+                        No employees found matching your criteria.
+                      </span>
+                    )}
                   </td>
                 </tr>
               )}

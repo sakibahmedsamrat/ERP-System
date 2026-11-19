@@ -11,17 +11,17 @@ function getOptimizedDatabaseUrl(): string | undefined {
   try {
     const parsed = new URL(url);
     if (parsed.protocol === 'postgresql:' || parsed.protocol === 'postgres:') {
-      // Connect timeout in seconds (fail fast at 5s to avoid hitting Vercel 10s ceiling)
+      // Connect timeout in seconds (allow up to 10s for database waking / network latency)
       if (!parsed.searchParams.has('connect_timeout')) {
-        parsed.searchParams.set('connect_timeout', '5');
+        parsed.searchParams.set('connect_timeout', '10');
       }
-      // Pool timeout in seconds
+      // Pool timeout in seconds (allow up to 10s for connection pool acquisition during concurrent load)
       if (!parsed.searchParams.has('pool_timeout')) {
-        parsed.searchParams.set('pool_timeout', '5');
+        parsed.searchParams.set('pool_timeout', '10');
       }
-      // In serverless environments, limit connections to avoid exhausting PostgreSQL pool
-      if (!parsed.searchParams.has('connection_limit') && (process.env.VERCEL || process.env.NODE_ENV === 'production')) {
-        parsed.searchParams.set('connection_limit', '2');
+      // In serverless environments (such as Vercel), limit connections to avoid exhausting PostgreSQL pool
+      if (!parsed.searchParams.has('connection_limit') && process.env.VERCEL) {
+        parsed.searchParams.set('connection_limit', '5');
       }
 
       // Check for misconfigured localhost in Vercel environment
@@ -91,6 +91,12 @@ export async function withDbTimeout<T>(
 
   try {
     return await Promise.race([promise, timeoutPromise]);
+  } catch (error) {
+    if (fallbackValue !== undefined) {
+      console.warn(`[Prisma withDbTimeout] Operation failed, returning fallback value:`, (error as any)?.message || error);
+      return fallbackValue;
+    }
+    throw error;
   } finally {
     if (timer) clearTimeout(timer);
   }
