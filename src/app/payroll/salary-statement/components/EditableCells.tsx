@@ -458,7 +458,9 @@ export const EditableInlineText = memo(function EditableInlineText({
 
   return (
     <span
-      className={`relative inline group/inline px-0.5 rounded hover:bg-blue-50/60 print:hover:bg-transparent transition align-baseline ${className}`}
+      className={`relative ${
+        isUnderline ? 'inline-block align-bottom' : 'inline align-baseline'
+      } group/inline px-0.5 rounded hover:bg-blue-50/60 print:hover:bg-transparent transition ${className}`}
     >
       {isEditing ? (
         <span className="inline-flex items-center align-baseline">
@@ -497,6 +499,19 @@ export const EditableInlineText = memo(function EditableInlineText({
           className={`cursor-pointer ${isBold ? 'font-bold' : ''} ${
             isUnderline ? 'salary-doc-title-underline inline-block' : ''
           } ${isMono ? 'font-mono' : ''}`}
+          style={
+            isUnderline
+              ? {
+                  borderBottom: '1.5px solid #000000',
+                  paddingBottom: '5px',
+                  lineHeight: '1.35',
+                  textDecoration: 'none',
+                  WebkitTextDecorationLine: 'none',
+                  display: 'inline-block',
+                  verticalAlign: 'bottom',
+                }
+              : undefined
+          }
           title="Click to edit directly on sheet"
         >
           {renderDisplay ? renderDisplay(displayVal) : displayVal}

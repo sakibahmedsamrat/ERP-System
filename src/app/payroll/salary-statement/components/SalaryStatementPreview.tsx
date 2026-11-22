@@ -305,7 +305,7 @@ export const SalaryStatementPreview = memo(function SalaryStatementPreview({
             </div>
 
             {/* Document Title */}
-            <div className="text-center mb-6">
+            <div className="text-center mb-6 leading-normal">
               <EditableInlineText
                 value={formData.p1Title || 'To Whom It May Concern'}
                 defaultValue="To Whom It May Concern"
@@ -313,7 +313,7 @@ export const SalaryStatementPreview = memo(function SalaryStatementPreview({
                 onReset={() => setFormData((prev) => ({ ...prev, p1Title: 'To Whom It May Concern' }))}
                 isBold={true}
                 isUnderline={true}
-                className="text-[16px]"
+                className="text-[16px] leading-normal"
               />
             </div>
 
@@ -1100,7 +1100,7 @@ export const SalaryStatementPreview = memo(function SalaryStatementPreview({
             </div>
 
             {/* Document Title */}
-            <div className="text-center mb-6">
+            <div className="text-center mb-6 leading-normal">
               <EditableInlineText
                 value={formData.p2Title || 'Monthly Salary Certificate'}
                 defaultValue="Monthly Salary Certificate"
@@ -1108,7 +1108,7 @@ export const SalaryStatementPreview = memo(function SalaryStatementPreview({
                 onReset={() => setFormData((prev) => ({ ...prev, p2Title: 'Monthly Salary Certificate' }))}
                 isBold={true}
                 isUnderline={true}
-                className="text-[16px]"
+                className="text-[16px] leading-normal"
               />
             </div>
 
@@ -1324,8 +1324,19 @@ export const SalaryStatementPreview = memo(function SalaryStatementPreview({
             </div>
 
             {/* Monthly salary details heading */}
-            <div className="mt-3 mb-2">
-              <span className="font-bold salary-doc-title-underline text-[14px] inline-block">
+            <div className="mt-3 mb-2 leading-normal">
+              <span
+                className="font-bold salary-doc-title-underline text-[14px] inline-block"
+                style={{
+                  borderBottom: '1.5px solid #000000',
+                  paddingBottom: '5px',
+                  lineHeight: '1.35',
+                  textDecoration: 'none',
+                  WebkitTextDecorationLine: 'none',
+                  display: 'inline-block',
+                  verticalAlign: 'bottom',
+                }}
+              >
                 Monthly salary details:
               </span>
             </div>

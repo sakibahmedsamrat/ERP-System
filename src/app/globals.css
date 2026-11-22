@@ -178,3 +178,48 @@ button, a, input, select, textarea {
     border-color: #e2e8f0 !important;
   }
 }
+
+/* Salary Statement document title underline print & screen fidelity */
+.salary-doc-title-underline,
+.salary-doc-page u,
+.salary-doc-page .underline,
+.salary-doc-page [class*="underline"] {
+  text-decoration: none !important;
+  text-decoration-line: none !important;
+  text-decoration-style: none !important;
+  text-decoration-color: transparent !important;
+  text-decoration-thickness: 0 !important;
+  -webkit-text-decoration: none !important;
+  -webkit-text-decoration-line: none !important;
+  -webkit-text-decoration-color: transparent !important;
+  border-bottom: 1.5px solid #000000 !important;
+  padding-bottom: 5px !important;
+  display: inline-block !important;
+  line-height: 1.35 !important;
+  vertical-align: bottom !important;
+  box-sizing: border-box !important;
+}
+
+@media print {
+  .salary-doc-title-underline,
+  .salary-doc-page u,
+  .salary-doc-page .underline,
+  .salary-doc-page [class*="underline"] {
+    text-decoration: none !important;
+    text-decoration-line: none !important;
+    text-decoration-style: none !important;
+    text-decoration-color: transparent !important;
+    text-decoration-thickness: 0 !important;
+    -webkit-text-decoration: none !important;
+    -webkit-text-decoration-line: none !important;
+    -webkit-text-decoration-color: transparent !important;
+    border-bottom: 1.5px solid #000000 !important;
+    padding-bottom: 5px !important;
+    display: inline-block !important;
+    line-height: 1.35 !important;
+    vertical-align: bottom !important;
+    box-sizing: border-box !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

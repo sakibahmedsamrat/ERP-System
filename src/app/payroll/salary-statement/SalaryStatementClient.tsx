@@ -1321,11 +1321,22 @@ export default function SalaryStatementClient({
         compress: true,
       });
 
+      const ignorePrintElements = (el: Element) => {
+        return (
+          el.classList?.contains('print:hidden') ||
+          Boolean(el.closest?.('.print\\:hidden')) ||
+          el.classList?.contains('inline-reset-btn') ||
+          el.classList?.contains('sheet-reset-btn') ||
+          el.classList?.contains('on-sheet-toolbar')
+        );
+      };
+
       const canvas1 = await html2canvas(page1Ref.current, {
         scale: 2,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
+        ignoreElements: ignorePrintElements,
       });
       const img1 = canvas1.toDataURL('image/jpeg', 0.95);
       pdf.addImage(img1, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
@@ -1335,6 +1346,7 @@ export default function SalaryStatementClient({
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
+        ignoreElements: ignorePrintElements,
       });
       const img2 = canvas2.toDataURL('image/jpeg', 0.95);
       pdf.addPage('a4', 'portrait');
@@ -1420,12 +1432,18 @@ export default function SalaryStatementClient({
         .salary-doc-page [class*="underline"] {
           text-decoration: none !important;
           text-decoration-line: none !important;
+          text-decoration-style: none !important;
+          text-decoration-color: transparent !important;
+          text-decoration-thickness: 0 !important;
+          -webkit-text-decoration: none !important;
           -webkit-text-decoration-line: none !important;
+          -webkit-text-decoration-color: transparent !important;
           border-bottom: 1.5px solid #000000 !important;
-          padding-bottom: 2px !important;
+          padding-bottom: 5px !important;
           display: inline-block !important;
-          line-height: 1.15 !important;
-          vertical-align: baseline !important;
+          line-height: 1.35 !important;
+          vertical-align: bottom !important;
+          box-sizing: border-box !important;
         }
         .salary-doc-page-2 table td {
           padding-left: 10px !important;
@@ -1491,6 +1509,27 @@ export default function SalaryStatementClient({
           .salary-doc-page-2 {
             page-break-after: auto !important;
             break-after: auto !important;
+          }
+          .salary-doc-title-underline,
+          .salary-doc-page u,
+          .salary-doc-page .underline,
+          .salary-doc-page [class*="underline"] {
+            text-decoration: none !important;
+            text-decoration-line: none !important;
+            text-decoration-style: none !important;
+            text-decoration-color: transparent !important;
+            text-decoration-thickness: 0 !important;
+            -webkit-text-decoration: none !important;
+            -webkit-text-decoration-line: none !important;
+            -webkit-text-decoration-color: transparent !important;
+            border-bottom: 1.5px solid #000000 !important;
+            padding-bottom: 5px !important;
+            display: inline-block !important;
+            line-height: 1.35 !important;
+            vertical-align: bottom !important;
+            box-sizing: border-box !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
           .print\\:hidden,
           .inline-reset-btn,
