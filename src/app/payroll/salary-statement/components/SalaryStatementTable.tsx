@@ -93,7 +93,8 @@ export const SalaryStatementTable = memo(function SalaryStatementTable({
         }
 
         const purpose = (fd.purpose || raw?.purpose || '').toLowerCase();
-        const searchCorpus = `${workerName} ${workerId} ${refNo} ${deptName} ${designationName} ${purpose}`.toLowerCase();
+        const p2Ref = (fd.p2RefNo || '').toLowerCase();
+        const searchCorpus = `${workerName} ${workerId} ${refNo} ${p2Ref} ${deptName} ${designationName} ${purpose}`.toLowerCase();
 
         return {
           stmt,

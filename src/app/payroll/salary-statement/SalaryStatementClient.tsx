@@ -24,6 +24,7 @@ import {
   MonthBreakdown,
   StatementCustomRow,
   createDefaultCustomRows,
+  createInitialDefaultData,
   computeNetPayable,
   formatWordsOnly,
   formatDocDate,
@@ -100,117 +101,7 @@ const preloadGenerator = () => {
   }
 };
 
-function createInitialDefaultData(
-  currentYear: number,
-  todayFormatted: string,
-  defaultMonths: [string, string, string]
-): StatementData {
-  return {
-    refNo: `MEPG/HR&ADMIN/309/${currentYear}`,
-    date: todayFormatted,
-    workerId: '4917',
-    name: 'Sakib Ahmed Samrat',
-    salutation: 'Mr.',
-    genderPronoun: 'He',
-    designation: 'Executive',
-    department: 'HR & Admin',
-    companyName: 'Mohammadi Electric Wires and Multi Products (MEP) Limited',
-    companyAddress: 'Head Office: MEP Group, 161 Sadar Road, Barishal, Bangladesh.',
-    joiningDate: '14th June 2009',
-    purpose: 'personal loan from Bank',
-    months: [
-      {
-        monthName: defaultMonths[0],
-        grossLabel: 'Gross Salary',
-        grossSalary: 44000,
-        basicLabel: 'Basic',
-        basicSalary: 22000,
-        houseRentLabel: 'House Rent',
-        houseRent: 13200,
-        medicalLabel: 'Medical',
-        medical: 4400,
-        conveyanceLabel: 'Conveyance',
-        conveyance: 4400,
-        pfLabel: '(Less) PF',
-        pfDeduction: 1848,
-        overtimeLabel: 'Over Time',
-        overtime: 2933,
-        incomeTaxLabel: 'Income Tax',
-        incomeTax: 1000,
-        netPayableLabel: 'Net Payable=',
-        netPayable: 44085,
-      },
-      {
-        monthName: defaultMonths[1],
-        grossLabel: 'Gross Salary',
-        grossSalary: 44000,
-        basicLabel: 'Basic',
-        basicSalary: 22000,
-        houseRentLabel: 'House Rent',
-        houseRent: 13200,
-        medicalLabel: 'Medical',
-        medical: 4400,
-        conveyanceLabel: 'Conveyance',
-        conveyance: 4400,
-        pfLabel: '(Less) PF',
-        pfDeduction: 1848,
-        overtimeLabel: 'Over Time',
-        overtime: 14986,
-        incomeTaxLabel: 'Income Tax',
-        incomeTax: 1000,
-        netPayableLabel: 'Net Payable=',
-        netPayable: 56138,
-      },
-      {
-        monthName: defaultMonths[2],
-        grossLabel: 'Gross Salary',
-        grossSalary: 44000,
-        basicLabel: 'Basic',
-        basicSalary: 22000,
-        houseRentLabel: 'House Rent',
-        houseRent: 13200,
-        medicalLabel: 'Medical',
-        medical: 4400,
-        conveyanceLabel: 'Conveyance',
-        conveyance: 4400,
-        pfLabel: '(Less) PF',
-        pfDeduction: 1848,
-        overtimeLabel: 'Over Time',
-        overtime: 4400,
-        incomeTaxLabel: 'Income Tax',
-        incomeTax: 417,
-        netPayableLabel: 'Net Payable=',
-        netPayable: 46135,
-      },
-    ],
-    // Page 2 specific
-    structureBasicLabel: 'Basic',
-    structureBasic: 22000,
-    structureHouseRentLabel: 'House Rent',
-    structureHouseRent: 13200,
-    structureMedicalLabel: 'Medical Allowance',
-    structureMedical: 4400,
-    structureConveyanceLabel: 'Conveyance',
-    structureConveyance: 4400,
-    structureTotalLabel: 'Total Salary',
-    structureTotal: 44000,
-    amountInWords: 'Forty-Four Thousand Taka Only.',
-    bankName: 'Prime Bank',
-    bankAccountNo: '2111212026612',
-    monthlyPayableAmount: 41735,
-    monthlyPayableInWords: 'Forty- One Thousand Seven Hundred Thirty-Five Taka Only.',
-    p2Item2Label: 'Total deduction amount (PF purpose Tk.',
-    pfDeductionPage2: 417,
-    disclaimer:
-      'This certificate is issued at the request of the mentioned employee with no responsibility borne either on the signatory or the company for any kind of financial transactions.',
-    // Signatory
-    signatoryName: 'Sajjad Hosen',
-    signatoryTitle: 'Senior Deputy Manager',
-    signatoryDepartment: 'HR & Admin',
-    signatoryOrg: 'MEP Group.',
-    customRows: createDefaultCustomRows(),
-  };
-}
+
 
 export interface SalaryStatementClientProps {
   initialStatementId?: string;
@@ -592,9 +483,40 @@ export default function SalaryStatementClient({
             Array.isArray(parsedFormData.months) && parsedFormData.months.length === 3
               ? parsedFormData.months
               : prev.months;
+          const mergedP1Ref =
+            parsedFormData.p1RefNo ||
+            parsedFormData.refNo ||
+            statement.refNo ||
+            prev.p1RefNo ||
+            prev.refNo;
+          const mergedP2Ref =
+            parsedFormData.p2RefNo ||
+            parsedFormData.refNo ||
+            statement.refNo ||
+            prev.p2RefNo ||
+            prev.refNo;
+          const mergedP1Date =
+            parsedFormData.p1Date ||
+            parsedFormData.date ||
+            statement.statementDate ||
+            prev.p1Date ||
+            prev.date;
+          const mergedP2Date =
+            parsedFormData.p2Date ||
+            parsedFormData.date ||
+            statement.statementDate ||
+            prev.p2Date ||
+            prev.date;
+
           const merged: StatementData = {
             ...prev,
             ...parsedFormData,
+            p1RefNo: mergedP1Ref,
+            p2RefNo: mergedP2Ref,
+            p1Date: mergedP1Date,
+            p2Date: mergedP2Date,
+            refNo: mergedP1Ref,
+            date: mergedP1Date,
             months: nextMonths,
             customRows: loadedCustomRows.length > 0 ? loadedCustomRows : prev.customRows || createDefaultCustomRows(),
           };
@@ -660,16 +582,29 @@ export default function SalaryStatementClient({
       setIsSaving(true);
       try {
         const targetId = asNewCopy ? undefined : activeStatementId || undefined;
+        const p1Ref = formData.p1RefNo ?? formData.refNo;
+        const p2Ref = formData.p2RefNo ?? formData.refNo;
+        const p1Dt = formData.p1Date ?? formData.date;
+        const p2Dt = formData.p2Date ?? formData.date;
+        const normalizedFormData: StatementData = {
+          ...formData,
+          p1RefNo: p1Ref,
+          p2RefNo: p2Ref,
+          p1Date: p1Dt,
+          p2Date: p2Dt,
+          refNo: p1Ref,
+          date: p1Dt,
+        };
         const payload = {
           id: targetId,
-          refNo: formData.refNo,
+          refNo: p1Ref,
           workerId: formData.workerId,
           name: formData.name,
           designation: formData.designation,
           department: formData.department,
-          statementDate: formData.date,
+          statementDate: p1Dt,
           data: {
-            formData,
+            formData: normalizedFormData,
             padSettings: {
               padTopMargin,
               padBottomMargin,
@@ -688,6 +623,8 @@ export default function SalaryStatementClient({
           const savedStmt = res.statement;
           setActiveStatementId(savedStmt.id);
           setActiveStatementRefNo(savedStmt.refNo);
+          initialDefaultsRef.current = structuredClone(normalizedFormData);
+          setFormData(normalizedFormData);
 
           setSavedStatements((prev) => {
             const withoutCurrent = prev.filter((s) => s.id !== savedStmt.id);
@@ -878,10 +815,45 @@ export default function SalaryStatementClient({
   // Helper resetting a single field on StatementData
   const handleResetField = useCallback((field: keyof StatementData) => {
     if (initialDefaultsRef.current) {
-      setFormData((prev) => ({
-        ...prev,
-        [field]: initialDefaultsRef.current[field],
-      }));
+      setFormData((prev) => {
+        const init = initialDefaultsRef.current;
+        if (field === 'refNo' || field === 'p1RefNo') {
+          const val = init.p1RefNo ?? init.refNo;
+          return {
+            ...prev,
+            refNo: val,
+            p1RefNo: val,
+            p2RefNo: prev.p2RefNo !== undefined ? prev.p2RefNo : (init.p2RefNo ?? init.refNo),
+          };
+        }
+        if (field === 'p2RefNo') {
+          const val = init.p2RefNo ?? init.refNo;
+          return {
+            ...prev,
+            p2RefNo: val,
+          };
+        }
+        if (field === 'date' || field === 'p1Date') {
+          const val = init.p1Date ?? init.date;
+          return {
+            ...prev,
+            date: val,
+            p1Date: val,
+            p2Date: prev.p2Date !== undefined ? prev.p2Date : (init.p2Date ?? init.date),
+          };
+        }
+        if (field === 'p2Date') {
+          const val = init.p2Date ?? init.date;
+          return {
+            ...prev,
+            p2Date: val,
+          };
+        }
+        return {
+          ...prev,
+          [field]: init[field],
+        };
+      });
     }
   }, []);
 

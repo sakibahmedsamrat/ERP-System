@@ -286,20 +286,34 @@ export const SalaryStatementPreview = memo(function SalaryStatementPreview({
               <div className="flex items-center gap-1">
                 <strong className="font-bold">Ref No:</strong>
                 <EditableInlineText
-                  value={formData.refNo}
-                  defaultValue={initialDefaults.refNo}
-                  onChange={(val) => setFormData((prev) => ({ ...prev, refNo: val }))}
-                  onReset={() => onResetField('refNo')}
+                  value={formData.p1RefNo ?? formData.refNo}
+                  defaultValue={initialDefaults.p1RefNo ?? initialDefaults.refNo}
+                  onChange={(val) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      p1RefNo: val,
+                      refNo: val,
+                      p2RefNo: prev.p2RefNo !== undefined ? prev.p2RefNo : prev.refNo,
+                    }))
+                  }
+                  onReset={() => onResetField('p1RefNo')}
                   isMono={true}
                 />
               </div>
               <div className="flex items-center gap-1">
                 <span>Date:</span>
                 <EditableInlineText
-                  value={formData.date}
-                  defaultValue={todayFormatted}
-                  onChange={(val) => setFormData((prev) => ({ ...prev, date: val }))}
-                  onReset={() => onResetField('date')}
+                  value={formData.p1Date ?? formData.date}
+                  defaultValue={initialDefaults.p1Date ?? initialDefaults.date ?? todayFormatted}
+                  onChange={(val) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      p1Date: val,
+                      date: val,
+                      p2Date: prev.p2Date !== undefined ? prev.p2Date : prev.date,
+                    }))
+                  }
+                  onReset={() => onResetField('p1Date')}
                 />
               </div>
             </div>
@@ -1081,20 +1095,20 @@ export const SalaryStatementPreview = memo(function SalaryStatementPreview({
               <div className="flex items-center gap-1">
                 <strong className="font-bold">Ref No:</strong>
                 <EditableInlineText
-                  value={formData.refNo}
-                  defaultValue={initialDefaults.refNo}
-                  onChange={(val) => setFormData((prev) => ({ ...prev, refNo: val }))}
-                  onReset={() => onResetField('refNo')}
+                  value={formData.p2RefNo ?? formData.refNo}
+                  defaultValue={initialDefaults.p2RefNo ?? initialDefaults.refNo}
+                  onChange={(val) => setFormData((prev) => ({ ...prev, p2RefNo: val }))}
+                  onReset={() => onResetField('p2RefNo')}
                   isMono={true}
                 />
               </div>
               <div className="flex items-center gap-1">
                 <span>Date:</span>
                 <EditableInlineText
-                  value={formData.date}
-                  defaultValue={todayFormatted}
-                  onChange={(val) => setFormData((prev) => ({ ...prev, date: val }))}
-                  onReset={() => onResetField('date')}
+                  value={formData.p2Date ?? formData.date}
+                  defaultValue={initialDefaults.p2Date ?? initialDefaults.date ?? todayFormatted}
+                  onChange={(val) => setFormData((prev) => ({ ...prev, p2Date: val }))}
+                  onReset={() => onResetField('p2Date')}
                 />
               </div>
             </div>

@@ -35,7 +35,11 @@ export interface MonthBreakdown {
 
 export interface StatementData {
   refNo: string;
+  p1RefNo?: string;
+  p2RefNo?: string;
   date: string;
+  p1Date?: string;
+  p2Date?: string;
   workerId: string;
   name: string;
   salutation: string;
@@ -242,4 +246,120 @@ export function renderOrdinalDateText(text: string): React.ReactNode {
     );
   }
   return text;
+}
+
+export function createInitialDefaultData(
+  currentYear: number = new Date().getFullYear(),
+  todayFormatted: string = formatDocDate(new Date()),
+  defaultMonths: [string, string, string] = getDefault3Months()
+): StatementData {
+  return {
+    refNo: `MEPG/HR&ADMIN/309/${currentYear}`,
+    p1RefNo: `MEPG/HR&ADMIN/309/${currentYear}`,
+    p2RefNo: `MEPG/HR&ADMIN/309/${currentYear}`,
+    date: todayFormatted,
+    p1Date: todayFormatted,
+    p2Date: todayFormatted,
+    workerId: '4917',
+    name: 'Sakib Ahmed Samrat',
+    salutation: 'Mr.',
+    genderPronoun: 'He',
+    designation: 'Executive',
+    department: 'HR & Admin',
+    companyName: 'Mohammadi Electric Wires and Multi Products (MEP) Limited',
+    companyAddress: 'Head Office: MEP Group, 161 Sadar Road, Barishal, Bangladesh.',
+    joiningDate: '14th June 2009',
+    purpose: 'personal loan from Bank',
+    months: [
+      {
+        monthName: defaultMonths[0],
+        grossLabel: 'Gross Salary',
+        grossSalary: 44000,
+        basicLabel: 'Basic',
+        basicSalary: 22000,
+        houseRentLabel: 'House Rent',
+        houseRent: 13200,
+        medicalLabel: 'Medical',
+        medical: 4400,
+        conveyanceLabel: 'Conveyance',
+        conveyance: 4400,
+        pfLabel: '(Less) PF',
+        pfDeduction: 1848,
+        overtimeLabel: 'Over Time',
+        overtime: 2933,
+        incomeTaxLabel: 'Income Tax',
+        incomeTax: 1000,
+        netPayableLabel: 'Net Payable=',
+        netPayable: 44085,
+      },
+      {
+        monthName: defaultMonths[1],
+        grossLabel: 'Gross Salary',
+        grossSalary: 44000,
+        basicLabel: 'Basic',
+        basicSalary: 22000,
+        houseRentLabel: 'House Rent',
+        houseRent: 13200,
+        medicalLabel: 'Medical',
+        medical: 4400,
+        conveyanceLabel: 'Conveyance',
+        conveyance: 4400,
+        pfLabel: '(Less) PF',
+        pfDeduction: 1848,
+        overtimeLabel: 'Over Time',
+        overtime: 14986,
+        incomeTaxLabel: 'Income Tax',
+        incomeTax: 1000,
+        netPayableLabel: 'Net Payable=',
+        netPayable: 56138,
+      },
+      {
+        monthName: defaultMonths[2],
+        grossLabel: 'Gross Salary',
+        grossSalary: 44000,
+        basicLabel: 'Basic',
+        basicSalary: 22000,
+        houseRentLabel: 'House Rent',
+        houseRent: 13200,
+        medicalLabel: 'Medical',
+        medical: 4400,
+        conveyanceLabel: 'Conveyance',
+        conveyance: 4400,
+        pfLabel: '(Less) PF',
+        pfDeduction: 1848,
+        overtimeLabel: 'Over Time',
+        overtime: 4400,
+        incomeTaxLabel: 'Income Tax',
+        incomeTax: 417,
+        netPayableLabel: 'Net Payable=',
+        netPayable: 46135,
+      },
+    ],
+    // Page 2 specific
+    structureBasicLabel: 'Basic',
+    structureBasic: 22000,
+    structureHouseRentLabel: 'House Rent',
+    structureHouseRent: 13200,
+    structureMedicalLabel: 'Medical Allowance',
+    structureMedical: 4400,
+    structureConveyanceLabel: 'Conveyance',
+    structureConveyance: 4400,
+    structureTotalLabel: 'Total Salary',
+    structureTotal: 44000,
+    amountInWords: 'Forty-Four Thousand Taka Only.',
+    bankName: 'Prime Bank',
+    bankAccountNo: '2111212026612',
+    monthlyPayableAmount: 41735,
+    monthlyPayableInWords: 'Forty- One Thousand Seven Hundred Thirty-Five Taka Only.',
+    p2Item2Label: 'Total deduction amount (PF purpose Tk.',
+    pfDeductionPage2: 417,
+    disclaimer:
+      'This certificate is issued at the request of the mentioned employee with no responsibility borne either on the signatory or the company for any kind of financial transactions.',
+    // Signatory
+    signatoryName: 'Sajjad Hosen',
+    signatoryTitle: 'Senior Deputy Manager',
+    signatoryDepartment: 'HR & Admin',
+    signatoryOrg: 'MEP Group.',
+    customRows: createDefaultCustomRows(),
+  };
 }

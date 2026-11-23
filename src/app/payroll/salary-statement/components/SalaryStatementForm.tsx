@@ -456,10 +456,10 @@ export const SalaryStatementForm = memo(function SalaryStatementForm({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-semibold text-gray-600">Reference No.</label>
+                  <label className="text-xs font-semibold text-gray-600">Reference No. (Page 1)</label>
                   <button
                     type="button"
-                    onClick={() => onResetField('refNo')}
+                    onClick={() => onResetField('p1RefNo')}
                     className="text-[11px] text-slate-400 hover:text-blue-600 flex items-center gap-1 font-medium transition"
                     title="Reset Reference Number"
                   >
@@ -468,17 +468,26 @@ export const SalaryStatementForm = memo(function SalaryStatementForm({
                 </div>
                 <input
                   type="text"
-                  value={formData.refNo}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, refNo: e.target.value }))}
+                  value={formData.p1RefNo ?? formData.refNo ?? ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setFormData((prev) => ({
+                      ...prev,
+                      p1RefNo: val,
+                      refNo: val,
+                      p2RefNo: prev.p2RefNo !== undefined ? prev.p2RefNo : prev.refNo,
+                    }));
+                  }}
+                  placeholder="e.g. MEPG/HR&ADMIN/309/2026"
                   className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 font-mono"
                 />
               </div>
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-semibold text-gray-600">Date</label>
+                  <label className="text-xs font-semibold text-gray-600">Date (Page 1)</label>
                   <button
                     type="button"
-                    onClick={() => onResetField('date')}
+                    onClick={() => onResetField('p1Date')}
                     className="text-[11px] text-slate-400 hover:text-blue-600 flex items-center gap-1 font-medium transition"
                     title="Reset Date"
                   >
@@ -487,8 +496,16 @@ export const SalaryStatementForm = memo(function SalaryStatementForm({
                 </div>
                 <input
                   type="text"
-                  value={formData.date}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, date: e.target.value }))}
+                  value={formData.p1Date ?? formData.date ?? ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setFormData((prev) => ({
+                      ...prev,
+                      p1Date: val,
+                      date: val,
+                      p2Date: prev.p2Date !== undefined ? prev.p2Date : prev.date,
+                    }));
+                  }}
                   className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -859,6 +876,59 @@ export const SalaryStatementForm = memo(function SalaryStatementForm({
       {/* TAB 2: Page 2 Data */}
       {activeTab === 'p2' && (
         <div className="space-y-6">
+          {/* Header & Reference (Page 2) */}
+          <div className="glass-card rounded-3xl p-5 border border-white/70 shadow-sm space-y-4">
+            <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2 border-b border-slate-200/60 pb-2">
+              <FileSpreadsheet size={16} className="text-blue-600" /> Header & Reference (Page 2)
+            </h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-semibold text-gray-600">Reference No. (Page 2)</label>
+                  <button
+                    type="button"
+                    onClick={() => onResetField('p2RefNo')}
+                    className="text-[11px] text-slate-400 hover:text-blue-600 flex items-center gap-1 font-medium transition"
+                    title="Reset Reference Number (Page 2)"
+                  >
+                    <RotateCcw size={10} /> Reset
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={formData.p2RefNo ?? formData.refNo ?? ''}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, p2RefNo: e.target.value }))
+                  }
+                  placeholder="e.g. MEPG/HR&ADMIN/309/2026"
+                  className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 font-mono"
+                />
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-semibold text-gray-600">Date (Page 2)</label>
+                  <button
+                    type="button"
+                    onClick={() => onResetField('p2Date')}
+                    className="text-[11px] text-slate-400 hover:text-blue-600 flex items-center gap-1 font-medium transition"
+                    title="Reset Date (Page 2)"
+                  >
+                    <RotateCcw size={10} /> Reset
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={formData.p2Date ?? formData.date ?? ''}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, p2Date: e.target.value }))
+                  }
+                  className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Monthly Salary Structure Table */}
           <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm space-y-4">
             <div className="flex items-center justify-between border-b pb-2">
